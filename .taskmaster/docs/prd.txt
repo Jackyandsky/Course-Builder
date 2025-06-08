@@ -1,0 +1,148 @@
+# Overview
+模块化课程设计与管理平台 (Course Builder) 是一个高度灵活、可定制的在线课程构建工具。赋能教育者、培训师和内容创作者，让他们能够高效地设计、组合、管理和分享结构化、模块化的教学内容。
+
+目标用户为系统管理员和课程组织者，专注于建立和管理教学内容，而非面向最终学习者。
+
+# Core Features
+
+## 1. Course Management
+- 课程作为顶层容器，包含课程名称、分类、封面图、简介、目标学员、前置要求
+- 灵活组合教材、教学计划、教学目标和教学方法构成完整课程
+- 支持模板和CSV/Excel批量导入课程信息
+- 卡片式布局展示，支持AJAX异步查询、搜索、筛选和分页
+
+## 2. Book/Material Library
+- 中心化教材库，包含书名、作者、分类、封面、描述、标签
+- 支持批量导入书目信息
+- 一本教材可关联多个词汇集
+- 可复用于不同课程
+
+## 3. Vocabulary Management
+- 包含单词、词性、释义、等级(CEFR)等属性
+- 支持批量导入(单词,词性,释义格式)
+- 词汇集分组功能，一个词汇可属于多个词汇集
+- 词汇集可关联多本教材
+
+## 4. Schedule Design
+- 教学计划包含总周数、每周课时数、单次课时长
+- 提供预设模板(如"标准12周研讨课")
+- 日历视图展示教学进度
+- 每节课详细设计：学习目标、教学方法、任务作业、关联教材章节、关联词汇集
+- 出勤记录功能
+
+## 5. Objective Library
+- 可复用的教学目标库
+- 包含目标名称、描述、状态(规划中/进行中/已存档)
+- 确保教学连贯性和一致性
+
+## 6. Method Library
+- 教学方法库(PBL、翻转课堂、小组讨论等)
+- 包含方法名称和详细描述
+- 供教师在设计课时活动时参考选用
+
+## 7. Task/Activity Library
+- 标准化任务库，包含测验、作业、阅读、写作等分类
+- 任务名称、描述、分类属性
+- 方便在教学计划中快速添加和复用
+
+## 8. Platform Common Features
+- 所有列表页采用卡片式布局
+- AJAX异步查询，流畅的搜索筛选体验
+- 批量修改功能
+- 创建/编辑页面内即时创建新分类
+- 所有核心对象可生成公开分享链接
+- 供利益相关者查看分析数据
+
+# User Experience
+主要用户为系统管理员和课程组织者，需要：
+- 直观的内容管理界面
+- 高效的批量操作功能
+- 灵活的模块化组合能力
+- 清晰的数据展示和分析
+
+用户工作流：
+1. 建立教材库和词汇库
+2. 创建教学目标和方法库
+3. 设计教学计划模板
+4. 组合各模块创建完整课程
+5. 管理和分享课程内容
+
+# Technical Architecture
+- Frontend: Next.js, React, TypeScript, Tailwind CSS
+- Backend/Database: Supabase (database, auth, storage, serverless functions)
+- 简约页面风格设计
+- 所有代码注释使用英文
+- 数据设计遵循简单使用逻辑，避免过度复杂化
+
+核心数据模型：
+- Course (课程)
+- Book (教材)
+- Vocabulary & VocabularyGroup (词汇和词汇集)
+- Schedule & Lesson (教学计划和课时)
+- Objective (教学目标)
+- Method (教学方法)
+- Task (任务活动)
+- Category (分类)
+
+# Development Roadmap
+
+## Phase 1: MVP Foundation
+- 基础项目架构搭建(Next.js + Supabase)
+- 用户认证系统
+- 核心数据模型设计和数据库schema
+- 基础UI组件库(卡片、表单、列表等)
+
+## Phase 2: Core Content Management
+- Course管理功能
+- Book库管理功能
+- Vocabulary管理功能
+- 基础CRUD操作界面
+
+## Phase 3: Advanced Features
+- Schedule设计和日历视图
+- Objective和Method库
+- Task库管理
+- 批量导入功能
+
+## Phase 4: User Experience Enhancement
+- 高级搜索和筛选
+- 批量操作功能
+- 公开分享链接
+- 数据分析和报表
+
+## Phase 5: Integration & Optimization
+- 模块间关联功能完善
+- 性能优化
+- 用户体验细节优化
+- 测试和部署
+
+# Logical Dependency Chain
+1. 项目基础架构 → 认证系统 → 数据库设计
+2. 基础UI组件 → 核心CRUD功能
+3. 独立模块(Course, Book, Vocabulary) → 关联功能
+4. 高级功能(Schedule, 批量操作) → 用户体验优化
+5. 集成测试 → 部署上线
+
+快速到达可用前端的策略：
+- 先实现Course管理的基础展示
+- 快速构建卡片式列表界面
+- 实现基本的增删改查功能
+- 逐步添加高级特性
+
+# Risks and Mitigations
+- 技术风险：Supabase集成复杂度 → 从简单功能开始，逐步集成
+- 数据设计风险：过度复杂化 → 遵循简单原则，避免过度设计
+- 用户体验风险：功能过于复杂 → 分阶段发布，收集反馈
+- 性能风险：大量数据加载 → 实现分页和异步加载
+
+MVP关键要素：
+- 能够创建和管理课程
+- 基础的教材和词汇管理
+- 简单直观的用户界面
+- 稳定的数据存储
+
+# Appendix
+项目位置：D:\dev\cursor\course builder\
+使用Supabase MCP功能进行数据库连接和管理
+注重教学内容管理而非学习者交互
+支持中英文内容但代码注释使用英文
