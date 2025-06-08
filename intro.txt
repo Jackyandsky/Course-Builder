@@ -1,0 +1,149 @@
+Course builder
+1. Create a course (name, category, description…). Allow batch importing.
+2. Create a book (title, category, author, description, tags…). Allow batch importing.
+3. Create vocabulary (word, part of speech, description, level…). 
+4. Vocabularies allow batch importing, word, part of speech, description(each line),. Grouping name, associated with one or more books
+5. Create Schedules (duration, per week? , lasting time? …)
+6. Create objectives (name, description,archived, development…)
+7. Method (name, description )
+8. Course composed of options including books, schedules, objectives, methods…
+9. Vocabulary associated with one or more books and can be grouped by multiple naming, eg. hamlet vocabulary part 1,2,3…
+10. Schedule can have a template for swift establishing, each lesson can include objectives, methods, assignments, quizzes, book and related vocabulary part…; schedule can have a calendar, week 1,2,3,4… can be used to record attendance 
+11. Task (name, category eg: quiz, assignment or reading, writing , description )
+12. All objects allow batch modification regards some common properties. Category creation within the creation page of the object. All the list pages allow an ajax query, items are displayed in cards style. All kinds of objects list can be shared for public exploration for analysis purposes by stakeholders
+13. techneque stuck (Next.js,ts,Tailwind,react,supabase...)
+======
+
+
+项目名称：模块化课程设计与管理平台 (Course Builder)
+
+项目愿景：
+打造一个高度灵活、可定制的在线课程构建工具。赋能教育者、培训师和内容创作者，让他们能够高效地设计、组合、管理和分享结构化、模块化的教学内容。
+
+核心功能模块
+
+1. 课程 (Course) 管理
+
+核心属性： 课程名称、所属分类、封面图、课程简介、目标学员、前置要求。
+
+核心功能：
+
+课程是所有教学资源的顶层容器，通过灵活组合“教材”、“教学计划”、“教学目标”和“教学方法”来构成一个完整的课程。
+
+支持通过模板或CSV/Excel文件 批量导入 课程基本信息。
+
+2. 教材/书目 (Book) 库
+
+核心属性： 书名、作者、分类、封面、描述、标签 (Tags)。
+
+核心功能：
+
+建立一个可复用的中心化教材库，供不同课程选用。
+
+支持 批量导入 书目信息。
+
+一本教材可以关联多个 词汇集 (Vocabulary Group)。
+
+3. 词汇 (Vocabulary) 管理
+
+核心属性： 单词、词性 (Part of Speech)、释义/描述、等级 (如 CEFR A1, B2)。
+
+核心功能：
+
+支持 批量导入，格式为 单词, 词性, 释义 (每行一个)。
+
+词汇集 (Grouping)： 词汇可以被组织成逻辑分组，例如 “《哈姆雷特》第一幕词汇”、“商务英语高频词汇”。一个词汇可以属于多个词汇集。
+
+关联性： 每个词汇集可以关联一本或多本教材 (Book)，方便学生按书学习。
+
+4. 教学计划 (Schedule) 设计
+
+核心属性： 计划名称、总周数 (e.g., 12周)、每周课时数 (e.g., 2次/周)、单次课时长 (e.g., 90分钟)。
+
+核心功能：
+
+计划模板： 提供预设模板（如“标准12周研讨课”），支持一键创建和修改。
+
+日历视图： 以周 (Week 1, 2, 3...) 或日历形式直观展示教学进度。
+
+课时详情： 每一节课 (Lesson) 都可以精细化设计，包含：
+
+学习目标 (Objectives)
+
+教学方法 (Methods)
+
+任务/作业 (Tasks/Assignments)
+
+关联教材 (Book) 及章节
+
+关联词汇集 (Vocabulary Group)
+
+出勤记录 (Attendance)： 可以在日历视图中轻松记录每节课的学员出勤情况。
+
+5. 教学目标 (Objective) 库
+
+核心属性： 目标名称、描述、状态 (如：规划中, 进行中, 已存档)。
+
+核心功能：
+
+建立可复用的教学目标库，方便在不同课程和课时中调用，确保教学的连贯性和一致性。
+
+6. 教学方法 (Method) 库
+
+核心属性： 方法名称、描述 (如：PBL项目式学习、翻转课堂、小组讨论)。
+
+核心功能：
+
+汇集和管理多种教学策略，供教师在设计课时活动时参考和选用。
+
+7. 任务/活动 (Task) 库
+
+核心属性： 任务名称、描述、分类 (如：测验 Quiz, 作业 Assignment, 阅读 Reading, 写作 Writing 等)。
+
+核心功能：
+
+创建一个标准化的任务库，方便在教学计划中快速添加和复用各类学习活动。
+
+平台通用特性
+
+高效操作与交互：
+
+所有列表页（课程、教材、词汇等）均采用 卡片式 (Cards) 布局，美观直观。
+
+列表页支持 AJAX 异步查询，提供流畅的搜索、筛选和分页体验。
+
+支持对任意对象的通用属性进行 批量修改 (如批量修改分类、状态等)。
+
+在创建/编辑页面内，支持 即时创建 新的分类 (Category)，无需跳转。
+
+数据开放与分析：
+
+所有核心对象（课程、教材、词汇集等）的列表均可生成一个 公开分享链接。
+
+供项目利益相关者 (Stakeholders) 查看、探索和分析数据，以支持教学评估和决策。
+
+技术栈 (Tech Stack)
+
+前端: Next.js, React, TypeScript, Tailwind CSS
+
+后端/数据库: Supabase (提供数据库、认证、存储和 Serverless Functions)
+
+所有代码注释均使用英文.
+
+页面风格简约.
+此应用为建立教学内容而设计，使用者为系统管理员和课程组织者.
+
+项目目录D:\dev\cursor\course builder\
+supabase可使用mcp功能进行连接. 数据设计也遵循简单使用逻辑，无需过多字段或者过多考虑延展性.
+=====
+# 查看所有任务
+tm get-tasks
+
+# 查看下一个要执行的任务
+tm next-task
+
+# 查看特定任务详情
+tm get-task --id 1
+
+# 设置任务状态
+tm set-task-status --id 1 --status in-progress
