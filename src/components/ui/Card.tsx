@@ -24,7 +24,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
 
 Card.displayName = 'Card';
 
-const CardHeader = forwardRef<HTMLDivElement, CardProps>(
+const Header = forwardRef<HTMLDivElement, CardProps>(
   ({ className, children, ...props }, ref) => {
     return (
       <div
@@ -38,9 +38,9 @@ const CardHeader = forwardRef<HTMLDivElement, CardProps>(
   }
 );
 
-CardHeader.displayName = 'CardHeader';
+Header.displayName = 'CardHeader';
 
-const CardTitle = forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
+const Title = forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, children, ...props }, ref) => {
     return (
       <h3
@@ -54,9 +54,9 @@ const CardTitle = forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadin
   }
 );
 
-CardTitle.displayName = 'CardTitle';
+Title.displayName = 'CardTitle';
 
-const CardContent = forwardRef<HTMLDivElement, CardProps>(
+const Content = forwardRef<HTMLDivElement, CardProps>(
   ({ className, children, ...props }, ref) => {
     return (
       <div ref={ref} className={cn('px-6 py-4', className)} {...props}>
@@ -66,9 +66,9 @@ const CardContent = forwardRef<HTMLDivElement, CardProps>(
   }
 );
 
-CardContent.displayName = 'CardContent';
+Content.displayName = 'CardContent';
 
-const CardFooter = forwardRef<HTMLDivElement, CardProps>(
+const Footer = forwardRef<HTMLDivElement, CardProps>(
   ({ className, children, ...props }, ref) => {
     return (
       <div
@@ -82,6 +82,6 @@ const CardFooter = forwardRef<HTMLDivElement, CardProps>(
   }
 );
 
-CardFooter.displayName = 'CardFooter';
+Footer.displayName = 'CardFooter';
 
-export { Card, CardHeader, CardTitle, CardContent, CardFooter };
+export { Card, Header, Title, Content, Footer };

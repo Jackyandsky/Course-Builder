@@ -22,6 +22,7 @@ const navigation = [
   { name: 'Books', href: '/books', icon: BookOpenIcon },
   { name: 'Vocabulary', href: '/vocabulary', icon: ClipboardDocumentListIcon },
   { name: 'Schedules', href: '/schedules', icon: CalendarIcon },
+  { name: 'Components', href: '/dashboard/components', icon: Bars3Icon },
 ];
 
 interface DashboardLayoutProps {

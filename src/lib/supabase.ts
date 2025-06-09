@@ -1,16 +1,11 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 
-// Client-side Supabase client
+// This is the client-side Supabase client.
+// It's used in client components (hooks, etc.)
 export const createSupabaseClient = () => {
   return createClientComponentClient();
 };
 
-// Server-side Supabase client
-export const createSupabaseServerClient = () => {
-  return createServerComponentClient({ cookies });
-};
-
-// Type for Supabase client
+// We export the type for convenience.
+// The server-side client will be created directly in server-side functions.
 export type SupabaseClient = ReturnType<typeof createSupabaseClient>;
