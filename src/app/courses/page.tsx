@@ -32,6 +32,8 @@ export default function CoursesPage() {
     published: 0,
     archived: 0,
   });
+  // State to control the visibility of the filter panel
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
   useEffect(() => {
     loadCourses();
@@ -158,25 +160,36 @@ export default function CoursesPage() {
       </div>
 
       {/* Search and Filters */}
-      <div className="flex flex-col lg:flex-row gap-4">
-        <div className="flex-1">
-          <SearchBox
-            placeholder="Search courses..."
-            onSearch={handleSearch}
-            fullWidth
-          />
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+                <SearchBox
+                    placeholder="Search courses..."
+                    onSearch={handleSearch}
+                    fullWidth
+                />
+            </div>
+            <Button
+                variant="outline"
+                onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+                leftIcon={<Filter className="h-4 w-4" />}
+            >
+                Filters
+            </Button>
         </div>
-        <div className="lg:w-80">
-          <FilterPanel
-            filters={filterGroups}
-            values={filters}
-            onChange={handleFilterChange}
-            onReset={() => setFilters({})}
-            collapsible={false}
-            className="h-full"
-          />
-        </div>
+        {isFilterPanelOpen && (
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <FilterPanel
+                    filters={filterGroups}
+                    values={filters}
+                    onChange={handleFilterChange}
+                    onReset={() => setFilters({})}
+                    collapsible={false}
+                />
+            </div>
+        )}
       </div>
+
 
       {/* Course Grid */}
       {loading ? (
