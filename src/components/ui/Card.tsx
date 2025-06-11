@@ -1,11 +1,14 @@
-import { cn } from '@/lib/utils';
-import { forwardRef } from 'react';
+// File: src/components/ui/Card.tsx
+
+import { cn } from '@/lib/utils'; 
+import { forwardRef } from 'react'; 
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: React.ReactNode;
+  children: React.ReactNode; 
 }
 
-const Card = forwardRef<HTMLDivElement, CardProps>(
+// 1. Define the main Card component as before
+const CardComponent = forwardRef<HTMLDivElement, CardProps>(
   ({ className, children, ...props }, ref) => {
     return (
       <div
@@ -21,9 +24,9 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
     );
   }
 );
+CardComponent.displayName = 'Card'; 
 
-Card.displayName = 'Card';
-
+// 2. Define sub-components as before
 const Header = forwardRef<HTMLDivElement, CardProps>(
   ({ className, children, ...props }, ref) => {
     return (
@@ -37,8 +40,7 @@ const Header = forwardRef<HTMLDivElement, CardProps>(
     );
   }
 );
-
-Header.displayName = 'CardHeader';
+Header.displayName = 'Header'; 
 
 const Title = forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, children, ...props }, ref) => {
@@ -53,8 +55,7 @@ const Title = forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingEle
     );
   }
 );
-
-Title.displayName = 'CardTitle';
+Title.displayName = 'Title'; 
 
 const Content = forwardRef<HTMLDivElement, CardProps>(
   ({ className, children, ...props }, ref) => {
@@ -65,8 +66,7 @@ const Content = forwardRef<HTMLDivElement, CardProps>(
     );
   }
 );
-
-Content.displayName = 'CardContent';
+Content.displayName = 'Content'; 
 
 const Footer = forwardRef<HTMLDivElement, CardProps>(
   ({ className, children, ...props }, ref) => {
@@ -81,7 +81,12 @@ const Footer = forwardRef<HTMLDivElement, CardProps>(
     );
   }
 );
+Footer.displayName = 'Footer'; 
 
-Footer.displayName = 'CardFooter';
-
-export { Card, Header, Title, Content, Footer };
+// 3. Combine them into a single object for export
+export const Card = Object.assign(CardComponent, {
+  Header,
+  Title,
+  Content,
+  Footer,
+});

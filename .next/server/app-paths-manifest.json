@@ -1,5 +1,24 @@
 {
-  "/page": "app/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/auth/page": "app/auth/page.js",
-  "/dashboard/page": "app/dashboard/page.js"
+  "/dashboard/components/page": "app/dashboard/components/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/lessons/[id]/page": "app/lessons/[id]/page.js",
+  "/page": "app/page.js",
+  "/books/[id]/edit/page": "app/books/[id]/edit/page.js",
+  "/courses/[id]/edit/page": "app/courses/[id]/edit/page.js",
+  "/books/new/page": "app/books/new/page.js",
+  "/books/[id]/page": "app/books/[id]/page.js",
+  "/courses/[id]/page": "app/courses/[id]/page.js",
+  "/schedules/[id]/edit/page": "app/schedules/[id]/edit/page.js",
+  "/courses/new/page": "app/courses/new/page.js",
+  "/courses/page": "app/courses/page.js",
+  "/vocabulary/groups/new/page": "app/vocabulary/groups/new/page.js",
+  "/schedules/[id]/page": "app/schedules/[id]/page.js",
+  "/schedules/new/page": "app/schedules/new/page.js",
+  "/books/page": "app/books/page.js",
+  "/vocabulary/groups/page": "app/vocabulary/groups/page.js",
+  "/schedules/page": "app/schedules/page.js",
+  "/vocabulary/new/page": "app/vocabulary/new/page.js",
+  "/vocabulary/page": "app/vocabulary/page.js"
 }

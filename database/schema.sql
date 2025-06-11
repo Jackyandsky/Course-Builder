@@ -191,13 +191,21 @@ CREATE TABLE schedules (
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    metadata JSONB DEFAULT '{}'::jsonb
+    metadata JSONB DEFAULT '{}'::jsonb,
+
+    default_start_time TIME,
+    default_duration_minutes INTEGER,
+    recurrence_type recurrence_type_enum,
+    recurrence_days day_of_week_enum[],
+    location VARCHAR(255),
+    max_students INTEGER,
+    is_active BOOLEAN DEFAULT true
 );
 
 -- Lessons (Individual lessons within a schedule)
 CREATE TABLE lessons (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    schedule_id UUID REFERENCES schedules(id) ON DELETE CASCADE NOT NULL,
+    course_id  UUID REFERENCES courses(id) ON DELETE CASCADE NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     lesson_number INTEGER,

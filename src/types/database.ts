@@ -1,8 +1,13 @@
 // Database types
 export type CourseStatus = 'draft' | 'published' | 'archived';
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert';
-export type LessonStatus = 'draft' | 'scheduled' | 'completed' | 'cancelled';
+export type LessonStatus = 'draft' | 'scheduled' |
+  'completed' | 'cancelled';
 export type ContentType = 'text' | 'video' | 'audio' | 'pdf' | 'image' | 'interactive';
+export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly';
+export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
+
 
 // Category type
 export interface Category {
@@ -45,6 +50,9 @@ export interface Course {
   book_count?: number;
   vocabulary_group_count?: number;
   schedule_count?: number;
+  // Add these two lines for the relations
+  course_books?: CourseBook[];
+  course_vocabulary_groups?: CourseVocabularyGroup[];
 }
 
 // Book type
@@ -90,9 +98,43 @@ export interface VocabularyGroup {
   created_at: string;
   updated_at: string;
   metadata?: Record<string, any>;
-  
   // Relations
   category?: Category;
+  vocabulary_group_items?: VocabularyGroupItem[];
+  vocabulary_count?: number;
+}
+
+// Vocabulary type
+export interface Vocabulary {
+  id: string;
+  word: string;
+  translation?: string;
+  pronunciation?: string;
+  part_of_speech?: string;
+  definition?: string;
+  example_sentence?: string;
+  example_translation?: string;
+  notes?: string;
+  difficulty: DifficultyLevel;
+  audio_url?: string;
+  image_url?: string;
+  tags?: string[];
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  metadata?: Record<string, any>;
+}
+
+// VocabularyGroupItem relation type
+export interface VocabularyGroupItem {
+  id: string;
+  vocabulary_group_id: string;
+  vocabulary_id: string;
+  position: number;
+  added_at: string;
+  // Relations
+  vocabulary_group?: VocabularyGroup;
+  vocabulary?: Vocabulary;
 }
 
 // CourseBook relation type
@@ -115,8 +157,297 @@ export interface CourseVocabularyGroup {
   course_id: string;
   vocabulary_group_id: string;
   position: number;
-  
   // Relations
   course?: Course;
   vocabulary_group?: VocabularyGroup;
 }
+
+// Objective type
+export interface Objective {
+  id: string;
+  title: string;
+  description?: string;
+  category_id?: string;
+  bloom_level?: string;
+  measurable: boolean;
+  tags?: string[];
+  is_template: boolean;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  metadata?: Record<string, any>;
+  // Relations
+  category?: Category;
+}
+
+// Method type
+export interface Method {
+  id: string;
+  name: string;
+  description?: string;
+  category_id?: string;
+  instructions?: string;
+  duration_minutes?: number;
+  group_size_min: number;
+  group_size_max?: number;
+  materials_needed?: string[];
+  tags?: string[];
+  is_template: boolean;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  metadata?: Record<string, any>;
+  
+  // Relations
+  category?: Category;
+}
+
+// Task type
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  category_id?: string;
+  instructions?: string;
+  duration_minutes?: number;
+  difficulty: DifficultyLevel;
+  materials_needed?: string[];
+  assessment_criteria?: string;
+  tags?: string[];
+  is_template: boolean;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  metadata?: Record<string, any>;
+  
+  // Relations
+  category?: Category;
+}
+
+// Schedule type
+export interface Schedule {
+  id: string;
+  course_id: string;
+  name: string;
+  description?: string;
+  start_date: string;
+  end_date?: string;
+  recurrence_type: RecurrenceType;
+  recurrence_days?: DayOfWeek[];
+  default_start_time: string;
+  default_duration_minutes: number;
+  timezone: string;
+  location?: string;
+  max_students?: number;
+  is_active: boolean;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  metadata?: Record<string, any>;
+  // Relations
+  course?: Course;
+  lessons?: Lesson[];
+}
+
+// Lesson type
+export interface Lesson {
+  id: string;
+  schedule_id: string;
+  title: string;
+  description?: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  duration_minutes: number;
+  location?: string;
+  status: LessonStatus;
+  notes?: string;
+  homework?: string;
+  resources?: string[];
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string;
+  cancelled_at?: string;
+  metadata?: Record<string, any>;
+  
+  // Relations
+  schedule?: Schedule;
+  objectives?: any[]; // Replace 'any' with specific relation type if available
+  methods?: any[];
+  tasks?: any[];
+  attendance?: any[];
+}
+
+// PublicLink type
+export interface PublicLink {
+    id: string;
+    entity_type: string;
+    entity_id: string;
+    token: string;
+    expires_at?: string;
+    password_hash?: string;
+    max_views?: number;
+    current_views: number;
+    is_active: boolean;
+    created_at: string;
+    metadata?: Record<string, any>;
+}
+
+// Relation types for Lessons
+export interface LessonObjective {
+    id: string;
+    lesson_id: string;
+    objective_id: string;
+    position: number;
+}
+export interface LessonMethod {
+    id: string;
+    lesson_id: string;
+    method_id: string;
+    duration_override?: number;
+    position: number;
+    notes?: string;
+}
+export interface LessonTask {
+    id: string;
+    lesson_id: string;
+    task_id: string;
+    duration_override?: number;
+    position: number;
+    notes?: string;
+    is_homework: boolean;
+    due_date?: string;
+}
+export interface LessonBook {
+    id: string;
+    lesson_id: string;
+    book_id: string;
+    pages_from?: number;
+    pages_to?: number;
+    notes?: string;
+}
+export interface LessonVocabulary {
+    id: string;
+    lesson_id: string;
+    vocabulary_id: string;
+    position: number;
+}
+
+
+// --- Main Database Type ---
+export type Database = {
+  public: {
+    Tables: {
+      categories: {
+        Row: Category;
+        Insert: Omit<Category, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Category, 'id' | 'user_id'>>;
+      };
+      courses: {
+        Row: Course;
+        Insert: Omit<Course, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Course, 'id' | 'user_id'>>;
+      };
+      books: {
+        Row: Book;
+        Insert: Omit<Book, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Book, 'id' | 'user_id'>>;
+      };
+      vocabulary_groups: {
+        Row: VocabularyGroup;
+        Insert: Omit<VocabularyGroup, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<VocabularyGroup, 'id' | 'user_id'>>;
+      };
+      vocabulary: {
+        Row: Vocabulary;
+        Insert: Omit<Vocabulary, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Vocabulary, 'id' | 'user_id'>>;
+      };
+      vocabulary_group_items: {
+        Row: VocabularyGroupItem;
+        Insert: Omit<VocabularyGroupItem, 'id'>;
+        Update: Partial<Omit<VocabularyGroupItem, 'id'>>;
+      };
+      objectives: {
+        Row: Objective;
+        Insert: Omit<Objective, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Objective, 'id' | 'user_id'>>;
+      };
+      methods: {
+        Row: Method;
+        Insert: Omit<Method, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Method, 'id' | 'user_id'>>;
+      };
+      tasks: {
+        Row: Task;
+        Insert: Omit<Task, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Task, 'id' | 'user_id'>>;
+      };
+      schedules: {
+        Row: Schedule;
+        Insert: Omit<Schedule, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Schedule, 'id' | 'user_id'>>;
+      };
+      lessons: {
+        Row: Lesson;
+        Insert: Omit<Lesson, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Lesson, 'id' | 'user_id'>>;
+      };
+      course_books: {
+        Row: CourseBook;
+        Insert: Omit<CourseBook, 'id'>;
+        Update: Partial<Omit<CourseBook, 'id'>>;
+      };
+      course_vocabulary_groups: {
+        Row: CourseVocabularyGroup;
+        Insert: Omit<CourseVocabularyGroup, 'id'>;
+        Update: Partial<Omit<CourseVocabularyGroup, 'id'>>;
+      };
+      lesson_objectives: {
+        Row: LessonObjective;
+        Insert: Omit<LessonObjective, 'id'>;
+        Update: Partial<Omit<LessonObjective, 'id'>>;
+      };
+      lesson_methods: {
+        Row: LessonMethod;
+        Insert: Omit<LessonMethod, 'id'>;
+        Update: Partial<Omit<LessonMethod, 'id'>>;
+      };
+      lesson_tasks: {
+        Row: LessonTask;
+        Insert: Omit<LessonTask, 'id'>;
+        Update: Partial<Omit<LessonTask, 'id'>>;
+      };
+      lesson_books: {
+        Row: LessonBook;
+        Insert: Omit<LessonBook, 'id'>;
+        Update: Partial<Omit<LessonBook, 'id'>>;
+      };
+      lesson_vocabulary: {
+        Row: LessonVocabulary;
+        Insert: Omit<LessonVocabulary, 'id'>;
+        Update: Partial<Omit<LessonVocabulary, 'id'>>;
+      };
+      public_links: {
+        Row: PublicLink;
+        Insert: Omit<PublicLink, 'id' | 'created_at' | 'current_views'>;
+        Update: Partial<Omit<PublicLink, 'id'>>;
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      course_status: 'draft' | 'published' | 'archived';
+      lesson_status: 'draft' | 'scheduled' | 'completed' | 'cancelled';
+      difficulty_level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+      content_type: 'text' | 'video' | 'audio' | 'pdf' | 'image' | 'interactive';
+      recurrence_type_enum: 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly';
+      day_of_week_enum: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+    };
+  };
+};

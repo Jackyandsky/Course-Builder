@@ -9,12 +9,6 @@ import {
   Modal,
   Select,
   Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-  TableEmpty,
   SearchBox,
   FilterPanel,
   Badge,
@@ -46,6 +40,37 @@ export default function ComponentsPage() {
     { id: 2, name: 'Jane Smith', email: 'jane@example.com', status: 'inactive' },
     { id: 3, name: 'Bob Johnson', email: 'bob@example.com', status: 'active' },
   ];
+  
+  const tableColumns = [
+    { key: 'id', label: 'ID' },
+    { key: 'name', label: 'Name' },
+    { key: 'email', label: 'Email' },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (row: { status: string }) => (
+        <Badge variant={row.status === 'active' ? 'success' : 'default'} size="sm">
+          {row.status}
+        </Badge>
+      ),
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: () => (
+        <Button variant="ghost" size="sm">
+          Edit
+        </Button>
+      ),
+    },
+  ];
+  
+  const emptyTableColumns = [
+    { key: 'id', label: 'ID' },
+    { key: 'name', label: 'Name' },
+    { key: 'email', label: 'Email' },
+  ];
+
 
   const filters = [
     {
@@ -122,8 +147,6 @@ export default function ComponentsPage() {
           <div className="flex flex-wrap gap-2">
             <Button variant="primary">Primary</Button>
             <Button variant="secondary">Secondary</Button>
-            <Button variant="success">Success</Button>
-            <Button variant="warning">Warning</Button>
             <Button variant="danger">Danger</Button>
             <Button variant="ghost">Ghost</Button>
           </div>
@@ -228,39 +251,11 @@ export default function ComponentsPage() {
           <Card.Title>Table</Card.Title>
         </Card.Header>
         <Card.Content>
-          <Table variant="striped">
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tableData.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell>{row.id}</TableCell>
-                  <TableCell>{row.name}</TableCell>
-                  <TableCell>{row.email}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={row.status === 'active' ? 'success' : 'default'}
-                      size="sm"
-                    >
-                      {row.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm">
-                      Edit
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+            <Table 
+                variant="striped"
+                columns={tableColumns}
+                data={tableData}
+            />
         </Card.Content>
       </Card>
 
@@ -270,18 +265,10 @@ export default function ComponentsPage() {
           <Card.Title>Empty Table</Card.Title>
         </Card.Header>
         <Card.Content>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableEmpty message="No data found" icon={<FileText className="h-8 w-8" />} />
-            </TableBody>
-          </Table>
+            <Table 
+                columns={emptyTableColumns}
+                data={[]}
+            />
         </Card.Content>
       </Card>
 

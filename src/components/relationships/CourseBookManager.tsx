@@ -1,0 +1,293 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
+import { SearchBox } from '@/components/ui/SearchBox'
+import { Table } from '@/components/ui/Table'
+import { Badge } from '@/components/ui/Badge'
+import { courseBookService } from '@/lib/services/relationships'
+import { bookService } from '@/lib/supabase/books'
+import { Book, Loader2 } from 'lucide-react'
+
+interface CourseBookManagerProps {
+  courseId: string
+  onUpdate?: () => void
+}
+
+export function CourseBookManager({ courseId, onUpdate }: CourseBookManagerProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedBooks, setSelectedBooks] = useState<string[]>([])
+  const [courseBooks, setCourseBooks] = useState<any[]>([])
+  const [availableBooks, setAvailableBooks] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [loadingBooks, setLoadingBooks] = useState(false)
+
+  // Load course books
+  const loadCourseBooks = async () => {
+    try {
+      const books = await courseBookService.getCourseBooksWithDetails(courseId)
+      setCourseBooks(books || [])
+    } catch (error) {
+      console.error('Failed to load course books:', error)
+    }
+  }
+
+  // Load available books
+  const loadAvailableBooks = async () => {
+    setLoadingBooks(true)
+    try {
+      const books = await bookService.getBooks()
+      // Filter out books already in the course
+      const courseBooksIds = courseBooks.map(cb => cb.book_id)
+      const available = books.filter(book => !courseBooksIds.includes(book.id))
+      setAvailableBooks(available)
+    } catch (error) {
+      console.error('Failed to load available books:', error)
+    } finally {
+      setLoadingBooks(false)
+    }
+  }
+
+  // Initial load
+  useEffect(() => {
+    loadCourseBooks()
+  }, [courseId])
+
+  // Open modal and load data
+  const openModal = async () => {
+    setIsModalOpen(true)
+    setSelectedBooks([])
+    setSearchQuery('')
+    await loadAvailableBooks()
+  }
+
+  // Add selected books to course
+  const handleAddBooks = async () => {
+    if (selectedBooks.length === 0) return
+
+    setLoading(true)
+    try {
+      await courseBookService.bulkAddBooksToCourse(courseId, selectedBooks)
+      setSelectedBooks([])
+      await loadCourseBooks()
+      onUpdate?.()
+      setIsModalOpen(false)
+    } catch (error) {
+      console.error('Failed to add books:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Remove book from course
+  const handleRemoveBook = async (bookId: string) => {
+    if (!confirm('Are you sure you want to remove this book from the course?')) return
+
+    try {
+      await courseBookService.removeBookFromCourse(courseId, bookId)
+      await loadCourseBooks()
+      onUpdate?.()
+    } catch (error) {
+      console.error('Failed to remove book:', error)
+    }
+  }
+
+  // Toggle book required status
+  const handleToggleRequired = async (bookId: string, currentRequired: boolean) => {
+    try {
+      await courseBookService.updateCourseBook(courseId, bookId, {
+        isRequired: !currentRequired
+      })
+      await loadCourseBooks()
+    } catch (error) {
+      console.error('Failed to update book:', error)
+    }
+  }
+
+  // Toggle book selection
+  const toggleBookSelection = (bookId: string) => {
+    if (selectedBooks.includes(bookId)) {
+      setSelectedBooks(selectedBooks.filter(id => id !== bookId))
+    } else {
+      setSelectedBooks([...selectedBooks, bookId])
+    }
+  }
+
+  // Filter available books based on search
+  const filteredBooks = availableBooks.filter(book =>
+    (book.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    book.author?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    book.isbn?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+  
+  return (
+    <>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-medium">Course Books</h3>
+          <Button onClick={openModal} size="sm">
+            <Book className="h-4 w-4 mr-2" />
+            Manage Books
+          </Button>
+        </div>
+
+        {courseBooks.length > 0 ? (
+          <div className="grid gap-4">
+            {courseBooks.map((courseBook) => (
+              <div
+                key={courseBook.id}
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  {courseBook.book?.cover_image_url && (
+                    <img
+                      src={courseBook.book.cover_image_url}
+                      alt={courseBook.book.title}
+                      className="w-16 h-20 object-cover rounded"
+                    />
+                  )}
+                  <div>
+                    <h4 className="font-medium">{courseBook.book?.title}</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{courseBook.book?.author}</p>
+                    {courseBook.book?.isbn && (
+                      <p className="text-xs text-gray-500 dark:text-gray-500">ISBN: {courseBook.book.isbn}</p>
+                    )}
+                    {courseBook.notes && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{courseBook.notes}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant={courseBook.is_required ? 'default' : 'secondary'}
+                    className="cursor-pointer"
+                    onClick={() => handleToggleRequired(courseBook.book_id, courseBook.is_required)}
+                  >
+                    {courseBook.is_required ? 'Required' : 'Optional'}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveBook(courseBook.book_id)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+            No books added to this course yet.
+          </p>
+        )}
+      </div>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Add Books to Course"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <SearchBox
+            value={searchQuery}
+            onSearch={setSearchQuery}
+            placeholder="Search books by title, author, or ISBN..."
+          />
+
+          {loadingBooks ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+          ) : filteredBooks.length > 0 ? (
+            <div className="max-h-96 overflow-y-auto">
+              <Table
+                columns={[
+                  {
+                    key: 'select',
+                    label: (
+                      <input
+                        type="checkbox"
+                        checked={filteredBooks.length > 0 && filteredBooks.every(book => selectedBooks.includes(book.id))}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedBooks(filteredBooks.map(book => book.id))
+                          } else {
+                            setSelectedBooks([])
+                          }
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    ),
+                    render: (book) => (
+                      <input
+                        type="checkbox"
+                        checked={selectedBooks.includes(book.id)}
+                        onChange={() => toggleBookSelection(book.id)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    )
+                  },
+                  { 
+                    key: 'title', 
+                    label: 'Title',
+                    render: (book) => (
+                      <div>
+                        <p className="font-medium">{book.title}</p>
+                        {book.isbn && (
+                          <p className="text-xs text-gray-500">ISBN: {book.isbn}</p>
+                        )}
+                      </div>
+                    )
+                  },
+                  { key: 'author', label: 'Author' },
+                  {
+                    key: 'category',
+                    label: 'Category',
+                    render: (book) => book.category?.name || '-'
+                  },
+                  {
+                    key: 'type',
+                    label: 'Type',
+                    render: (book) => (
+                      <Badge variant="warning">
+                        {book.content_type || 'physical'}
+                      </Badge>
+                    )
+                  }
+                ]}
+                data={filteredBooks}
+              />
+            </div>
+          ) : (
+            <p className="text-center py-8 text-gray-500 dark:text-gray-400">
+              {searchQuery ? 'No books found matching your search.' : 'No available books to add.'}
+            </p>
+          )}
+
+          <div className="flex justify-between items-center border-t pt-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {selectedBooks.length} book{selectedBooks.length !== 1 ? 's' : ''} selected
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddBooks}
+                disabled={selectedBooks.length === 0 || loading}
+                loading={loading}
+              >
+                Add Books
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+    </>
+  )
+}
