@@ -52,7 +52,7 @@ Edit `.env.local` with your configuration values.
 npm run dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+5. Open [http://localhost:5001](http://localhost:5001) in your browser.
 
 ## 📁 Project Structure
 
