@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { 
   ArrowLeft, Edit, Trash2, Archive, Globe, Lock, 
   Book, Bookmark, Calendar, Clock, Target, AlertCircle,
@@ -29,20 +29,30 @@ const difficultyColors = {
 export default function CourseDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const courseId = params.id as string;
   
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
   const [copied, setCopied] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   useEffect(() => {
     if (courseId) {
       loadCourse();
     }
   }, [courseId]);
+
+  useEffect(() => {
+    const attachedCount = searchParams.get('attached');
+    if (attachedCount && parseInt(attachedCount) > 0) {
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 5000);
+    }
+  }, [searchParams]);
 
   const loadCourse = async () => {
     try {
@@ -113,6 +123,7 @@ export default function CourseDetailPage() {
     { id: 'overview', label: 'Overview', icon: <Book className="h-4 w-4" /> },
     { id: 'materials', label: 'Materials', icon: <Bookmark className="h-4 w-4" /> },
     { id: 'schedule', label: 'Schedule', icon: <Calendar className="h-4 w-4" /> },
+    { id: 'lessons', label: 'Lessons', icon: <Clock className="h-4 w-4" /> },
   ];
 
   return (
@@ -239,6 +250,18 @@ export default function CourseDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Success Message */}
+      {showSuccessMessage && (
+        <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg border border-green-200 dark:border-green-800">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            <span className="font-medium">
+              Successfully attached {searchParams.get('attached')} schedule{parseInt(searchParams.get('attached') || '0') !== 1 ? 's' : ''} to this course!
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
@@ -397,6 +420,31 @@ export default function CourseDetailPage() {
         <Card>
           <Card.Content>
             <CourseScheduleList courseId={courseId} />
+          </Card.Content>
+        </Card>
+      )}
+
+      {activeTab === 'lessons' && (
+        <Card>
+          <Card.Header>
+            <h2 className="text-lg font-semibold">Course Lessons</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Manage lessons for this course. Lessons can be embedded into schedules and contain tasks, assignments, and quizzes.
+            </p>
+          </Card.Header>
+          <Card.Content>
+            <div className="text-center py-8">
+              <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                Coming Soon
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Lesson management will allow you to create lessons with tasks, assignments, and quizzes that can be embedded into your schedules.
+              </p>
+              <Button variant="outline" disabled>
+                Create Lesson
+              </Button>
+            </div>
           </Card.Content>
         </Card>
       )}
