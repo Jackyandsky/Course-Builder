@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Plus, Search, Filter, BookOpen, FileText, Video, 
-  Headphones, Image as ImageIcon, Gamepad2, Grid, List 
+  Headphones, Image as ImageIcon, Gamepad2, Grid, List, Upload 
 } from 'lucide-react';
 import { Book, ContentType } from '@/types/database';
 import { bookService, BookFilters } from '@/lib/supabase/books';
@@ -12,6 +12,7 @@ import { categoryService } from '@/lib/supabase/categories';
 import { 
   Button, Card, Badge, SearchBox, FilterPanel, Spinner, Select 
 } from '@/components/ui';
+import { BookImportModal } from '@/components/books/BookImportModal';
 import { cn } from '@/lib/utils';
 
 const contentTypeIcons: Record<ContentType, React.ReactNode> = {
@@ -52,6 +53,7 @@ export default function BooksPage() {
   
   // State to control the visibility of the filter panel
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   useEffect(() => {
     loadInitialData();
@@ -97,6 +99,11 @@ export default function BooksPage() {
 
   const handleFilterChange = (filterId: string, value: any) => {
     setFilters({ ...filters, [filterId]: value });
+  };
+
+  const handleImportComplete = () => {
+    loadBooks();
+    loadInitialData();
   };
 
   const contentTypes = bookService.getContentTypes();
@@ -176,6 +183,13 @@ export default function BooksPage() {
               <List className="h-4 w-4" />
             </button>
           </div>
+          <Button
+            variant="outline"
+            onClick={() => setShowImportModal(true)}
+            leftIcon={<Upload className="h-4 w-4" />}
+          >
+            Import
+          </Button>
           <Button
             onClick={() => router.push('/books/new')}
             leftIcon={<Plus className="h-4 w-4" />}
@@ -480,6 +494,12 @@ export default function BooksPage() {
           })}
         </div>
       )}
+
+      <BookImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImportComplete={handleImportComplete}
+      />
     </div>
   );
 }
