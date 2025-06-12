@@ -12,6 +12,7 @@ export interface BookFilters {
   publicationYear?: number;
   tags?: string[];
   isPublic?: boolean;
+  limit?: number;
 }
 
 export interface CreateBookData {
@@ -51,7 +52,8 @@ export const bookService = {
           )
         )
       `)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(filters.limit || 50);
 
     // Apply filters
     if (filters.search) {
