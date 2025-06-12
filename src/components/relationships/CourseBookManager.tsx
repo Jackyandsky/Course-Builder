@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { SearchBox } from '@/components/ui/SearchBox'
@@ -34,11 +34,15 @@ export function CourseBookManager({ courseId, onUpdate }: CourseBookManagerProps
     }
   }
 
-  // Load available books
-  const loadAvailableBooks = async () => {
+  // Load available books with search and filters
+  const loadAvailableBooks = useCallback(async (search = '') => {
     setLoadingBooks(true)
     try {
-      const books = await bookService.getBooks()
+      // Use server-side search with limit for better performance
+      const books = await bookService.getBooks({
+        search: search.trim(),
+        limit: 100 // Limit results for performance
+      })
       // Filter out books already in the course
       const courseBooksIds = courseBooks.map(cb => cb.book_id)
       const available = books.filter(book => !courseBooksIds.includes(book.id))
@@ -48,7 +52,7 @@ export function CourseBookManager({ courseId, onUpdate }: CourseBookManagerProps
     } finally {
       setLoadingBooks(false)
     }
-  }
+  }, [courseBooks])
 
   // Initial load
   useEffect(() => {
@@ -60,8 +64,19 @@ export function CourseBookManager({ courseId, onUpdate }: CourseBookManagerProps
     setIsModalOpen(true)
     setSelectedBooks([])
     setSearchQuery('')
-    await loadAvailableBooks()
+    await loadAvailableBooks('')
   }
+
+  // Debounced search handler
+  useEffect(() => {
+    if (!isModalOpen) return
+    
+    const timeoutId = setTimeout(() => {
+      loadAvailableBooks(searchQuery)
+    }, 300) // 300ms debounce
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, isModalOpen, loadAvailableBooks])
 
   // Add selected books to course
   const handleAddBooks = async () => {
@@ -115,12 +130,8 @@ export function CourseBookManager({ courseId, onUpdate }: CourseBookManagerProps
     }
   }
 
-  // Filter available books based on search
-  const filteredBooks = availableBooks.filter(book =>
-    (book.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    book.author?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    book.isbn?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // No need for client-side filtering since we're using server-side search
+  const filteredBooks = availableBooks
   
   return (
     <>
@@ -204,6 +215,9 @@ export function CourseBookManager({ courseId, onUpdate }: CourseBookManagerProps
           ) : filteredBooks.length > 0 ? (
             <div className="max-h-96 overflow-y-auto">
               <Table
+                responsive={false}
+                size="sm"
+                className="w-full"
                 columns={[
                   {
                     key: 'select',
@@ -234,26 +248,42 @@ export function CourseBookManager({ courseId, onUpdate }: CourseBookManagerProps
                     key: 'title', 
                     label: 'Title',
                     render: (book) => (
-                      <div>
-                        <p className="font-medium">{book.title}</p>
+                      <div className="max-w-xs">
+                        <p className="font-medium truncate" title={book.title}>{book.title}</p>
                         {book.isbn && (
-                          <p className="text-xs text-gray-500">ISBN: {book.isbn}</p>
+                          <p className="text-xs text-gray-500 truncate">ISBN: {book.isbn}</p>
                         )}
                       </div>
                     )
                   },
-                  { key: 'author', label: 'Author' },
+                  { 
+                    key: 'author', 
+                    label: 'Author',
+                    render: (book) => (
+                      <div className="max-w-32">
+                        <span className="truncate block" title={book.author}>
+                          {book.author || '-'}
+                        </span>
+                      </div>
+                    )
+                  },
                   {
                     key: 'category',
                     label: 'Category',
-                    render: (book) => book.category?.name || '-'
+                    render: (book) => (
+                      <div className="max-w-24">
+                        <span className="truncate block" title={book.category?.name}>
+                          {book.category?.name || '-'}
+                        </span>
+                      </div>
+                    )
                   },
                   {
                     key: 'type',
                     label: 'Type',
                     render: (book) => (
-                      <Badge variant="warning">
-                        {book.content_type || 'physical'}
+                      <Badge variant="warning" className="text-xs whitespace-nowrap">
+                        {book.content_type || 'text'}
                       </Badge>
                     )
                   }
