@@ -11,6 +11,8 @@ CREATE TYPE course_status AS ENUM ('draft', 'published', 'archived');
 CREATE TYPE lesson_status AS ENUM ('draft', 'scheduled', 'completed', 'cancelled');
 CREATE TYPE difficulty_level AS ENUM ('beginner', 'intermediate', 'advanced', 'expert');
 CREATE TYPE content_type AS ENUM ('text', 'video', 'audio', 'pdf', 'image', 'interactive');
+CREATE TYPE recurrence_type_enum AS ENUM ('none', 'daily', 'weekly', 'biweekly', 'monthly');
+CREATE TYPE day_of_week_enum AS ENUM ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday');
 
 -- Categories table (for organizing all entities)
 CREATE TABLE categories (
@@ -205,19 +207,35 @@ CREATE TABLE schedules (
 -- Lessons (Individual lessons within a schedule)
 CREATE TABLE lessons (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    course_id  UUID REFERENCES courses(id) ON DELETE CASCADE NOT NULL,
+    schedule_id UUID REFERENCES schedules(id) ON DELETE CASCADE NOT NULL,
+    course_id UUID REFERENCES courses(id) ON DELETE CASCADE NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     lesson_number INTEGER,
     date DATE NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
+    duration_minutes INTEGER,
     location VARCHAR(255),
     status lesson_status DEFAULT 'draft',
     tags TEXT[],
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     metadata JSONB DEFAULT '{}'::jsonb
+);
+
+-- Attendance tracking for lessons
+CREATE TABLE attendance (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    lesson_id UUID REFERENCES lessons(id) ON DELETE CASCADE NOT NULL,
+    student_name VARCHAR(255) NOT NULL,
+    student_id VARCHAR(100),
+    status VARCHAR(20) DEFAULT 'present', -- 'present', 'absent', 'late', 'excused'
+    notes TEXT,
+    marked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    marked_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    UNIQUE(lesson_id, student_name)
 );
 
 -- Relationship Tables for Many-to-Many associations
@@ -295,6 +313,27 @@ CREATE TABLE lesson_vocabulary (
     UNIQUE(lesson_id, vocabulary_id)
 );
 
+-- Vocabulary-Book associations (many-to-many)
+CREATE TABLE vocabulary_books (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    vocabulary_id UUID REFERENCES vocabulary(id) ON DELETE CASCADE NOT NULL,
+    book_id UUID REFERENCES books(id) ON DELETE CASCADE NOT NULL,
+    page_number INTEGER,
+    section VARCHAR(255),
+    notes TEXT,
+    UNIQUE(vocabulary_id, book_id)
+);
+
+-- Vocabulary Group-Book associations (many-to-many)
+CREATE TABLE vocabulary_group_books (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    vocabulary_group_id UUID REFERENCES vocabulary_groups(id) ON DELETE CASCADE NOT NULL,
+    book_id UUID REFERENCES books(id) ON DELETE CASCADE NOT NULL,
+    notes TEXT,
+    position INTEGER DEFAULT 0,
+    UNIQUE(vocabulary_group_id, book_id)
+);
+
 -- Public sharing links
 CREATE TABLE public_links (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -340,8 +379,20 @@ CREATE INDEX idx_schedules_course_id ON schedules(course_id);
 CREATE INDEX idx_schedules_dates ON schedules(start_date, end_date);
 
 CREATE INDEX idx_lessons_schedule_id ON lessons(schedule_id);
+CREATE INDEX idx_lessons_course_id ON lessons(course_id);
 CREATE INDEX idx_lessons_date ON lessons(date);
 CREATE INDEX idx_lessons_status ON lessons(status);
+CREATE INDEX idx_lessons_user_id ON lessons(user_id);
+
+CREATE INDEX idx_attendance_lesson_id ON attendance(lesson_id);
+CREATE INDEX idx_attendance_student_name ON attendance(student_name);
+CREATE INDEX idx_attendance_status ON attendance(status);
+
+CREATE INDEX idx_vocabulary_books_vocabulary_id ON vocabulary_books(vocabulary_id);
+CREATE INDEX idx_vocabulary_books_book_id ON vocabulary_books(book_id);
+
+CREATE INDEX idx_vocabulary_group_books_group_id ON vocabulary_group_books(vocabulary_group_id);
+CREATE INDEX idx_vocabulary_group_books_book_id ON vocabulary_group_books(book_id);
 
 CREATE INDEX idx_public_links_token ON public_links(token);
 CREATE INDEX idx_public_links_entity ON public_links(entity_type, entity_id);

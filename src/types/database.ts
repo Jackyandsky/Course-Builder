@@ -253,30 +253,43 @@ export interface Schedule {
 export interface Lesson {
   id: string;
   schedule_id: string;
+  course_id: string;
   title: string;
   description?: string;
+  lesson_number?: number;
   date: string;
   start_time: string;
   end_time: string;
-  duration_minutes: number;
+  duration_minutes?: number;
   location?: string;
   status: LessonStatus;
-  notes?: string;
-  homework?: string;
-  resources?: string[];
+  tags?: string[];
   user_id: string;
   created_at: string;
   updated_at: string;
-  completed_at?: string;
-  cancelled_at?: string;
   metadata?: Record<string, any>;
   
   // Relations
   schedule?: Schedule;
-  objectives?: any[]; // Replace 'any' with specific relation type if available
-  methods?: any[];
-  tasks?: any[];
-  attendance?: any[];
+  course?: Course;
+  objectives?: LessonObjective[];
+  methods?: LessonMethod[];
+  tasks?: LessonTask[];
+  books?: LessonBook[];
+  vocabulary?: LessonVocabulary[];
+  attendance?: Attendance[];
+}
+
+// Attendance type
+export interface Attendance {
+  id: string;
+  lesson_id: string;
+  student_name: string;
+  student_id?: string;
+  status: AttendanceStatus;
+  notes?: string;
+  marked_at: string;
+  marked_by?: string;
 }
 
 // PublicLink type
@@ -331,6 +344,23 @@ export interface LessonVocabulary {
     id: string;
     lesson_id: string;
     vocabulary_id: string;
+    position: number;
+}
+
+export interface VocabularyBook {
+    id: string;
+    vocabulary_id: string;
+    book_id: string;
+    page_number?: number;
+    section?: string;
+    notes?: string;
+}
+
+export interface VocabularyGroupBook {
+    id: string;
+    vocabulary_group_id: string;
+    book_id: string;
+    notes?: string;
     position: number;
 }
 
@@ -429,6 +459,21 @@ export type Database = {
         Insert: Omit<LessonVocabulary, 'id'>;
         Update: Partial<Omit<LessonVocabulary, 'id'>>;
       };
+      vocabulary_books: {
+        Row: VocabularyBook;
+        Insert: Omit<VocabularyBook, 'id'>;
+        Update: Partial<Omit<VocabularyBook, 'id'>>;
+      };
+      vocabulary_group_books: {
+        Row: VocabularyGroupBook;
+        Insert: Omit<VocabularyGroupBook, 'id'>;
+        Update: Partial<Omit<VocabularyGroupBook, 'id'>>;
+      };
+      attendance: {
+        Row: Attendance;
+        Insert: Omit<Attendance, 'id' | 'marked_at'>;
+        Update: Partial<Omit<Attendance, 'id'>>;
+      };
       public_links: {
         Row: PublicLink;
         Insert: Omit<PublicLink, 'id' | 'created_at' | 'current_views'>;
@@ -448,6 +493,7 @@ export type Database = {
       content_type: 'text' | 'video' | 'audio' | 'pdf' | 'image' | 'interactive';
       recurrence_type_enum: 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly';
       day_of_week_enum: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+      attendance_status: 'present' | 'absent' | 'late' | 'excused';
     };
   };
 };

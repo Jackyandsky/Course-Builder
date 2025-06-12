@@ -134,47 +134,45 @@ export function CourseBookManager({ courseId, onUpdate }: CourseBookManagerProps
         </div>
 
         {courseBooks.length > 0 ? (
-          <div className="grid gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
             {courseBooks.map((courseBook) => (
               <div
                 key={courseBook.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="border rounded-lg p-2 hover:shadow-md transition-shadow group relative"
               >
-                <div className="flex items-center gap-4">
-                  {courseBook.book?.cover_image_url && (
-                    <img
-                      src={courseBook.book.cover_image_url}
-                      alt={courseBook.book.title}
-                      className="w-16 h-20 object-cover rounded"
-                    />
+                {courseBook.book?.cover_image_url && (
+                  <img
+                    src={courseBook.book.cover_image_url}
+                    alt={courseBook.book.title}
+                    className="w-full h-24 object-cover rounded mb-2"
+                  />
+                )}
+                <div className="space-y-1">
+                  <h4 className="font-medium text-xs line-clamp-2" title={courseBook.book?.title}>
+                    {courseBook.book?.title}
+                  </h4>
+                  {courseBook.book?.author && (
+                    <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1" title={courseBook.book.author}>
+                      {courseBook.book.author}
+                    </p>
                   )}
-                  <div>
-                    <h4 className="font-medium">{courseBook.book?.title}</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{courseBook.book?.author}</p>
-                    {courseBook.book?.isbn && (
-                      <p className="text-xs text-gray-500 dark:text-gray-500">ISBN: {courseBook.book.isbn}</p>
-                    )}
-                    {courseBook.notes && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{courseBook.notes}</p>
-                    )}
+                  <div className="flex items-center justify-between">
+                    <Badge
+                      variant={courseBook.is_required ? 'default' : 'secondary'}
+                      className="cursor-pointer text-xs px-1 py-0.5"
+                      onClick={() => handleToggleRequired(courseBook.book_id, courseBook.is_required)}
+                    >
+                      {courseBook.is_required ? 'Req' : 'Opt'}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveBook(courseBook.book_id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                    >
+                      ×
+                    </Button>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant={courseBook.is_required ? 'default' : 'secondary'}
-                    className="cursor-pointer"
-                    onClick={() => handleToggleRequired(courseBook.book_id, courseBook.is_required)}
-                  >
-                    {courseBook.is_required ? 'Required' : 'Optional'}
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleRemoveBook(courseBook.book_id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  >
-                    Remove
-                  </Button>
                 </div>
               </div>
             ))}

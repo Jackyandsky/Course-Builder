@@ -261,183 +261,237 @@ export default function VocabularyGroupsPage() {
         </Card>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {groups.map((group) => (
-            <Card
-              key={group.id}
-              className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden"
-              onClick={() => router.push(`/vocabulary/groups/${group.id}`)}
-            >
-              <Card.Content className="p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                      {group.name}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                      {group.vocabulary_count} words
+          {groups.map((group) => {
+            const relatedBooks = group.vocabulary_group_books?.map(vgb => vgb.book).filter(Boolean) || [];
+            return (
+              <Card
+                key={group.id}
+                className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden"
+                onClick={() => router.push(`/vocabulary/groups/${group.id}`)}
+              >
+                <Card.Content className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                        {group.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        {group.vocabulary_count} words
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 ml-2">
+                      {group.is_public ? (
+                        <Globe className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Lock className="h-4 w-4 text-gray-400" />
+                      )}
+                    </div>
+                  </div>
+
+                  {group.description && (
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 line-clamp-2">
+                      {group.description}
                     </p>
-                  </div>
-                  <div className="flex items-center gap-1 ml-2">
-                    {group.is_public ? (
-                      <Globe className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <Lock className="h-4 w-4 text-gray-400" />
-                    )}
-                  </div>
-                </div>
+                  )}
 
-                {group.description && (
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 line-clamp-2">
-                    {group.description}
-                  </p>
-                )}
-
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant={difficultyColors[group.difficulty] as any}
-                      size="sm"
-                    >
-                      {group.difficulty}
-                    </Badge>
-                    <Badge variant="warning" size="sm">
-                      {group.language.toUpperCase()}
-                    </Badge>
-                  </div>
-                </div>
-
-                {group.target_language && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                    Target: {group.target_language.toUpperCase()}
-                  </p>
-                )}
-
-                {group.category && (
-                  <div className="mb-3">
-                    <span
-                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                      style={{
-                        backgroundColor: group.category.color ? `${group.category.color}20` : undefined,
-                        color: group.category.color || undefined,
-                      }}
-                    >
-                      {group.category.name}
-                    </span>
-                  </div>
-                )}
-
-                {group.tags && group.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {group.tags.slice(0, 2).map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={difficultyColors[group.difficulty] as any}
+                        size="sm"
                       >
-                        {tag}
-                      </span>
-                    ))}
-                    {group.tags.length > 2 && (
-                      <span className="text-xs text-gray-500">
-                        +{group.tags.length - 2}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </Card.Content>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {groups.map((group) => (
-            <Card
-              key={group.id}
-              className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => router.push(`/vocabulary/groups/${group.id}`)}
-            >
-              <Card.Content className="p-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-800 dark:to-blue-900 rounded-lg flex items-center justify-center">
-                    <Users className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                        {group.difficulty}
+                      </Badge>
+                      <Badge variant="warning" size="sm">
+                        {group.language.toUpperCase()}
+                      </Badge>
+                    </div>
                   </div>
 
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                            {group.name}
-                          </h3>
-                          {group.is_public ? (
-                            <Globe className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <Lock className="h-4 w-4 text-gray-400" />
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                          {group.vocabulary_count} words
-                        </p>
-                      </div>
+                  {group.target_language && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      Target: {group.target_language.toUpperCase()}
+                    </p>
+                  )}
 
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={difficultyColors[group.difficulty] as any}
-                          size="sm"
-                        >
-                          {group.difficulty}
-                        </Badge>
-                        <Badge variant="warning" size="sm">
-                          {group.language.toUpperCase()}
-                        </Badge>
-                        {group.target_language && (
-                          <Badge variant="warning" size="sm">
-                            → {group.target_language.toUpperCase()}
+                  {relatedBooks.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs text-gray-500 mb-1">Related Books ({relatedBooks.length})</p>
+                      <div className="flex flex-wrap gap-1">
+                        {relatedBooks.slice(0, 2).map((book) => (
+                          <Badge
+                            key={book.id}
+                            variant="outline"
+                            className="text-xs px-1 py-0.5"
+                            title={book.title}
+                          >
+                            {book.title.length > 15 ? `${book.title.substring(0, 15)}...` : book.title}
+                          </Badge>
+                        ))}
+                        {relatedBooks.length > 2 && (
+                          <Badge variant="outline" className="text-xs px-1 py-0.5">
+                            +{relatedBooks.length - 2}
                           </Badge>
                         )}
                       </div>
                     </div>
+                  )}
 
-                    {group.description && (
-                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-2 line-clamp-2">
-                        {group.description}
-                      </p>
-                    )}
+                  {group.category && (
+                    <div className="mb-3">
+                      <span
+                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                        style={{
+                          backgroundColor: group.category.color ? `${group.category.color}20` : undefined,
+                          color: group.category.color || undefined,
+                        }}
+                      >
+                        {group.category.name}
+                      </span>
+                    </div>
+                  )}
 
-                    <div className="flex items-center gap-2">
-                      {group.category && (
+                  {group.tags && group.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {group.tags.slice(0, 2).map((tag) => (
                         <span
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                          style={{
-                            backgroundColor: group.category.color ? `${group.category.color}20` : undefined,
-                            color: group.category.color || undefined,
-                          }}
+                          key={tag}
+                          className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
                         >
-                          {group.category.name}
+                          {tag}
+                        </span>
+                      ))}
+                      {group.tags.length > 2 && (
+                        <span className="text-xs text-gray-500">
+                          +{group.tags.length - 2}
                         </span>
                       )}
-                      {group.tags && group.tags.length > 0 && (
-                        <>
-                          {group.tags.slice(0, 3).map((tag) => (
-                            <span
-                              key={tag}
-                              className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                          {group.tags.length > 3 && (
-                            <span className="text-xs text-gray-500">
-                              +{group.tags.length - 3}
-                            </span>
+                    </div>
+                  )}
+                </Card.Content>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {groups.map((group) => {
+            const relatedBooks = group.vocabulary_group_books?.map(vgb => vgb.book).filter(Boolean) || [];
+            return (
+              <Card
+                key={group.id}
+                className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => router.push(`/vocabulary/groups/${group.id}`)}
+              >
+                <Card.Content className="p-4">
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-800 dark:to-blue-900 rounded-lg flex items-center justify-center">
+                      <Users className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                    </div>
+
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                              {group.name}
+                            </h3>
+                            {group.is_public ? (
+                              <Globe className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <Lock className="h-4 w-4 text-gray-400" />
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                            {group.vocabulary_count} words
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={difficultyColors[group.difficulty] as any}
+                            size="sm"
+                          >
+                            {group.difficulty}
+                          </Badge>
+                          <Badge variant="warning" size="sm">
+                            {group.language.toUpperCase()}
+                          </Badge>
+                          {group.target_language && (
+                            <Badge variant="warning" size="sm">
+                              → {group.target_language.toUpperCase()}
+                            </Badge>
                           )}
-                        </>
+                        </div>
+                      </div>
+
+                      {group.description && (
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mb-2 line-clamp-2">
+                          {group.description}
+                        </p>
                       )}
+
+                      {relatedBooks.length > 0 && (
+                        <div className="mb-2">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                            Related Books ({relatedBooks.length})
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {relatedBooks.slice(0, 4).map((book) => (
+                              <Badge
+                                key={book.id}
+                                variant="outline"
+                                className="text-xs"
+                                title={book.title}
+                              >
+                                {book.title}
+                              </Badge>
+                            ))}
+                            {relatedBooks.length > 4 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{relatedBooks.length - 4} more
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2">
+                        {group.category && (
+                          <span
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                            style={{
+                              backgroundColor: group.category.color ? `${group.category.color}20` : undefined,
+                              color: group.category.color || undefined,
+                            }}
+                          >
+                            {group.category.name}
+                          </span>
+                        )}
+                        {group.tags && group.tags.length > 0 && (
+                          <>
+                            {group.tags.slice(0, 3).map((tag) => (
+                              <span
+                                key={tag}
+                                className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                            {group.tags.length > 3 && (
+                              <span className="text-xs text-gray-500">
+                                +{group.tags.length - 3}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Card.Content>
-            </Card>
-          ))}
+                </Card.Content>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

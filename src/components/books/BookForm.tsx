@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, X, Plus } from 'lucide-react';
-import { Book, Category, ContentType } from '@/types/database';
+import { ArrowLeft, Save, X, Plus, BookOpen, Search } from 'lucide-react';
+import { Book, Category, ContentType, VocabularyGroup } from '@/types/database';
 import { bookService, CreateBookData, UpdateBookData } from '@/lib/supabase/books';
 import { categoryService } from '@/lib/supabase/categories';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { 
   Button, Card, Input, Textarea, Select, Badge, Modal, Spinner 
 } from '@/components/ui';
@@ -16,6 +17,7 @@ interface BookFormProps {
 
 export function BookForm({ initialData }: BookFormProps) {
   const router = useRouter();
+  const supabase = createClientComponentClient();
   const isEditing = !!initialData;
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -23,6 +25,12 @@ export function BookForm({ initialData }: BookFormProps) {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#6b7280');
+
+  // Vocabulary group relationships
+  const [availableVocabGroups, setAvailableVocabGroups] = useState<VocabularyGroup[]>([]);
+  const [selectedVocabGroups, setSelectedVocabGroups] = useState<string[]>([]);
+  const [showVocabModal, setShowVocabModal] = useState(false);
+  const [vocabSearchTerm, setVocabSearchTerm] = useState('');
 
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
@@ -41,7 +49,41 @@ export function BookForm({ initialData }: BookFormProps) {
 
   useEffect(() => {
     loadCategories();
+    loadAvailableVocabGroups();
+    if (isEditing && initialData) {
+      loadExistingVocabRelationships();
+    }
   }, []);
+
+  const loadAvailableVocabGroups = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('vocabulary_groups')
+        .select('id, name, description, difficulty, language, target_language')
+        .order('name');
+
+      if (error) throw error;
+      setAvailableVocabGroups(data || []);
+    } catch (error) {
+      console.error('Failed to load vocabulary groups:', error);
+    }
+  };
+
+  const loadExistingVocabRelationships = async () => {
+    if (!initialData) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('vocabulary_group_books')
+        .select('vocabulary_group_id')
+        .eq('book_id', initialData.id);
+
+      if (error) throw error;
+      setSelectedVocabGroups(data?.map(r => r.vocabulary_group_id) || []);
+    } catch (error) {
+      console.error('Failed to load existing vocabulary group relationships:', error);
+    }
+  };
 
   const loadCategories = async () => {
     try {
@@ -75,11 +117,18 @@ export function BookForm({ initialData }: BookFormProps) {
         publication_year: formData.publication_year ? Number(formData.publication_year) : undefined,
       };
       
+      let bookId: string;
+      
       if (isEditing) {
         await bookService.updateBook({ id: initialData.id, ...bookData } as UpdateBookData);
+        bookId = initialData.id;
       } else {
-        await bookService.createBook(bookData as CreateBookData);
+        const newBook = await bookService.createBook(bookData as CreateBookData);
+        bookId = newBook.id;
       }
+
+      // Save vocabulary group relationships
+      await saveVocabGroupRelationships(bookId);
       
       router.push('/books');
       router.refresh(); // To reflect changes on the book list page
@@ -101,6 +150,49 @@ export function BookForm({ initialData }: BookFormProps) {
   const handleRemoveTag = (tag: string) => {
     setFormData({ ...formData, tags: formData.tags.filter(t => t !== tag) });
   };
+
+  const saveVocabGroupRelationships = async (bookId: string) => {
+    try {
+      // Remove existing relationships if editing
+      if (isEditing) {
+        await supabase
+          .from('vocabulary_group_books')
+          .delete()
+          .eq('book_id', bookId);
+      }
+
+      // Add new relationships
+      if (selectedVocabGroups.length > 0) {
+        const groupItems = selectedVocabGroups.map((groupId, index) => ({
+          vocabulary_group_id: groupId,
+          book_id: bookId,
+          position: index
+        }));
+
+        await supabase
+          .from('vocabulary_group_books')
+          .insert(groupItems);
+      }
+    } catch (error) {
+      console.error('Failed to save vocabulary group relationships:', error);
+      // Non-fatal error, continue
+    }
+  };
+
+  const handleVocabGroupToggle = (groupId: string) => {
+    setSelectedVocabGroups(prev => 
+      prev.includes(groupId) 
+        ? prev.filter(id => id !== groupId)
+        : [...prev, groupId]
+    );
+  };
+
+  const filteredVocabGroups = availableVocabGroups.filter(group =>
+    group.name.toLowerCase().includes(vocabSearchTerm.toLowerCase()) ||
+    (group.description && group.description.toLowerCase().includes(vocabSearchTerm.toLowerCase())) ||
+    group.language.toLowerCase().includes(vocabSearchTerm.toLowerCase()) ||
+    (group.target_language && group.target_language.toLowerCase().includes(vocabSearchTerm.toLowerCase()))
+  );
 
   // Add this new handler function
   const handleCreateCategory = async () => {
@@ -279,6 +371,72 @@ export function BookForm({ initialData }: BookFormProps) {
           </Card.Content>
         </Card>
 
+        <Card>
+          <Card.Header>
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              <h2 className="text-lg font-semibold">Related Vocabulary Groups</h2>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Associate vocabulary groups that contain words from this book
+            </p>
+          </Card.Header>
+          <Card.Content className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {selectedVocabGroups.length} group{selectedVocabGroups.length !== 1 ? 's' : ''} selected
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowVocabModal(true)}
+                leftIcon={<Search className="h-4 w-4" />}
+              >
+                Select Groups
+              </Button>
+            </div>
+
+            {selectedVocabGroups.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {selectedVocabGroups.map(groupId => {
+                  const group = availableVocabGroups.find(g => g.id === groupId);
+                  if (!group) return null;
+                  
+                  return (
+                    <div key={groupId} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <h4 className="font-medium text-sm">{group.name}</h4>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {group.difficulty}
+                          </Badge>
+                          {group.language && group.target_language && (
+                            <Badge variant="outline" className="text-xs">
+                              {group.language} → {group.target_language}
+                            </Badge>
+                          )}
+                        </div>
+                        {group.description && (
+                          <p className="text-xs text-gray-600 mt-1 line-clamp-1">{group.description}</p>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleVocabGroupToggle(groupId)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card.Content>
+        </Card>
+
         <div className="flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={() => router.push('/books')}>Cancel</Button>
           <Button type="submit" loading={loading} leftIcon={<Save className="h-4 w-4" />}>
@@ -315,6 +473,88 @@ export function BookForm({ initialData }: BookFormProps) {
           <Button onClick={handleCreateCategory}>
             Create Category
           </Button>
+        </div>
+      </Modal>
+
+      {/* Vocabulary Group Selection Modal */}
+      <Modal
+        isOpen={showVocabModal}
+        onClose={() => setShowVocabModal(false)}
+        title="Select Vocabulary Groups"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <Input
+            placeholder="Search vocabulary groups by name, description, or language..."
+            value={vocabSearchTerm}
+            onChange={(e) => setVocabSearchTerm(e.target.value)}
+            leftIcon={<Search className="h-4 w-4" />}
+          />
+
+          <div className="max-h-96 overflow-y-auto">
+            {filteredVocabGroups.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">
+                  {vocabSearchTerm ? 'No vocabulary groups found matching your search.' : 'No vocabulary groups available.'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredVocabGroups.map((group) => (
+                  <div
+                    key={group.id}
+                    className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                      selectedVocabGroups.includes(group.id)
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => handleVocabGroupToggle(group.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedVocabGroups.includes(group.id)}
+                          onChange={() => handleVocabGroupToggle(group.id)}
+                          className="rounded"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium">{group.name}</h4>
+                            <Badge variant="secondary" className="text-xs">
+                              {group.difficulty}
+                            </Badge>
+                            {group.language && group.target_language && (
+                              <Badge variant="outline" className="text-xs">
+                                {group.language} → {group.target_language}
+                              </Badge>
+                            )}
+                          </div>
+                          {group.description && (
+                            <p className="text-sm text-gray-600 mt-1">{group.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-between items-center border-t pt-4">
+            <p className="text-sm text-gray-600">
+              {selectedVocabGroups.length} group{selectedVocabGroups.length !== 1 ? 's' : ''} selected
+            </p>
+            <div className="flex space-x-2">
+              <Button variant="outline" onClick={() => setShowVocabModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => setShowVocabModal(false)}>
+                Done
+              </Button>
+            </div>
+          </div>
         </div>
       </Modal>
     </form>
