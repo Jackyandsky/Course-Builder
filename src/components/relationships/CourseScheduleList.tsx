@@ -34,7 +34,16 @@ export function CourseScheduleList({ courseId }: CourseScheduleListProps) {
     setLoading(true)
     try {
       // Get all schedules for this course
+      console.log('Loading schedules for course:', courseId)
+      console.log('Course ID type:', typeof courseId)
+      
+      // First try to get all schedules to see if any exist
+      const allSchedules = await scheduleService.getSchedules({})
+      console.log('All schedules in database:', allSchedules)
+      
       const courseSchedules = await scheduleService.getSchedules({ course_id: courseId })
+      console.log('Found schedules for course ID', courseId, ':', courseSchedules)
+      console.log('Filtered schedules length:', courseSchedules.length)
       setSchedules(courseSchedules)
 
       // Get all lessons for these schedules
@@ -133,24 +142,106 @@ export function CourseScheduleList({ courseId }: CourseScheduleListProps) {
             {schedules.length} schedule{schedules.length !== 1 ? 's' : ''}, {lessons.length} lesson{lessons.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.push(`/schedules/new?courseId=${courseId}`)}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          New Schedule
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/schedules?courseId=${courseId}&action=attach`)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Attach Existing
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/schedules/new?courseId=${courseId}`)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Schedule
+          </Button>
+        </div>
       </div>
 
+      {/* Schedules List */}
+      {schedules.length > 0 && (
+        <div className="space-y-4">
+          <h4 className="font-medium text-gray-900 dark:text-gray-100">Active Schedules</h4>
+          <div className="grid gap-4">
+            {schedules.map((schedule) => (
+              <Card
+                key={schedule.id}
+                className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => router.push(`/schedules/${schedule.id}`)}
+              >
+                <Card.Content className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h5 className="font-medium">{schedule.name}</h5>
+                        <Badge variant={schedule.is_active ? 'success' : 'secondary'} size="sm">
+                          {schedule.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </div>
+                      
+                      {schedule.description && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                          {schedule.description}
+                        </p>
+                      )}
+                      
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>
+                            {new Date(schedule.start_date).toLocaleDateString()} - 
+                            {schedule.end_date ? new Date(schedule.end_date).toLocaleDateString() : 'Ongoing'}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>{formatTime(schedule.default_start_time)}</span>
+                        </div>
+                        
+                        {schedule.location && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            <span>{schedule.location}</span>
+                          </div>
+                        )}
+                        
+                        {schedule.max_students && (
+                          <div className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            <span>Max {schedule.max_students}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <ChevronRight className="h-5 w-5 text-gray-400 flex-shrink-0 ml-4" />
+                  </div>
+                </Card.Content>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Lessons List */}
-      <div className="space-y-3">
-        {lessons.map((lesson) => (
-          <Card
-            key={lesson.id}
-            className="hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => router.push(`/lessons/${lesson.id}`)}
-          >
+      {lessons.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium text-gray-900 dark:text-gray-100">Upcoming Lessons</h4>
+            <span className="text-sm text-gray-500">{lessons.length} lessons</span>
+          </div>
+          <div className="space-y-3">
+            {lessons.map((lesson) => (
+              <Card
+                key={lesson.id}
+                className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => router.push(`/lessons/${lesson.id}`)}
+              >
             <Card.Content className="p-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -206,8 +297,10 @@ export function CourseScheduleList({ courseId }: CourseScheduleListProps) {
               </div>
             </Card.Content>
           </Card>
-        ))}
-      </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
