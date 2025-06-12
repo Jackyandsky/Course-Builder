@@ -283,6 +283,7 @@ export class ScheduleService {
 
         lessons.push({
           schedule_id,
+          course_id: schedule.course_id,
           title: `${schedule.name} - Lesson ${lessonNumber}`,
           date: currentDate.toISOString().split('T')[0],
           start_time: startTime.toTimeString().slice(0, 5),

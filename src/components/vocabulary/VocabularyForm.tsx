@@ -9,13 +9,18 @@ import {
   Button, Card, Input, Textarea, Select, Badge, Spinner 
 } from '@/components/ui';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface VocabularyFormProps {
   initialData?: Vocabulary;
+  onSave?: (formData: Omit<Vocabulary, "id" | "created_at" | "updated_at">) => Promise<void>;
+  isLoading?: boolean;
+  onCancel?: () => void;
 }
 
-export function VocabularyForm({ initialData }: VocabularyFormProps) {
+export function VocabularyForm({ initialData, onSave, isLoading, onCancel }: VocabularyFormProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const supabase = createClientComponentClient();
   const isEditing = !!initialData;
   const [loading, setLoading] = useState(false);
@@ -55,17 +60,17 @@ export function VocabularyForm({ initialData }: VocabularyFormProps) {
       // Load available groups
       const { data: groups } = await supabase
         .from('vocabulary_groups')
-        .select('id, name')
+        .select('id, name, language, difficulty, is_public, user_id, created_at, updated_at')
         .order('name');
       
       // Load available books
       const { data: books } = await supabase
         .from('books')
-        .select('id, title')
+        .select('id, title, user_id, created_at, updated_at, content_type, language, is_public')
         .order('title');
 
-      setAvailableGroups(groups || []);
-      setAvailableBooks(books || []);
+      setAvailableGroups(groups as VocabularyGroup[] || []);
+      setAvailableBooks(books as Book[] || []);
     } catch (error) {
       console.error('Failed to load available options:', error);
     }
@@ -105,30 +110,36 @@ export function VocabularyForm({ initialData }: VocabularyFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateForm() || !user) return;
     
-    setLoading(true);
-    try {
-      let vocabularyId: string;
-      
-      if (isEditing) {
-        await vocabularyService.updateVocabulary({ id: initialData.id, ...formData } as UpdateVocabularyData);
-        vocabularyId = initialData.id;
-      } else {
-        const newVocabulary = await vocabularyService.createVocabulary(formData as CreateVocabularyData);
-        vocabularyId = newVocabulary.id;
+    if (onSave) {
+      // Use external onSave handler
+      await onSave({ ...formData, user_id: user.id });
+    } else {
+      // Use internal logic for standalone form
+      setLoading(true);
+      try {
+        let vocabularyId: string;
+        
+        if (isEditing) {
+          await vocabularyService.updateVocabulary({ id: initialData.id, ...formData } as UpdateVocabularyData);
+          vocabularyId = initialData.id;
+        } else {
+          const newVocabulary = await vocabularyService.createVocabulary(formData as CreateVocabularyData);
+          vocabularyId = newVocabulary.id;
+        }
+        
+        // Save relationships
+        await saveRelationships(vocabularyId);
+        
+        router.push('/vocabulary');
+        router.refresh();
+      } catch (error: any) {
+        console.error('Failed to save vocabulary:', error);
+        setErrors({ submit: error.message || 'Failed to save vocabulary. Please try again.' });
+      } finally {
+        setLoading(false);
       }
-      
-      // Save relationships
-      await saveRelationships(vocabularyId);
-      
-      router.push('/vocabulary');
-      router.refresh();
-    } catch (error: any) {
-      console.error('Failed to save vocabulary:', error);
-      setErrors({ submit: error.message || 'Failed to save vocabulary. Please try again.' });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -467,8 +478,8 @@ export function VocabularyForm({ initialData }: VocabularyFormProps) {
         </Card>
 
         <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={() => router.push('/vocabulary')}>Cancel</Button>
-          <Button type="submit" loading={loading} leftIcon={<Save className="h-4 w-4" />}>
+          <Button type="button" variant="outline" onClick={onCancel || (() => router.push('/vocabulary'))}>Cancel</Button>
+          <Button type="submit" loading={isLoading !== undefined ? isLoading : loading} leftIcon={<Save className="h-4 w-4" />}>
             {isEditing ? 'Update Vocabulary' : 'Create Vocabulary'}
           </Button>
         </div>

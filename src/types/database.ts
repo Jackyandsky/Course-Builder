@@ -80,6 +80,7 @@ export interface Book {
   
   // Relations
   category?: Category;
+  vocabulary_group_books?: VocabularyGroupBook[];
 }
 
 // VocabularyGroup type
@@ -101,6 +102,7 @@ export interface VocabularyGroup {
   // Relations
   category?: Category;
   vocabulary_group_items?: VocabularyGroupItem[];
+  vocabulary_group_books?: VocabularyGroupBook[];
   vocabulary_count?: number;
 }
 
@@ -263,6 +265,7 @@ export interface Lesson {
   duration_minutes?: number;
   location?: string;
   status: LessonStatus;
+  notes?: string;
   tags?: string[];
   user_id: string;
   created_at: string;
@@ -362,6 +365,9 @@ export interface VocabularyGroupBook {
     book_id: string;
     notes?: string;
     position: number;
+    // Relations
+    vocabulary_group?: VocabularyGroup;
+    book?: Book;
 }
 
 

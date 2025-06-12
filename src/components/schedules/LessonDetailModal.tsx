@@ -40,19 +40,13 @@ export function LessonDetailModal({ isOpen, onClose, lesson, onEdit }: LessonDet
             </div>
         </div>
 
-        {lesson.notes && (
+        {lesson.description && (
              <div className="pt-2">
-                <h4 className="font-medium text-gray-800">Teaching Notes</h4>
-                <p className="mt-1 text-sm text-gray-600 whitespace-pre-wrap">{lesson.notes}</p>
+                <h4 className="font-medium text-gray-800">Description</h4>
+                <p className="mt-1 text-sm text-gray-600 whitespace-pre-wrap">{lesson.description}</p>
             </div>
         )}
 
-        {lesson.homework && (
-            <div className="pt-2">
-                <h4 className="font-medium text-gray-800">Homework</h4>
-                <p className="mt-1 text-sm text-gray-600 whitespace-pre-wrap">{lesson.homework}</p>
-            </div>
-        )}
       </div>
       <div className="mt-6 flex justify-end gap-3">
         <Button variant="outline" onClick={onClose}>Close</Button>

@@ -67,12 +67,12 @@ export function LessonForm({ scheduleId, lesson, onSuccess }: LessonFormProps) {
         date: lesson.date,
         start_time: lesson.start_time,
         end_time: lesson.end_time,
-        duration_minutes: lesson.duration_minutes,
+        duration_minutes: lesson.duration_minutes || 60,
         location: lesson.location || '',
         status: lesson.status,
-        notes: lesson.notes || '',
-        homework: lesson.homework || '',
-        resources: lesson.resources || [],
+        notes: lesson.description || '',
+        homework: '',
+        resources: [],
       });
     } else {
       setFormData({ ...initialFormData, schedule_id: scheduleId || '' });
@@ -106,7 +106,17 @@ export function LessonForm({ scheduleId, lesson, onSuccess }: LessonFormProps) {
     if (!user) return;
     setLoading(true);
     try {
-      const lessonData = { ...formData, user_id: user.id };
+      // Get the course_id from the schedule
+      const selectedSchedule = schedules.find(s => s.id === formData.schedule_id);
+      if (!selectedSchedule) {
+        throw new Error("Please select a valid schedule");
+      }
+
+      const lessonData = { 
+        ...formData, 
+        user_id: user.id,
+        course_id: selectedSchedule.course_id
+      };
 
       if (isEditing) {
         if (!lesson) throw new Error("Lesson to update is missing.");

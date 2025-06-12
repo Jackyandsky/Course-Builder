@@ -84,10 +84,10 @@ export default function VocabularyGroupDetailPage() {
       if (error) throw error;
       
       const books = data
-        ?.map(item => item.book)
-        .filter(Boolean) || [];
+        ?.map((item: any) => item.book)
+        .filter(Boolean) as Book[] || [];
       
-      setRelatedBooks(books as Book[]);
+      setRelatedBooks(books);
     } catch (error) {
       console.error('Failed to load related books:', error);
     }
@@ -202,7 +202,7 @@ export default function VocabularyGroupDetailPage() {
                 <label className="text-sm font-medium text-gray-700">Difficulty</label>
                 <p className="mt-1">
                   <Badge variant={group.difficulty === 'beginner' ? 'success' : 
-                              group.difficulty === 'intermediate' ? 'warning' : 'error'}>
+                              group.difficulty === 'intermediate' ? 'warning' : 'danger'}>
                     {group.difficulty}
                   </Badge>
                 </p>
@@ -347,7 +347,7 @@ export default function VocabularyGroupDetailPage() {
                       )}
                       <Badge 
                         variant={word.difficulty === 'beginner' ? 'success' : 
-                                word.difficulty === 'intermediate' ? 'warning' : 'error'}
+                                word.difficulty === 'intermediate' ? 'warning' : 'danger'}
                         className="text-xs px-1 py-0.5"
                       >
                         {word.difficulty.charAt(0).toUpperCase()}
@@ -482,7 +482,6 @@ function AddVocabularyModal({
           placeholder="Search vocabulary words..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          leftIcon={<Search className="h-4 w-4" />}
         />
 
         {/* Available Words */}
@@ -523,7 +522,7 @@ function AddVocabularyModal({
                         )}
                         <Badge 
                           variant={word.difficulty === 'beginner' ? 'success' : 
-                                  word.difficulty === 'intermediate' ? 'warning' : 'error'}
+                                  word.difficulty === 'intermediate' ? 'warning' : 'danger'}
                           className="text-xs"
                         >
                           {word.difficulty}
@@ -555,7 +554,7 @@ function AddVocabularyModal({
             <Button 
               onClick={handleAddWords}
               disabled={selectedWords.length === 0 || adding}
-              isLoading={adding}
+              loading={adding}
             >
               Add Selected Words
             </Button>

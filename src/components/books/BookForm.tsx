@@ -63,7 +63,7 @@ export function BookForm({ initialData }: BookFormProps) {
         .order('name');
 
       if (error) throw error;
-      setAvailableVocabGroups(data || []);
+      setAvailableVocabGroups(data as VocabularyGroup[] || []);
     } catch (error) {
       console.error('Failed to load vocabulary groups:', error);
     }
@@ -390,7 +390,6 @@ export function BookForm({ initialData }: BookFormProps) {
                 type="button"
                 variant="outline"
                 onClick={() => setShowVocabModal(true)}
-                leftIcon={<Search className="h-4 w-4" />}
               >
                 Select Groups
               </Button>
@@ -488,7 +487,6 @@ export function BookForm({ initialData }: BookFormProps) {
             placeholder="Search vocabulary groups by name, description, or language..."
             value={vocabSearchTerm}
             onChange={(e) => setVocabSearchTerm(e.target.value)}
-            leftIcon={<Search className="h-4 w-4" />}
           />
 
           <div className="max-h-96 overflow-y-auto">

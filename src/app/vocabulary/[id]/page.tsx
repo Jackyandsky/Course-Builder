@@ -184,7 +184,7 @@ export default function VocabularyDetailPage() {
                 <label className="text-sm font-medium text-gray-700">Difficulty</label>
                 <p className="mt-1">
                   <Badge variant={vocabulary.difficulty === 'beginner' ? 'success' : 
-                              vocabulary.difficulty === 'intermediate' ? 'warning' : 'error'}>
+                              vocabulary.difficulty === 'intermediate' ? 'warning' : 'danger'}>
                     {vocabulary.difficulty}
                   </Badge>
                 </p>
