@@ -29,3 +29,7 @@ tasks.json
 tasks/
 # Build directories
 package-lock.json
+
+# next.js
+/.next/
+/out/
