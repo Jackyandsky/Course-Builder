@@ -53,7 +53,7 @@ export function BookImportModal({ isOpen, onClose, onImportComplete }: BookImpor
       const line = lines[i];
       if (!line.trim()) continue;
       
-      const values = [];
+      const values: string[] = [];
       let current = '';
       let inQuotes = false;
       
@@ -80,8 +80,8 @@ export function BookImportModal({ isOpen, onClose, onImportComplete }: BookImpor
     return data;
   };
 
-  const getOrCreateCategory = async (categoryName: string, newCategories: Set<string>) => {
-    if (!categoryName.trim()) return null;
+  const getOrCreateCategory = async (categoryName: string, newCategories: Set<string>): Promise<string | undefined> => {
+    if (!categoryName.trim()) return undefined;
     
     try {
       const categories = await categoryService.getCategories({ type: 'book' });
@@ -103,7 +103,7 @@ export function BookImportModal({ isOpen, onClose, onImportComplete }: BookImpor
       return newCategory.id;
     } catch (error) {
       console.error('Error creating category:', error);
-      return null;
+      return undefined;
     }
   };
 
