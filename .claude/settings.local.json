@@ -4,7 +4,10 @@
       "Bash(npm run build:*)",
       "Bash(grep:*)",
       "Bash(npx tsc:*)",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(sed:*)"
     ],
     "deny": []
   }

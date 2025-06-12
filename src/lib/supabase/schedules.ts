@@ -65,6 +65,7 @@ async function generateRecurringLessons(
 
       lessons.push({
         schedule_id,
+        course_id: schedule.course_id,
         user_id: schedule.user_id,
         title: `${schedule.name} - Lesson ${lessonNumber}`,
         date: currentDate.toISOString().split('T')[0],

@@ -60,10 +60,10 @@ export default function BookDetailPage() {
       if (error) throw error;
       
       const groups = data
-        ?.map(item => item.vocabulary_group)
-        .filter(Boolean) || [];
+        ?.map((item: any) => item.vocabulary_group)
+        .filter(Boolean) as VocabularyGroup[] || [];
       
-      setVocabGroups(groups as VocabularyGroup[]);
+      setVocabGroups(groups);
     } catch (error) {
       console.error('Failed to load vocabulary groups:', error);
     } finally {

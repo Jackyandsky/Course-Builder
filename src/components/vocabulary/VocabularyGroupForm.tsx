@@ -7,16 +7,21 @@ import { VocabularyGroup, Category, DifficultyLevel, Book as BookType } from '@/
 import { vocabularyService, CreateVocabularyGroupData, UpdateVocabularyGroupData } from '@/lib/supabase/vocabulary';
 import { categoryService } from '@/lib/supabase/categories';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Button, Card, Input, Textarea, Select, Badge, Modal, Spinner 
 } from '@/components/ui';
 
 interface VocabularyGroupFormProps {
   initialData?: VocabularyGroup;
+  onSave?: (formData: Omit<VocabularyGroup, "id" | "created_at" | "updated_at">) => Promise<void>;
+  isLoading?: boolean;
+  onCancel?: () => void;
 }
 
-export function VocabularyGroupForm({ initialData }: VocabularyGroupFormProps) {
+export function VocabularyGroupForm({ initialData, onSave, isLoading, onCancel }: VocabularyGroupFormProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const supabase = createClientComponentClient();
   const isEditing = !!initialData;
   const [loading, setLoading] = useState(false);
@@ -67,7 +72,7 @@ export function VocabularyGroupForm({ initialData }: VocabularyGroupFormProps) {
         .order('title');
 
       if (error) throw error;
-      setAvailableBooks(data || []);
+      setAvailableBooks(data as BookType[] || []);
     } catch (error) {
       console.error('Failed to load available books:', error);
     }
@@ -109,35 +114,41 @@ export function VocabularyGroupForm({ initialData }: VocabularyGroupFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateForm() || !user) return;
     
-    setLoading(true);
-    try {
-      let groupId: string;
-      
-      if (isEditing) {
-        await vocabularyService.updateVocabularyGroup({ id: initialData.id, ...formData } as UpdateVocabularyGroupData);
-        groupId = initialData.id;
-      } else {
-        const newGroup = await vocabularyService.createVocabularyGroup(formData as CreateVocabularyGroupData);
-        groupId = newGroup.id;
-      }
-      
-      // Process batch vocabulary if present
-      if (batchVocabulary.trim() && batchPreview.length > 0) {
-        await processBatchVocabulary(groupId);
-      }
+    if (onSave) {
+      // Use external onSave handler
+      await onSave({ ...formData, user_id: user.id });
+    } else {
+      // Use internal logic for standalone form
+      setLoading(true);
+      try {
+        let groupId: string;
+        
+        if (isEditing) {
+          await vocabularyService.updateVocabularyGroup({ id: initialData.id, ...formData } as UpdateVocabularyGroupData);
+          groupId = initialData.id;
+        } else {
+          const newGroup = await vocabularyService.createVocabularyGroup(formData as CreateVocabularyGroupData);
+          groupId = newGroup.id;
+        }
+        
+        // Process batch vocabulary if present
+        if (batchVocabulary.trim() && batchPreview.length > 0) {
+          await processBatchVocabulary(groupId);
+        }
 
-      // Save book relationships
-      await saveBookRelationships(groupId);
-      
-      router.push('/vocabulary/groups');
-      router.refresh();
-    } catch (error: any) {
-      console.error('Failed to save vocabulary group:', error);
-      setErrors({ submit: error.message || 'Failed to save vocabulary group. Please try again.' });
-    } finally {
-      setLoading(false);
+        // Save book relationships
+        await saveBookRelationships(groupId);
+        
+        router.push('/vocabulary/groups');
+        router.refresh();
+      } catch (error: any) {
+        console.error('Failed to save vocabulary group:', error);
+        setErrors({ submit: error.message || 'Failed to save vocabulary group. Please try again.' });
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -562,7 +573,6 @@ create,v.,bring something into existence`}
                 type="button"
                 variant="outline"
                 onClick={() => setShowBookModal(true)}
-                leftIcon={<Search className="h-4 w-4" />}
               >
                 Select Books
               </Button>
@@ -609,8 +619,8 @@ create,v.,bring something into existence`}
         </Card>
 
         <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={() => router.push('/vocabulary/groups')}>Cancel</Button>
-          <Button type="submit" loading={loading} leftIcon={<Save className="h-4 w-4" />}>
+          <Button type="button" variant="outline" onClick={onCancel || (() => router.push('/vocabulary/groups'))}>Cancel</Button>
+          <Button type="submit" loading={isLoading !== undefined ? isLoading : loading} leftIcon={<Save className="h-4 w-4" />}>
             {isEditing ? 'Update Group' : 'Create Group'}
           </Button>
         </div>
@@ -733,7 +743,6 @@ create,v.,bring something into existence`}
             placeholder="Search books by title or author..."
             value={bookSearchTerm}
             onChange={(e) => setBookSearchTerm(e.target.value)}
-            leftIcon={<Search className="h-4 w-4" />}
           />
 
           <div className="max-h-96 overflow-y-auto">

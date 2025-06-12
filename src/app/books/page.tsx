@@ -324,7 +324,7 @@ export default function BooksPage() {
                     <div className="mb-2">
                       <p className="text-xs text-gray-500 mb-1">Vocabulary Groups ({vocabGroups.length})</p>
                       <div className="flex flex-wrap gap-1">
-                        {vocabGroups.slice(0, 2).map((group) => (
+                        {vocabGroups.slice(0, 2).map((group) => group && (
                           <Badge
                             key={group.id}
                             variant="outline"
@@ -423,7 +423,7 @@ export default function BooksPage() {
                             Vocabulary Groups ({vocabGroups.length})
                           </p>
                           <div className="flex flex-wrap gap-1">
-                            {vocabGroups.slice(0, 4).map((group) => (
+                            {vocabGroups.slice(0, 4).map((group) => group && (
                               <Badge
                                 key={group.id}
                                 variant="outline"
