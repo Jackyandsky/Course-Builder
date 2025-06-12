@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { useAuth } from '@/contexts/AuthContext';
-import { scheduleService } from '@/lib/services/schedule-service';
+import { scheduleService } from '@/lib/supabase/schedules';
 import { courseService } from '@/lib/supabase/courses';
 import type { Schedule, RecurrenceType, DayOfWeek } from '@/types/schedule';
 import type { Course } from '@/types/database';

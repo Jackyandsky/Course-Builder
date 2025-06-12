@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Edit, Trash2, Calendar, Clock, Users } from 'lucide-react';
 import { Schedule, Lesson } from '@/types/schedule';
-import { scheduleService } from '@/lib/services/schedule-service';
+import { scheduleService } from '@/lib/supabase/schedules';
 import { Button, Card, Badge, Spinner, Modal } from '@/components/ui';
 import { ScheduleCalendar } from '@/components/schedules/ScheduleCalendar';
 import { LessonDetailModal } from '@/components/schedules/LessonDetailModal';

@@ -8,7 +8,8 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { scheduleService } from '@/lib/services/schedule-service';
+import { scheduleService } from '@/lib/supabase/schedules';
+import { lessonService } from '@/lib/supabase/lessons';
 import type { Lesson, Schedule } from '@/types/schedule';
 import type { LessonStatus } from '@/types/database';
 import { Plus, X } from 'lucide-react';
@@ -120,9 +121,9 @@ export function LessonForm({ scheduleId, lesson, onSuccess }: LessonFormProps) {
 
       if (isEditing) {
         if (!lesson) throw new Error("Lesson to update is missing.");
-        await scheduleService.updateLesson(lesson.id, lessonData);
+        await lessonService.updateLesson(lesson.id, lessonData);
       } else {
-        await scheduleService.createLesson(lessonData);
+        await lessonService.createLesson(lessonData);
       }
 
       if (onSuccess) {

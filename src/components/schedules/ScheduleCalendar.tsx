@@ -8,7 +8,7 @@ import {startOfWeek} from 'date-fns/startOfWeek';
 import {getDay} from 'date-fns/getDay';
 import {enUS} from 'date-fns/locale/en-US';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { scheduleService } from '@/lib/services/schedule-service';
+import { scheduleService } from '@/lib/supabase/schedules';
 import { Schedule, Lesson } from '@/types/schedule';
 
 const locales = {
