@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Search, Calendar } from 'lucide-react';
 import { Schedule } from '@/types/schedule';
-import { scheduleService } from '@/lib/services/schedule-service';
+import { scheduleService } from '@/lib/supabase/schedules';
 import { 
   Button, Card, Badge, SearchBox, Spinner 
 } from '@/components/ui';

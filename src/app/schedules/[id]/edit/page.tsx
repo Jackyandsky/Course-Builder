@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { Button, Card, Spinner } from '@/components/ui';
 import { ScheduleForm } from '@/components/schedules/ScheduleForm';
-import { scheduleService } from '@/lib/services/schedule-service';
+import { scheduleService } from '@/lib/supabase/schedules';
 import { Schedule } from '@/types/schedule';
 
 export default function EditSchedulePage() {

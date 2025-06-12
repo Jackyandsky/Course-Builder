@@ -34,7 +34,7 @@ export function CourseScheduleList({ courseId }: CourseScheduleListProps) {
     setLoading(true)
     try {
       // Get all schedules for this course
-      const courseSchedules = await scheduleService.getSchedule(courseId)
+      const courseSchedules = await scheduleService.getSchedules({ course_id: courseId })
       setSchedules(courseSchedules)
 
       // Get all lessons for these schedules

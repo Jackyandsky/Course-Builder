@@ -181,4 +181,39 @@ export const scheduleService = {
     const { error } = await supabase.from('schedules').delete().eq('id', id);
     if (error) throw error;
   },
+
+  /**
+   * Transform lessons to calendar events format
+   */
+  transformToCalendarEvents(lessons: any[]): any[] {
+    return lessons.map(lesson => {
+      const startDateTime = new Date(`${lesson.date}T${lesson.start_time}`);
+      const endDateTime = new Date(`${lesson.date}T${lesson.end_time}`);
+      
+      return {
+        id: lesson.id,
+        title: lesson.title,
+        start: startDateTime,
+        end: endDateTime,
+        resource: {
+          lesson,
+          schedule: lesson.schedule
+        },
+        className: getLessonClassName(lesson.status)
+      };
+    });
+  },
 };
+
+function getLessonClassName(status: string): string {
+  switch (status) {
+    case 'completed':
+      return 'bg-green-100 border-green-300 text-green-800';
+    case 'cancelled':
+      return 'bg-red-100 border-red-300 text-red-800';
+    case 'draft':
+      return 'bg-gray-100 border-gray-300 text-gray-800';
+    default:
+      return 'bg-blue-100 border-blue-300 text-blue-800';
+  }
+}
