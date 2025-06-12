@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, X, Plus, Volume2 } from 'lucide-react';
-import { Vocabulary, DifficultyLevel } from '@/types/database';
+import { Vocabulary, DifficultyLevel, VocabularyGroup, Book } from '@/types/database';
 import { vocabularyService, CreateVocabularyData, UpdateVocabularyData } from '@/lib/supabase/vocabulary';
 import { 
   Button, Card, Input, Textarea, Select, Badge, Spinner 
 } from '@/components/ui';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface VocabularyFormProps {
   initialData?: Vocabulary;
@@ -15,6 +16,7 @@ interface VocabularyFormProps {
 
 export function VocabularyForm({ initialData }: VocabularyFormProps) {
   const router = useRouter();
+  const supabase = createClientComponentClient();
   const isEditing = !!initialData;
   const [loading, setLoading] = useState(false);
 
@@ -34,6 +36,63 @@ export function VocabularyForm({ initialData }: VocabularyFormProps) {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [newTag, setNewTag] = useState('');
+  
+  // Relationships
+  const [availableGroups, setAvailableGroups] = useState<VocabularyGroup[]>([]);
+  const [availableBooks, setAvailableBooks] = useState<Book[]>([]);
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [selectedBooks, setSelectedBooks] = useState<string[]>([]);
+
+  useEffect(() => {
+    loadAvailableOptions();
+    if (isEditing && initialData) {
+      loadExistingRelationships();
+    }
+  }, []);
+
+  const loadAvailableOptions = async () => {
+    try {
+      // Load available groups
+      const { data: groups } = await supabase
+        .from('vocabulary_groups')
+        .select('id, name')
+        .order('name');
+      
+      // Load available books
+      const { data: books } = await supabase
+        .from('books')
+        .select('id, title')
+        .order('title');
+
+      setAvailableGroups(groups || []);
+      setAvailableBooks(books || []);
+    } catch (error) {
+      console.error('Failed to load available options:', error);
+    }
+  };
+
+  const loadExistingRelationships = async () => {
+    if (!initialData) return;
+
+    try {
+      // Load existing group relationships
+      const { data: groupRelations } = await supabase
+        .from('vocabulary_group_items')
+        .select('vocabulary_group_id')
+        .eq('vocabulary_id', initialData.id);
+
+      // Load existing book relationships (we need to create this table)
+      const { data: bookRelations } = await supabase
+        .from('vocabulary_books')
+        .select('book_id')
+        .eq('vocabulary_id', initialData.id);
+
+      setSelectedGroups(groupRelations?.map(r => r.vocabulary_group_id) || []);
+      setSelectedBooks(bookRelations?.map(r => r.book_id) || []);
+    } catch (error) {
+      console.error('Failed to load existing relationships:', error);
+    }
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -50,11 +109,18 @@ export function VocabularyForm({ initialData }: VocabularyFormProps) {
     
     setLoading(true);
     try {
+      let vocabularyId: string;
+      
       if (isEditing) {
         await vocabularyService.updateVocabulary({ id: initialData.id, ...formData } as UpdateVocabularyData);
+        vocabularyId = initialData.id;
       } else {
-        await vocabularyService.createVocabulary(formData as CreateVocabularyData);
+        const newVocabulary = await vocabularyService.createVocabulary(formData as CreateVocabularyData);
+        vocabularyId = newVocabulary.id;
       }
+      
+      // Save relationships
+      await saveRelationships(vocabularyId);
       
       router.push('/vocabulary');
       router.refresh();
@@ -63,6 +129,56 @@ export function VocabularyForm({ initialData }: VocabularyFormProps) {
       setErrors({ submit: error.message || 'Failed to save vocabulary. Please try again.' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveRelationships = async (vocabularyId: string) => {
+    try {
+      // Save group relationships
+      if (isEditing) {
+        // Remove existing group relationships
+        await supabase
+          .from('vocabulary_group_items')
+          .delete()
+          .eq('vocabulary_id', vocabularyId);
+      }
+
+      // Add new group relationships
+      if (selectedGroups.length > 0) {
+        const groupItems = selectedGroups.map((groupId, index) => ({
+          vocabulary_group_id: groupId,
+          vocabulary_id: vocabularyId,
+          position: index
+        }));
+
+        await supabase
+          .from('vocabulary_group_items')
+          .insert(groupItems);
+      }
+
+      // Save book relationships (when we create the table)
+      if (isEditing) {
+        // Remove existing book relationships
+        await supabase
+          .from('vocabulary_books')
+          .delete()
+          .eq('vocabulary_id', vocabularyId);
+      }
+
+      // Add new book relationships
+      if (selectedBooks.length > 0) {
+        const bookItems = selectedBooks.map(bookId => ({
+          vocabulary_id: vocabularyId,
+          book_id: bookId
+        }));
+
+        await supabase
+          .from('vocabulary_books')
+          .insert(bookItems);
+      }
+    } catch (error) {
+      console.error('Failed to save relationships:', error);
+      // Note: We could make this non-fatal and just show a warning
     }
   };
 
@@ -249,6 +365,77 @@ export function VocabularyForm({ initialData }: VocabularyFormProps) {
                 </div>
               </div>
             )}
+          </Card.Content>
+        </Card>
+
+        <Card>
+          <Card.Header><h2 className="text-lg font-semibold">Relationships</h2></Card.Header>
+          <Card.Content className="space-y-6">
+            {/* Vocabulary Groups */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Vocabulary Groups
+              </label>
+              <div className="space-y-2">
+                {availableGroups.map((group) => (
+                  <label key={group.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedGroups.includes(group.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedGroups([...selectedGroups, group.id]);
+                        } else {
+                          setSelectedGroups(selectedGroups.filter(id => id !== group.id));
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    <span className="text-sm">{group.name}</span>
+                  </label>
+                ))}
+              </div>
+              {selectedGroups.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-sm text-gray-600">
+                    Selected {selectedGroups.length} group{selectedGroups.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Books */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Related Books
+              </label>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {availableBooks.map((book) => (
+                  <label key={book.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedBooks.includes(book.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedBooks([...selectedBooks, book.id]);
+                        } else {
+                          setSelectedBooks(selectedBooks.filter(id => id !== book.id));
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    <span className="text-sm">{book.title}</span>
+                  </label>
+                ))}
+              </div>
+              {selectedBooks.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-sm text-gray-600">
+                    Selected {selectedBooks.length} book{selectedBooks.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              )}
+            </div>
           </Card.Content>
         </Card>
         

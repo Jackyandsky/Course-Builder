@@ -42,7 +42,14 @@ export const bookService = {
       .from('books')
       .select(`
         *,
-        category:categories(id, name, color, icon)
+        category:categories(id, name, color, icon),
+        vocabulary_group_books(
+          vocabulary_group:vocabulary_groups(
+            id,
+            name,
+            difficulty
+          )
+        )
       `)
       .order('created_at', { ascending: false });
 

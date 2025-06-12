@@ -269,161 +269,215 @@ export default function BooksPage() {
           </Button>
         </Card>
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {books.map((book) => (
-            <Card
-              key={book.id}
-              className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden"
-              onClick={() => router.push(`/books/${book.id}`)}
-            >
-              {book.cover_image_url ? (
-                <div className="h-48 overflow-hidden bg-gray-100">
-                  <img
-                    src={book.cover_image_url}
-                    alt={book.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
-                  <BookOpen className="h-16 w-16 text-gray-400" />
-                </div>
-              )}
-              <Card.Content className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 flex-1">
-                    {book.title}
-                  </h3>
-                  <Badge
-                    variant={contentTypeColors[book.content_type] as any}
-                    size="sm"
-                    className="ml-2"
-                  >
-                    {contentTypeIcons[book.content_type]}
-                  </Badge>
-                </div>
-                
-                {book.author && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    by {book.author}
-                  </p>
-                )}
-                
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  {book.publication_year && (
-                    <span>{book.publication_year}</span>
-                  )}
-                  {book.language && (
-                    <span className="uppercase">{book.language}</span>
-                  )}
-                </div>
-                
-                {book.category && (
-                  <div className="mt-3">
-                    <span
-                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                      style={{
-                        backgroundColor: book.category.color ? `${book.category.color}20` : undefined,
-                        color: book.category.color || undefined,
-                      }}
-                    >
-                      {book.category.name}
-                    </span>
-                  </div>
-                )}
-              </Card.Content>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {books.map((book) => (
-            <Card
-              key={book.id}
-              className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => router.push(`/books/${book.id}`)}
-            >
-              <Card.Content className="p-4">
-                <div className="flex items-start gap-4">
-                  {book.cover_image_url ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+          {books.map((book) => {
+            const vocabGroups = book.vocabulary_group_books?.map(vgb => vgb.vocabulary_group).filter(Boolean) || [];
+            return (
+              <Card
+                key={book.id}
+                className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
+                onClick={() => router.push(`/books/${book.id}`)}
+              >
+                {book.cover_image_url ? (
+                  <div className="h-32 overflow-hidden bg-gray-100">
                     <img
                       src={book.cover_image_url}
                       alt={book.title}
-                      className="w-20 h-28 object-cover rounded"
+                      className="w-full h-full object-cover"
                     />
-                  ) : (
-                    <div className="w-20 h-28 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
-                      <BookOpen className="h-8 w-8 text-gray-400" />
-                    </div>
+                  </div>
+                ) : (
+                  <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
+                    <BookOpen className="h-10 w-10 text-gray-400" />
+                  </div>
+                )}
+                <Card.Content className="p-3">
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 flex-1">
+                      {book.title}
+                    </h3>
+                    <Badge
+                      variant={contentTypeColors[book.content_type] as any}
+                      size="sm"
+                      className="ml-1 text-xs"
+                    >
+                      {contentTypeIcons[book.content_type]}
+                    </Badge>
+                  </div>
+                  
+                  {book.author && (
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 line-clamp-1">
+                      by {book.author}
+                    </p>
                   )}
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          {book.title}
-                        </h3>
-                        {book.author && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            by {book.author}
-                          </p>
+                  
+                  <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                    {book.publication_year && (
+                      <span>{book.publication_year}</span>
+                    )}
+                    {book.language && (
+                      <span className="uppercase">{book.language}</span>
+                    )}
+                  </div>
+                  
+                  {vocabGroups.length > 0 && (
+                    <div className="mb-2">
+                      <p className="text-xs text-gray-500 mb-1">Vocabulary Groups ({vocabGroups.length})</p>
+                      <div className="flex flex-wrap gap-1">
+                        {vocabGroups.slice(0, 2).map((group) => (
+                          <Badge
+                            key={group.id}
+                            variant="outline"
+                            className="text-xs px-1 py-0.5"
+                            title={group.name}
+                          >
+                            {group.name.length > 12 ? `${group.name.substring(0, 12)}...` : group.name}
+                          </Badge>
+                        ))}
+                        {vocabGroups.length > 2 && (
+                          <Badge variant="outline" className="text-xs px-1 py-0.5">
+                            +{vocabGroups.length - 2}
+                          </Badge>
                         )}
                       </div>
-                      <Badge
-                        variant={contentTypeColors[book.content_type] as any}
-                        size="sm"
+                    </div>
+                  )}
+                  
+                  {book.category && (
+                    <div className="mt-2">
+                      <span
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                        style={{
+                          backgroundColor: book.category.color ? `${book.category.color}20` : undefined,
+                          color: book.category.color || undefined,
+                        }}
                       >
-                        {book.content_type}
-                      </Badge>
+                        {book.category.name}
+                      </span>
                     </div>
-                    
-                    {book.description && (
-                      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                        {book.description}
-                      </p>
+                  )}
+                </Card.Content>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {books.map((book) => {
+            const vocabGroups = book.vocabulary_group_books?.map(vgb => vgb.vocabulary_group).filter(Boolean) || [];
+            return (
+              <Card
+                key={book.id}
+                className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => router.push(`/books/${book.id}`)}
+              >
+                <Card.Content className="p-4">
+                  <div className="flex items-start gap-4">
+                    {book.cover_image_url ? (
+                      <img
+                        src={book.cover_image_url}
+                        alt={book.title}
+                        className="w-20 h-28 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-20 h-28 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
+                        <BookOpen className="h-8 w-8 text-gray-400" />
+                      </div>
                     )}
-                    
-                    <div className="mt-3 flex items-center gap-4 text-sm text-gray-500">
-                      {book.publisher && <span>Publisher: {book.publisher}</span>}
-                      {book.publication_year && <span>{book.publication_year}</span>}
-                      {book.total_pages && <span>{book.total_pages} pages</span>}
-                      {book.language && <span className="uppercase">{book.language}</span>}
-                    </div>
-                    
-                    <div className="mt-3 flex items-center gap-2">
-                      {book.category && (
-                        <span
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                          style={{
-                            backgroundColor: book.category.color ? `${book.category.color}20` : undefined,
-                            color: book.category.color || undefined,
-                          }}
-                        >
-                          {book.category.name}
-                        </span>
-                      )}
-                      {book.tags && book.tags.length > 0 && (
-                        <>
-                          {book.tags.slice(0, 3).map((tag) => (
-                            <span
-                              key={tag}
-                              className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                          {book.tags.length > 3 && (
-                            <span className="text-xs text-gray-500">
-                              +{book.tags.length - 3}
-                            </span>
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                            {book.title}
+                          </h3>
+                          {book.author && (
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              by {book.author}
+                            </p>
                           )}
-                        </>
+                        </div>
+                        <Badge
+                          variant={contentTypeColors[book.content_type] as any}
+                          size="sm"
+                        >
+                          {book.content_type}
+                        </Badge>
+                      </div>
+                      
+                      {book.description && (
+                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                          {book.description}
+                        </p>
                       )}
+                      
+                      <div className="mt-3 flex items-center gap-4 text-sm text-gray-500">
+                        {book.publisher && <span>Publisher: {book.publisher}</span>}
+                        {book.publication_year && <span>{book.publication_year}</span>}
+                        {book.total_pages && <span>{book.total_pages} pages</span>}
+                        {book.language && <span className="uppercase">{book.language}</span>}
+                      </div>
+                      
+                      {vocabGroups.length > 0 && (
+                        <div className="mt-3">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                            Vocabulary Groups ({vocabGroups.length})
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {vocabGroups.slice(0, 4).map((group) => (
+                              <Badge
+                                key={group.id}
+                                variant="outline"
+                                className="text-xs"
+                                title={group.name}
+                              >
+                                {group.name}
+                              </Badge>
+                            ))}
+                            {vocabGroups.length > 4 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{vocabGroups.length - 4} more
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="mt-3 flex items-center gap-2">
+                        {book.category && (
+                          <span
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                            style={{
+                              backgroundColor: book.category.color ? `${book.category.color}20` : undefined,
+                              color: book.category.color || undefined,
+                            }}
+                          >
+                            {book.category.name}
+                          </span>
+                        )}
+                        {book.tags && book.tags.length > 0 && (
+                          <>
+                            {book.tags.slice(0, 3).map((tag) => (
+                              <span
+                                key={tag}
+                                className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                            {book.tags.length > 3 && (
+                              <span className="text-xs text-gray-500">
+                                +{book.tags.length - 3}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Card.Content>
-            </Card>
-          ))}
+                </Card.Content>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

@@ -2,23 +2,28 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Edit, Trash2, Globe, Lock, BookOpen } from 'lucide-react';
-import { Book } from '@/types/database';
+import { ArrowLeft, Edit, Trash2, Globe, Lock, BookOpen, Users } from 'lucide-react';
+import { Book, VocabularyGroup } from '@/types/database';
 import { bookService } from '@/lib/supabase/books';
 import { Button, Card, Badge, Modal, Spinner } from '@/components/ui';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export default function BookDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const supabase = createClientComponentClient();
   const bookId = params.id as string;
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [vocabGroups, setVocabGroups] = useState<VocabularyGroup[]>([]);
+  const [vocabGroupsLoading, setVocabGroupsLoading] = useState(false);
 
   useEffect(() => {
     if (bookId) {
       loadBook();
+      loadVocabGroups();
     }
   }, [bookId]);
 
@@ -32,6 +37,37 @@ export default function BookDetailPage() {
       router.push('/books');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadVocabGroups = async () => {
+    setVocabGroupsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('vocabulary_group_books')
+        .select(`
+          vocabulary_group:vocabulary_groups(
+            id,
+            name,
+            description,
+            difficulty,
+            language,
+            target_language
+          )
+        `)
+        .eq('book_id', bookId);
+
+      if (error) throw error;
+      
+      const groups = data
+        ?.map(item => item.vocabulary_group)
+        .filter(Boolean) || [];
+      
+      setVocabGroups(groups as VocabularyGroup[]);
+    } catch (error) {
+      console.error('Failed to load vocabulary groups:', error);
+    } finally {
+      setVocabGroupsLoading(false);
     }
   };
 
@@ -151,6 +187,70 @@ export default function BookDetailPage() {
                  </Card>
             )}
         </div>
+
+        <Card>
+          <Card.Header>
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              <h2 className="text-lg font-semibold">Related Vocabulary Groups</h2>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Vocabulary groups that contain words from this book
+            </p>
+          </Card.Header>
+          <Card.Content>
+            {vocabGroupsLoading ? (
+              <div className="flex justify-center py-8">
+                <Spinner size="md" />
+              </div>
+            ) : vocabGroups.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No vocabulary groups are associated with this book.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/books/${bookId}/edit`)}
+                  className="mt-3"
+                >
+                  Add Vocabulary Groups
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {vocabGroups.map((group) => (
+                  <div
+                    key={group.id}
+                    className="border rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => router.push(`/vocabulary/groups/${group.id}`)}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between">
+                        <h4 className="font-medium text-sm line-clamp-2 flex-1" title={group.name}>
+                          {group.name}
+                        </h4>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {group.difficulty}
+                        </Badge>
+                        {group.language && group.target_language && (
+                          <Badge variant="outline" className="text-xs">
+                            {group.language} → {group.target_language}
+                          </Badge>
+                        )}
+                      </div>
+                      {group.description && (
+                        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2" title={group.description}>
+                          {group.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card.Content>
+        </Card>
       </div>
       
       <Modal

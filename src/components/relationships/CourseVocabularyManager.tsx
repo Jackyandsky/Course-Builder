@@ -143,7 +143,7 @@ export function CourseVocabularyManager({ courseId, onUpdate }: CourseVocabulary
         </div>
 
         {courseGroups.length > 0 ? (
-          <div className="grid gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {courseGroups.map((courseGroup) => {
               const group = courseGroup.vocabulary_group
               const wordCount = group?.vocabulary_group_items?.length || 0
@@ -151,48 +151,46 @@ export function CourseVocabularyManager({ courseId, onUpdate }: CourseVocabulary
               return (
                 <div
                   key={courseGroup.id}
-                  className="p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  className="border rounded-lg p-3 hover:shadow-md transition-shadow group relative"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-medium">{group?.name}</h4>
-                        <Badge variant={getDifficultyColor(group?.difficulty)}>
-                          {group?.difficulty}
-                        </Badge>
-                        {group?.language && group?.target_language && (
-                          <Badge variant="outline">
-                            {group.language} → {group.target_language}
-                          </Badge>
-                        )}
-                      </div>
-                      {group?.description && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{group.description}</p>
-                      )}
-                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
-                        <span>{wordCount} word{wordCount !== 1 ? 's' : ''}</span>
-                        {group?.tags && group.tags.length > 0 && (
-                          <div className="flex gap-1">
-                            {group.tags.slice(0, 3).map((tag: string) => (
-                              <span key={tag} className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">
-                                {tag}
-                              </span>
-                            ))}
-                            {group.tags.length > 3 && (
-                              <span className="text-xs">+{group.tags.length - 3}</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between">
+                      <h4 className="font-medium text-sm line-clamp-2" title={group?.name}>
+                        {group?.name}
+                      </h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveGroup(courseGroup.vocabulary_group_id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                      >
+                        ×
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveGroup(courseGroup.vocabulary_group_id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <Badge variant={getDifficultyColor(group?.difficulty)} className="text-xs px-1 py-0.5">
+                        {group?.difficulty}
+                      </Badge>
+                      {group?.language && group?.target_language && (
+                        <Badge variant="outline" className="text-xs px-1 py-0.5">
+                          {group.language}→{group.target_language}
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {group?.description && (
+                      <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2" title={group.description}>
+                        {group.description}
+                      </p>
+                    )}
+                    
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                      <span>{wordCount} word{wordCount !== 1 ? 's' : ''}</span>
+                      {group?.tags && group.tags.length > 0 && (
+                        <span>{group.tags.length} tag{group.tags.length !== 1 ? 's' : ''}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               )

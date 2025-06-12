@@ -35,22 +35,20 @@ export interface Schedule {
 export interface Lesson {
   id: string;
   schedule_id: string;
+  course_id: string;
   title: string;
   description?: string;
+  lesson_number?: number;
   date: string;
   start_time: string;
   end_time: string;
-  duration_minutes: number;
+  duration_minutes?: number;
   location?: string;
   status: 'draft' | 'scheduled' | 'completed' | 'cancelled';
-  notes?: string;
-  homework?: string;
-  resources?: string[];
+  tags?: string[];
   user_id: string;
   created_at: string;
   updated_at: string;
-  completed_at?: string;
-  cancelled_at?: string;
   metadata?: Record<string, any>;
   
   // Relations
@@ -65,13 +63,12 @@ export interface Lesson {
 export interface Attendance {
   id: string;
   lesson_id: string;
-  student_id: string;
   student_name: string;
+  student_id?: string;
   status: AttendanceStatus;
-  arrival_time?: string;
   notes?: string;
   marked_at: string;
-  marked_by: string;
+  marked_by?: string;
   
   // Relations
   lesson?: Lesson;

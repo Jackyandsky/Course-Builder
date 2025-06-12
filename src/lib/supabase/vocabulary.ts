@@ -171,7 +171,15 @@ export const vocabularyService = {
       .select(`
         *,
         category:categories(id, name, color, icon),
-        vocabulary_group_items(count)
+        vocabulary_group_items(count),
+        vocabulary_group_books(
+          book:books(
+            id,
+            title,
+            author,
+            cover_image_url
+          )
+        )
       `)
       .order('created_at', { ascending: false });
 
