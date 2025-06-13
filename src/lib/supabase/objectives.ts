@@ -1,5 +1,6 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Objective } from '@/types/database';
+import { SHARED_USER_ID } from '@/lib/constants/shared';
 
 const supabase = createClientComponentClient();
 
@@ -89,7 +90,7 @@ export const objectiveService = {
       .from('objectives')
       .insert({
         ...objectiveData,
-        user_id: 'shared-user',
+        user_id: SHARED_USER_ID,
         measurable: objectiveData.measurable ?? true,
         is_template: objectiveData.is_template ?? false,
       })

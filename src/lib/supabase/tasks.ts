@@ -1,5 +1,6 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Task, DifficultyLevel } from '@/types/database';
+import { SHARED_USER_ID } from '@/lib/constants/shared';
 
 const supabase = createClientComponentClient();
 
@@ -97,7 +98,7 @@ export const taskService = {
       .from('tasks')
       .insert({
         ...taskData,
-        user_id: 'shared-user',
+        user_id: SHARED_USER_ID,
         difficulty: taskData.difficulty ?? 'beginner',
         is_template: taskData.is_template ?? false,
       })
@@ -206,7 +207,7 @@ export const taskService = {
     const { data, error } = await supabase
       .from('tasks')
       .select('difficulty, duration_minutes, is_template', { count: 'exact' })
-      .eq('user_id', 'shared-user');
+      .eq('user_id', SHARED_USER_ID);
     
     if (error) throw error;
 
@@ -236,7 +237,7 @@ export const taskService = {
     const { data, error } = await supabase
       .from('tasks')
       .select('materials_needed')
-      .eq('user_id', 'shared-user')
+      .eq('user_id', SHARED_USER_ID)
       .not('materials_needed', 'is', null);
     
     if (error) throw error;

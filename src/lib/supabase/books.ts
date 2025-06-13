@@ -1,5 +1,6 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Book, ContentType } from '@/types/database';
+import { SHARED_USER_ID } from '@/lib/constants/shared';
 
 const supabase = createClientComponentClient();
 
@@ -124,7 +125,7 @@ export const bookService = {
       ...bookData,
       language: bookData.language || 'en',
       is_public: bookData.is_public || false,
-      user_id: 'shared-user', // Use a shared user ID since authentication is not required
+      user_id: SHARED_USER_ID, // Use a shared user ID since authentication is not required
     };
 
     const { data, error } = await supabase

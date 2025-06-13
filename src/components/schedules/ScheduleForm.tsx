@@ -1,17 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
-import { useAuth } from '@/contexts/AuthContext';
+import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { SHARED_USER_ID } from '@/lib/constants/shared';
 import { scheduleService } from '@/lib/supabase/schedules';
 import { courseService } from '@/lib/supabase/courses';
 import type { Schedule, RecurrenceType, DayOfWeek } from '@/types/schedule';
 import type { Course } from '@/types/database';
-import { Save } from 'lucide-react';
+import { Save, Calendar, Clock, BookOpen } from 'lucide-react';
 
 interface ScheduleFormProps {
   schedule?: Schedule;
@@ -51,7 +53,6 @@ const TIMEZONES = [
 
 export function ScheduleForm({ schedule, onSuccess }: ScheduleFormProps) {
   const router = useRouter();
-  const { user } = useAuth();
   const isEditing = !!schedule;
   const [loading, setLoading] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -96,13 +97,13 @@ export function ScheduleForm({ schedule, onSuccess }: ScheduleFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm() || !user) return;
+    if (!validateForm()) return;
 
     setLoading(true);
     try {
       const scheduleData = {
         ...formData,
-        user_id: user.id,
+        user_id: SHARED_USER_ID,
         // Explicitly set max_students to number | undefined to match Partial<Schedule>
         max_students: formData.max_students === null ? undefined : formData.max_students,
         default_duration_minutes: formData.default_duration_minutes,
@@ -137,14 +138,102 @@ export function ScheduleForm({ schedule, onSuccess }: ScheduleFormProps) {
     }));
   };
 
+  // Calculate lesson preview
+  const lessonPreview = useMemo(() => {
+    if (formData.recurrence_type === 'none' || !formData.start_date || !formData.recurrence_days.length) {
+      return { count: formData.recurrence_type === 'none' ? 1 : 0, totalDuration: formData.default_duration_minutes };
+    }
+
+    const startDate = new Date(`${formData.start_date}T00:00:00Z`);
+    const endDate = formData.end_date 
+      ? new Date(`${formData.end_date}T00:00:00Z`)
+      : new Date(startDate.getFullYear() + 1, startDate.getMonth(), startDate.getDate());
+
+    let currentDate = new Date(startDate);
+    let lessonCount = 0;
+    
+    const dayMap: DayOfWeek[] = [
+      'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'
+    ];
+
+    while (currentDate <= endDate) {
+      const dayOfWeek = dayMap[currentDate.getUTCDay()];
+      if (formData.recurrence_days.includes(dayOfWeek)) {
+        lessonCount++;
+      }
+      // Move to next day
+      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+    }
+
+    return {
+      count: lessonCount,
+      totalDuration: lessonCount * formData.default_duration_minutes
+    };
+  }, [formData.start_date, formData.end_date, formData.recurrence_days, formData.recurrence_type, formData.default_duration_minutes]);
+
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours === 0) return `${mins}m`;
+    if (mins === 0) return `${hours}h`;
+    return `${hours}h ${mins}m`;
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-       {errors.submit && (
-        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg">
-          {errors.submit}
-        </div>
+    <div className="space-y-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          {isEditing ? 'Edit Schedule' : 'Create New Schedule'}
+        </h1>
+        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+          {isEditing ? 'Update your schedule details' : 'Set up a recurring schedule that will automatically generate lessons'}
+        </p>
+      </div>
+
+      {/* Lesson Preview Card */}
+      {formData.start_date && (formData.recurrence_type === 'none' || formData.recurrence_days.length > 0) && (
+        <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+          <Card.Content className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <h3 className="font-medium text-blue-900 dark:text-blue-100">Lesson Preview</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm text-blue-800 dark:text-blue-200">Lessons to be created:</span>
+                </div>
+                <Badge variant="info" size="sm">
+                  {lessonPreview.count} lesson{lessonPreview.count !== 1 ? 's' : ''}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm text-blue-800 dark:text-blue-200">Total duration:</span>
+                </div>
+                <Badge variant="info" size="sm">
+                  {formatDuration(lessonPreview.totalDuration)}
+                </Badge>
+              </div>
+            </div>
+            {formData.recurrence_type !== 'none' && (
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-3">
+                Based on {formData.start_date} to {formData.end_date || 'one year from start'} • {formData.recurrence_days.length} day{formData.recurrence_days.length !== 1 ? 's' : ''} per week • {formData.default_duration_minutes} minutes each
+              </p>
+            )}
+          </Card.Content>
+        </Card>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {errors.submit && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg">
+            {errors.submit}
+          </div>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="col-span-2">
           <Select
             label="Course"
@@ -282,11 +371,12 @@ export function ScheduleForm({ schedule, onSuccess }: ScheduleFormProps) {
         </div>
       </div>
       <div className="flex justify-end space-x-4 mt-6">
-        <Button type="button" variant="outline" onClick={() => router.push('/schedules')}>Cancel</Button>
-        <Button type="submit" loading={loading} leftIcon={<Save className="h-4 w-4" />}>
-          {isEditing ? 'Update Schedule' : 'Create Schedule'}
-        </Button>
-      </div>
-    </form>
+          <Button type="button" variant="outline" onClick={() => router.push('/schedules')}>Cancel</Button>
+          <Button type="submit" loading={loading} leftIcon={<Save className="h-4 w-4" />}>
+            {isEditing ? 'Update Schedule' : 'Create Schedule'}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 }

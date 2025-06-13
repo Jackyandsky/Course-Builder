@@ -8,6 +8,7 @@ import {
   DayOfWeek,
 } from '@/types/schedule';
 import { Course } from '@/types/database';
+import { SHARED_USER_ID } from '@/lib/constants/shared';
 
 const supabase = createClientComponentClient();
 
@@ -147,14 +148,14 @@ export const scheduleService = {
   async createSchedule(scheduleData: CreateScheduleData) {
     const { data, error } = await supabase
       .from('schedules')
-      .insert({ ...scheduleData, user_id: 'shared-user' })
+      .insert({ ...scheduleData, user_id: SHARED_USER_ID })
       .select()
       .single();
 
     if (error) throw error;
 
     if (data && scheduleData.recurrence_type !== 'none') {
-      await generateRecurringLessons(data.id, { ...scheduleData, user_id: 'shared-user' });
+      await generateRecurringLessons(data.id, { ...scheduleData, user_id: SHARED_USER_ID });
     }
 
     return data;

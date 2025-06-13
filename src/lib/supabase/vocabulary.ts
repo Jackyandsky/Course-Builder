@@ -1,5 +1,6 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Vocabulary, VocabularyGroup, VocabularyGroupItem, DifficultyLevel } from '@/types/database';
+import { SHARED_USER_ID } from '@/lib/constants/shared';
 
 const supabase = createClientComponentClient();
 
@@ -120,7 +121,7 @@ export const vocabularyService = {
     const dataWithDefaults = {
       ...vocabularyData,
       difficulty: vocabularyData.difficulty || 'beginner' as DifficultyLevel,
-      user_id: 'shared-user',
+      user_id: SHARED_USER_ID,
     };
 
     const { data, error } = await supabase
@@ -248,7 +249,7 @@ export const vocabularyService = {
       language: groupData.language || 'en',
       difficulty: groupData.difficulty || 'beginner' as DifficultyLevel,
       is_public: groupData.is_public || false,
-      user_id: 'shared-user',
+      user_id: SHARED_USER_ID,
     };
 
     const { data, error } = await supabase
@@ -350,11 +351,11 @@ export const vocabularyService = {
       supabase
         .from('vocabulary')
         .select('difficulty', { count: 'exact' })
-        .eq('user_id', 'shared-user'),
+        .eq('user_id', SHARED_USER_ID),
       supabase
         .from('vocabulary_groups')
         .select('difficulty', { count: 'exact' })
-        .eq('user_id', 'shared-user'),
+        .eq('user_id', SHARED_USER_ID),
     ]);
     
     if (vocabularyData.error) throw vocabularyData.error;
@@ -384,7 +385,7 @@ export const vocabularyService = {
     const { data, error } = await supabase
       .from('vocabulary')
       .select('part_of_speech')
-      .eq('user_id', 'shared-user')
+      .eq('user_id', SHARED_USER_ID)
       .not('part_of_speech', 'is', null);
     
     if (error) throw error;
@@ -400,7 +401,7 @@ export const vocabularyService = {
     const { data, error } = await supabase
       .from('vocabulary_groups')
       .select('language, target_language')
-      .eq('user_id', 'shared-user');
+      .eq('user_id', SHARED_USER_ID);
     
     if (error) throw error;
 

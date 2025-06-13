@@ -1,5 +1,6 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Course, CourseStatus, DifficultyLevel } from '@/types/database';
+import { SHARED_USER_ID } from '@/lib/constants/shared';
 
 const supabase = createClientComponentClient();
 
@@ -108,7 +109,7 @@ export const courseService = {
       .from('courses')
       .insert({
         ...courseData,
-        user_id: 'shared-user', // Use shared user ID since authentication is not required
+        user_id: SHARED_USER_ID, // Use shared user ID since authentication is not required
         status: courseData.status || 'draft',
         difficulty: courseData.difficulty || 'beginner',
         is_public: courseData.is_public || false,
