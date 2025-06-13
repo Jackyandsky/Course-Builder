@@ -1,7 +1,6 @@
 'use client';
 
 import React, { forwardRef, SelectHTMLAttributes } from 'react';
-import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface SelectOption {
@@ -21,15 +20,9 @@ export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement
 }
 
 const sizeClasses = {
-  sm: 'h-8 text-sm px-3 pr-8',
-  md: 'h-10 text-base px-4 pr-10',
-  lg: 'h-12 text-lg px-5 pr-12',
-};
-
-const iconSizeClasses = {
-  sm: 'h-4 w-4',
-  md: 'h-5 w-5',
-  lg: 'h-6 w-6',
+  sm: 'h-8 text-sm px-3 pr-3',
+  md: 'h-10 text-base px-4 pr-4',
+  lg: 'h-12 text-lg px-5 pr-5',
 };
 
 const variantClasses = {
@@ -67,48 +60,38 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             {props.required && <span className="text-red-500 ml-1">*</span>}
           </label>
         )}
-        <div className="relative">
-          <select
-            ref={ref}
-            id={selectId}
-            className={cn(
-              'appearance-none rounded-md transition-colors duration-200',
-              'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
-              'text-gray-900 dark:text-gray-100',
-              sizeClasses[size],
-              variantClasses[variant],
-              error && 'border-red-500 dark:border-red-400',
-              fullWidth && 'w-full',
-              className
-            )}
-            disabled={disabled}
-            {...props}
-          >
-            {placeholder && (
-              <option value="" disabled>
-                {placeholder}
-              </option>
-            )}
-            {options.map((option) => (
-              <option
-                key={option.value}
-                value={option.value}
-                disabled={option.disabled}
-              >
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-            <ChevronDown
-              className={cn(
-                'text-gray-400',
-                iconSizeClasses[size]
-              )}
-            />
-          </div>
-        </div>
+        <select
+          ref={ref}
+          id={selectId}
+          className={cn(
+            'rounded-md transition-colors duration-200',
+            'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'disabled:opacity-50 disabled:cursor-not-allowed',
+            'text-gray-900 dark:text-gray-100',
+            sizeClasses[size],
+            variantClasses[variant],
+            error && 'border-red-500 dark:border-red-400',
+            fullWidth && 'w-full',
+            className
+          )}
+          disabled={disabled}
+          {...props}
+        >
+          {placeholder && (
+            <option value="" disabled>
+              {placeholder}
+            </option>
+          )}
+          {options.map((option) => (
+            <option
+              key={option.value}
+              value={option.value}
+              disabled={option.disabled}
+            >
+              {option.label}
+            </option>
+          ))}
+        </select>
         {error && (
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
         )}

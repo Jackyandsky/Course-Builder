@@ -24,6 +24,7 @@ export default function VocabularyPage() {
   const router = useRouter();
   const [vocabulary, setVocabulary] = useState<Vocabulary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [filters, setFilters] = useState<VocabularyFilters>({});
   const [stats, setStats] = useState({
     vocabulary: { total: 0, beginner: 0, intermediate: 0, advanced: 0, expert: 0 },
@@ -44,15 +45,28 @@ export default function VocabularyPage() {
 
   const loadInitialData = async () => {
     try {
+      setStatsLoading(true);
+      console.log('Loading vocabulary stats...');
       const [statsData, partsData] = await Promise.all([
         vocabularyService.getVocabularyStats(),
         vocabularyService.getPartsOfSpeech(),
       ]);
 
+      console.log('Stats data received:', statsData);
+      console.log('Parts of speech data received:', partsData);
+      
       setStats(statsData);
       setPartsOfSpeech(partsData);
     } catch (error) {
       console.error('Failed to load initial data:', error);
+      // Set default empty stats if there's an error
+      setStats({
+        vocabulary: { total: 0, beginner: 0, intermediate: 0, advanced: 0, expert: 0 },
+        groups: { total: 0, beginner: 0, intermediate: 0, advanced: 0, expert: 0 }
+      });
+      setPartsOfSpeech([]);
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -100,7 +114,7 @@ export default function VocabularyPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -157,7 +171,7 @@ export default function VocabularyPage() {
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Words</p>
               <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                {stats.vocabulary.total}
+                {statsLoading ? <Spinner size="sm" /> : stats.vocabulary.total}
               </p>
             </div>
             <BookOpen className="h-8 w-8 text-gray-400" />
@@ -169,7 +183,7 @@ export default function VocabularyPage() {
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Groups</p>
               <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                {stats.groups.total}
+                {statsLoading ? <Spinner size="sm" /> : stats.groups.total}
               </p>
             </div>
             <Users className="h-8 w-8 text-gray-400" />
@@ -184,7 +198,7 @@ export default function VocabularyPage() {
                   {level.label}
                 </p>
                 <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                  {stats.vocabulary[level.value] || 0}
+                  {statsLoading ? <Spinner size="sm" /> : (stats.vocabulary[level.value] || 0)}
                 </p>
               </div>
               <div className={`w-3 h-3 rounded-full bg-${level.color}-500`}></div>

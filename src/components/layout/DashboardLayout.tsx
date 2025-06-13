@@ -10,6 +10,12 @@ import {
   ClipboardDocumentListIcon,
   CalendarIcon,
   XMarkIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  CogIcon,
+  DocumentTextIcon,
+  LanguageIcon,
+  KeyIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -19,10 +25,14 @@ import { cn } from '@/lib/utils';
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
   { name: 'Courses', href: '/courses', icon: AcademicCapIcon },
-  { name: 'Books', href: '/books', icon: BookOpenIcon },
-  { name: 'Vocabulary', href: '/vocabulary', icon: ClipboardDocumentListIcon },
   { name: 'Schedules', href: '/schedules', icon: CalendarIcon },
-  { name: 'Components', href: '/dashboard/components', icon: Bars3Icon },
+  { name: 'Lessons', href: '/lessons', icon: ClockIcon },
+  { name: 'Tasks', href: '/tasks', icon: CheckCircleIcon },
+  { name: 'Objectives', href: '/objectives', icon: DocumentTextIcon },
+  { name: 'Methods', href: '/methods', icon: CogIcon },
+  { name: 'Books', href: '/books', icon: BookOpenIcon },
+  { name: 'Vocabulary', href: '/vocabulary', icon: LanguageIcon },
+  { name: 'Decoders', href: '/decoders', icon: KeyIcon },
 ];
 
 interface DashboardLayoutProps {
