@@ -98,14 +98,11 @@ export const methodService = {
 
   // Create new method
   async createMethod(methodData: CreateMethodData) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('methods')
       .insert({
         ...methodData,
-        user_id: user.user.id,
+        user_id: 'shared-user', // Use a shared user ID since authentication is not required
         group_size_min: methodData.group_size_min ?? 1,
         is_template: methodData.is_template ?? false,
       })
@@ -212,13 +209,9 @@ export const methodService = {
 
   // Get method statistics
   async getMethodStats() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('methods')
-      .select('duration_minutes, group_size_min, group_size_max, is_template', { count: 'exact' })
-      .eq('user_id', user.user.id);
+      .select('duration_minutes, group_size_min, group_size_max, is_template', { count: 'exact' });
     
     if (error) throw error;
 
@@ -244,13 +237,9 @@ export const methodService = {
 
   // Get popular materials
   async getPopularMaterials(limit: number = 10) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('methods')
       .select('materials_needed')
-      .eq('user_id', user.user.id)
       .not('materials_needed', 'is', null);
     
     if (error) throw error;

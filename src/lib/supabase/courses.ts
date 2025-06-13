@@ -104,14 +104,11 @@ export const courseService = {
 
   // Create new course
   async createCourse(courseData: CreateCourseData) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('courses')
       .insert({
         ...courseData,
-        user_id: user.user.id,
+        user_id: 'shared-user', // Use shared user ID since authentication is not required
         status: courseData.status || 'draft',
         difficulty: courseData.difficulty || 'beginner',
         is_public: courseData.is_public || false,
@@ -184,13 +181,9 @@ export const courseService = {
 
   // Get course statistics
   async getCourseStats() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('courses')
-      .select('status', { count: 'exact' })
-      .eq('user_id', user.user.id);
+      .select('status', { count: 'exact' });
     
     if (error) throw error;
 
