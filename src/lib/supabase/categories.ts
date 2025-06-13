@@ -1,5 +1,6 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Category } from '@/types/database';
+import { SHARED_USER_ID } from '@/lib/constants/shared';
 
 const supabase = createClientComponentClient();
 
@@ -67,7 +68,7 @@ export const categoryService = {
       .from('categories')
       .insert({
         ...categoryData,
-        user_id: 'shared-user', // Use shared user ID since authentication is not required
+        user_id: SHARED_USER_ID, // Use shared user ID since authentication is not required
       })
       .select()
       .single();

@@ -1,5 +1,6 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Method } from '@/types/database';
+import { SHARED_USER_ID } from '@/lib/constants/shared';
 
 const supabase = createClientComponentClient();
 
@@ -102,7 +103,7 @@ export const methodService = {
       .from('methods')
       .insert({
         ...methodData,
-        user_id: 'shared-user', // Use a shared user ID since authentication is not required
+        user_id: SHARED_USER_ID, // Use a shared user ID since authentication is not required
         group_size_min: methodData.group_size_min ?? 1,
         is_template: methodData.is_template ?? false,
       })

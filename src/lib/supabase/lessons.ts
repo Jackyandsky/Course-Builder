@@ -7,6 +7,7 @@ import type {
   AttendanceStatus
 } from '@/types/schedule';
 import type { LessonStatus } from '@/types/database';
+import { SHARED_USER_ID } from '@/lib/constants/shared';
 
 const supabase = createClientComponentClient();
 
@@ -151,7 +152,7 @@ export const lessonService = {
   async createLesson(lessonData: CreateLessonData) {
     const { data, error } = await supabase
       .from('lessons')
-      .insert({ ...lessonData, user_id: 'shared-user' })
+      .insert({ ...lessonData, user_id: SHARED_USER_ID })
       .select()
       .single();
 
@@ -207,7 +208,7 @@ export const lessonService = {
       .upsert({
         ...attendanceData,
         marked_at: new Date().toISOString(),
-        marked_by: 'shared-user',
+        marked_by: SHARED_USER_ID,
       })
       .select()
       .single();
@@ -227,7 +228,7 @@ export const lessonService = {
       ...a,
       lesson_id,
       marked_at: new Date().toISOString(),
-      marked_by: 'shared-user',
+      marked_by: SHARED_USER_ID,
     }));
 
     const { data, error } = await supabase.from('attendance').upsert(records).select();
