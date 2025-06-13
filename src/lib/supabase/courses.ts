@@ -76,31 +76,70 @@ export const courseService = {
 
   // Get single course by ID
   async getCourse(id: string) {
-    const { data, error } = await supabase
-      .from('courses')
-      .select(`
-        *,
-        category:categories(id, name, color, icon),
-        course_books(
-          id,
-          book_id,
-          is_required,
-          notes,
-          position,
-          book:books(id, title, author, cover_image_url)
-        ),
-        course_vocabulary_groups(
-          id,
-          vocabulary_group_id,
-          position,
-          vocabulary_group:vocabulary_groups(id, name, language, difficulty)
-        )
-      `)
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
-    return data as Course;
+    try {
+      // Try to get course with objectives first
+      const { data, error } = await supabase
+        .from('courses')
+        .select(`
+          *,
+          category:categories(id, name, color, icon),
+          course_books(
+            id,
+            book_id,
+            is_required,
+            notes,
+            position,
+            book:books(id, title, author, cover_image_url)
+          ),
+          course_vocabulary_groups(
+            id,
+            vocabulary_group_id,
+            position,
+            vocabulary_group:vocabulary_groups(id, name, language, difficulty)
+          ),
+          course_objectives(
+            id,
+            objective_id,
+            position,
+            objective:objectives(id, title, description, bloom_level, measurable, tags, is_template)
+          )
+        `)
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      return data as Course;
+    } catch (error: any) {
+      // If the course_objectives table doesn't exist, fall back to basic query
+      if (error.message?.includes('course_objectives') || error.code === '42P01') {
+        const { data, error: fallbackError } = await supabase
+          .from('courses')
+          .select(`
+            *,
+            category:categories(id, name, color, icon),
+            course_books(
+              id,
+              book_id,
+              is_required,
+              notes,
+              position,
+              book:books(id, title, author, cover_image_url)
+            ),
+            course_vocabulary_groups(
+              id,
+              vocabulary_group_id,
+              position,
+              vocabulary_group:vocabulary_groups(id, name, language, difficulty)
+            )
+          `)
+          .eq('id', id)
+          .single();
+        
+        if (fallbackError) throw fallbackError;
+        return { ...data, course_objectives: [] } as Course;
+      }
+      throw error;
+    }
   },
 
   // Create new course

@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, X, Plus, GripVertical } from 'lucide-react';
-import { Course, CourseStatus, DifficultyLevel, Category } from '@/types/database';
+import { Course, CourseStatus, DifficultyLevel, Category, CourseObjective } from '@/types/database';
 import { courseService, CreateCourseData, UpdateCourseData } from '@/lib/supabase/courses';
 import { categoryService } from '@/lib/supabase/categories';
+import { ObjectiveSelector } from './ObjectiveSelector';
 import { 
   Button, Card, Input, Textarea, Select, Badge, Modal, Spinner 
 } from '@/components/ui';
@@ -25,6 +26,9 @@ export function CourseForm({ initialData }: CourseFormProps) {
   
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [courseObjectives, setCourseObjectives] = useState<CourseObjective[]>(
+    initialData?.course_objectives || []
+  );
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
     short_description: initialData?.short_description || '',
@@ -33,7 +37,6 @@ export function CourseForm({ initialData }: CourseFormProps) {
     status: initialData?.status || 'draft' as CourseStatus,
     difficulty: initialData?.difficulty || 'beginner' as DifficultyLevel,
     duration_hours: initialData?.duration_hours || '',
-    objectives: initialData?.objectives || [],
     prerequisites: initialData?.prerequisites || [],
     tags: initialData?.tags || [],
     thumbnail_url: initialData?.thumbnail_url || '',
@@ -41,7 +44,6 @@ export function CourseForm({ initialData }: CourseFormProps) {
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [newObjective, setNewObjective] = useState('');
   const [newPrerequisite, setNewPrerequisite] = useState('');
   const [newTag, setNewTag] = useState('');
 
@@ -114,22 +116,6 @@ export function CourseForm({ initialData }: CourseFormProps) {
     }
   };
 
-  const handleAddObjective = () => {
-    if (newObjective.trim()) {
-      setFormData({
-        ...formData,
-        objectives: [...formData.objectives, newObjective.trim()],
-      });
-      setNewObjective('');
-    }
-  };
-
-  const handleRemoveObjective = (index: number) => {
-    setFormData({
-      ...formData,
-      objectives: formData.objectives.filter((_, i) => i !== index),
-    });
-  };
 
   const handleAddPrerequisite = () => {
     if (newPrerequisite.trim()) {
@@ -343,44 +329,17 @@ export function CourseForm({ initialData }: CourseFormProps) {
         <Card>
           <Card.Header>
             <h2 className="text-lg font-semibold">Learning Objectives</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Define what students will achieve by completing this course
+            </p>
           </Card.Header>
           <Card.Content>
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  value={newObjective}
-                  onChange={(e) => setNewObjective(e.target.value)}
-                  placeholder="Add a learning objective"
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddObjective())}
-                />
-                <Button
-                  type="button"
-                  onClick={handleAddObjective}
-                  leftIcon={<Plus className="h-4 w-4" />}
-                >
-                  Add
-                </Button>
-              </div>
-              
-              {formData.objectives.length > 0 && (
-                <div className="space-y-2">
-                  {formData.objectives.map((objective, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                      <GripVertical className="h-4 w-4 text-gray-400" />
-                      <span className="flex-1 text-sm">{objective}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveObjective(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <ObjectiveSelector
+              courseId={isEditing ? initialData?.id : undefined}
+              selectedObjectives={courseObjectives}
+              onObjectivesChange={setCourseObjectives}
+              disabled={loading}
+            />
           </Card.Content>
         </Card>
 

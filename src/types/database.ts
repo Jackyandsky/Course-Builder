@@ -50,9 +50,10 @@ export interface Course {
   book_count?: number;
   vocabulary_group_count?: number;
   schedule_count?: number;
-  // Add these two lines for the relations
+  // Add these lines for the relations
   course_books?: CourseBook[];
   course_vocabulary_groups?: CourseVocabularyGroup[];
+  course_objectives?: CourseObjective[];
 }
 
 // Book type
@@ -310,12 +311,26 @@ export interface PublicLink {
     metadata?: Record<string, any>;
 }
 
-// Relation types for Lessons
+// Relation types for Courses and Lessons
+export interface CourseObjective {
+    id: string;
+    course_id: string;
+    objective_id: string;
+    position: number;
+    created_at: string;
+    // Relations
+    course?: Course;
+    objective?: Objective;
+}
+
 export interface LessonObjective {
     id: string;
     lesson_id: string;
     objective_id: string;
     position: number;
+    // Relations
+    lesson?: Lesson;
+    objective?: Objective;
 }
 export interface LessonMethod {
     id: string;
@@ -439,6 +454,11 @@ export type Database = {
         Row: CourseVocabularyGroup;
         Insert: Omit<CourseVocabularyGroup, 'id'>;
         Update: Partial<Omit<CourseVocabularyGroup, 'id'>>;
+      };
+      course_objectives: {
+        Row: CourseObjective;
+        Insert: Omit<CourseObjective, 'id' | 'created_at'>;
+        Update: Partial<Omit<CourseObjective, 'id'>>;
       };
       lesson_objectives: {
         Row: LessonObjective;
