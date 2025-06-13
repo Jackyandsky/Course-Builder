@@ -51,11 +51,13 @@ export interface Lesson {
   updated_at: string;
   metadata?: Record<string, any>;
   
-  // Relations
+  // Relations - Enhanced for course content integration
   schedule?: Schedule;
   objectives?: LessonObjective[];
   methods?: LessonMethod[];
   tasks?: LessonTask[];
+  books?: LessonBook[];
+  vocabulary_groups?: LessonVocabularyGroup[];
   attendance?: Attendance[];
 }
 
@@ -183,4 +185,33 @@ export interface ScheduleTemplate {
   user_id: string;
   created_at: string;
   updated_at: string;
+}
+
+// Lesson-Book relation
+export interface LessonBook {
+  id: string;
+  lesson_id: string;
+  book_id: string;
+  position: number;
+  is_required: boolean;
+  reading_pages?: string;
+  notes?: string;
+  
+  // Relations
+  lesson?: Lesson;
+  book?: any; // Will be Book type from database.ts
+}
+
+// Lesson-VocabularyGroup relation
+export interface LessonVocabularyGroup {
+  id: string;
+  lesson_id: string;
+  vocabulary_group_id: string;
+  position: number;
+  focus_words?: string[];
+  notes?: string;
+  
+  // Relations
+  lesson?: Lesson;
+  vocabulary_group?: any; // Will be VocabularyGroup type from database.ts
 }

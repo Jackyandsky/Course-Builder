@@ -119,15 +119,12 @@ export const bookService = {
 
   // Create new book
   async createBook(bookData: CreateBookData) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     // Set default language if not provided
     const dataWithDefaults = {
       ...bookData,
       language: bookData.language || 'en',
       is_public: bookData.is_public || false,
-      user_id: user.user.id,
+      user_id: 'shared-user', // Use a shared user ID since authentication is not required
     };
 
     const { data, error } = await supabase
@@ -168,13 +165,9 @@ export const bookService = {
 
   // Get book statistics
   async getBookStats() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('books')
-      .select('content_type', { count: 'exact' })
-      .eq('user_id', user.user.id);
+      .select('content_type', { count: 'exact' });
     
     if (error) throw error;
 
@@ -192,13 +185,9 @@ export const bookService = {
 
   // Get unique authors
   async getAuthors() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('books')
       .select('author')
-      .eq('user_id', user.user.id)
       .not('author', 'is', null);
     
     if (error) throw error;
@@ -211,13 +200,9 @@ export const bookService = {
 
   // Get unique languages
   async getLanguages() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('books')
-      .select('language')
-      .eq('user_id', user.user.id);
+      .select('language');
     
     if (error) throw error;
 

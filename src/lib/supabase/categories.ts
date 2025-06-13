@@ -63,14 +63,11 @@ export const categoryService = {
 
   // Create new category
   async createCategory(categoryData: CreateCategoryData) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('categories')
       .insert({
         ...categoryData,
-        user_id: user.user.id,
+        user_id: 'shared-user', // Use shared user ID since authentication is not required
       })
       .select()
       .single();

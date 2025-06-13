@@ -93,14 +93,11 @@ export const taskService = {
 
   // Create new task
   async createTask(taskData: CreateTaskData) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('tasks')
       .insert({
         ...taskData,
-        user_id: user.user.id,
+        user_id: 'shared-user',
         difficulty: taskData.difficulty ?? 'beginner',
         is_template: taskData.is_template ?? false,
       })
@@ -206,13 +203,10 @@ export const taskService = {
 
   // Get task statistics
   async getTaskStats() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('tasks')
       .select('difficulty, duration_minutes, is_template', { count: 'exact' })
-      .eq('user_id', user.user.id);
+      .eq('user_id', 'shared-user');
     
     if (error) throw error;
 
@@ -239,13 +233,10 @@ export const taskService = {
 
   // Get popular materials for tasks
   async getPopularMaterials(limit: number = 10) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('tasks')
       .select('materials_needed')
-      .eq('user_id', user.user.id)
+      .eq('user_id', 'shared-user')
       .not('materials_needed', 'is', null);
     
     if (error) throw error;

@@ -117,13 +117,10 @@ export const vocabularyService = {
 
   // Create new vocabulary item
   async createVocabulary(vocabularyData: CreateVocabularyData) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const dataWithDefaults = {
       ...vocabularyData,
       difficulty: vocabularyData.difficulty || 'beginner' as DifficultyLevel,
-      user_id: user.user.id,
+      user_id: 'shared-user',
     };
 
     const { data, error } = await supabase
@@ -246,15 +243,12 @@ export const vocabularyService = {
 
   // Create new vocabulary group
   async createVocabularyGroup(groupData: CreateVocabularyGroupData) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const dataWithDefaults = {
       ...groupData,
       language: groupData.language || 'en',
       difficulty: groupData.difficulty || 'beginner' as DifficultyLevel,
       is_public: groupData.is_public || false,
-      user_id: user.user.id,
+      user_id: 'shared-user',
     };
 
     const { data, error } = await supabase
@@ -352,18 +346,15 @@ export const vocabularyService = {
   
   // Get vocabulary statistics
   async getVocabularyStats() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const [vocabularyData, groupsData] = await Promise.all([
       supabase
         .from('vocabulary')
         .select('difficulty', { count: 'exact' })
-        .eq('user_id', user.user.id),
+        .eq('user_id', 'shared-user'),
       supabase
         .from('vocabulary_groups')
         .select('difficulty', { count: 'exact' })
-        .eq('user_id', user.user.id),
+        .eq('user_id', 'shared-user'),
     ]);
     
     if (vocabularyData.error) throw vocabularyData.error;
@@ -390,13 +381,10 @@ export const vocabularyService = {
 
   // Get unique part of speech values
   async getPartsOfSpeech() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('vocabulary')
       .select('part_of_speech')
-      .eq('user_id', user.user.id)
+      .eq('user_id', 'shared-user')
       .not('part_of_speech', 'is', null);
     
     if (error) throw error;
@@ -409,13 +397,10 @@ export const vocabularyService = {
 
   // Get unique languages used in vocabulary groups
   async getLanguages() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('vocabulary_groups')
       .select('language, target_language')
-      .eq('user_id', user.user.id);
+      .eq('user_id', 'shared-user');
     
     if (error) throw error;
 

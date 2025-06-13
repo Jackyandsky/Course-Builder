@@ -85,14 +85,11 @@ export const objectiveService = {
 
   // Create new objective
   async createObjective(objectiveData: CreateObjectiveData) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('objectives')
       .insert({
         ...objectiveData,
-        user_id: user.user.id,
+        user_id: 'shared-user',
         measurable: objectiveData.measurable ?? true,
         is_template: objectiveData.is_template ?? false,
       })
@@ -182,13 +179,9 @@ export const objectiveService = {
 
   // Get objective statistics
   async getObjectiveStats() {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('objectives')
-      .select('bloom_level, is_template', { count: 'exact' })
-      .eq('user_id', user.user.id);
+      .select('bloom_level, is_template', { count: 'exact' });
     
     if (error) throw error;
 

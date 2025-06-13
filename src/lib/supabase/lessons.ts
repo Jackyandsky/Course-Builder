@@ -38,7 +38,47 @@ export const lessonService = {
       .select(
         `
         *,
-        schedule:schedules(id, name, course:courses(id, title))
+        schedule:schedules(id, name, course:courses(id, title)),
+        lesson_books(
+          id,
+          book_id,
+          position,
+          is_required,
+          reading_pages,
+          notes,
+          book:books(id, title, author, cover_image_url)
+        ),
+        lesson_vocabulary_groups(
+          id,
+          vocabulary_group_id,
+          position,
+          focus_words,
+          notes,
+          vocabulary_group:vocabulary_groups(id, name, language, difficulty)
+        ),
+        lesson_objectives(
+          id,
+          objective_id,
+          position,
+          objective:objectives(id, title, description)
+        ),
+        lesson_methods(
+          id,
+          method_id,
+          position,
+          duration_minutes,
+          notes,
+          method:methods(id, name, description, duration_minutes)
+        ),
+        lesson_tasks(
+          id,
+          task_id,
+          position,
+          is_homework,
+          due_date,
+          notes,
+          task:tasks(id, title, description, estimated_minutes)
+        )
       `
       )
       .order('date', { ascending: true })
@@ -109,12 +149,9 @@ export const lessonService = {
    * Create a new lesson.
    */
   async createLesson(lessonData: CreateLessonData) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('lessons')
-      .insert({ ...lessonData, user_id: user.user.id })
+      .insert({ ...lessonData, user_id: 'shared-user' })
       .select()
       .single();
 
@@ -165,15 +202,12 @@ export const lessonService = {
    * Mark (create or update) a single attendance record.
    */
   async markAttendance(attendanceData: CreateAttendanceData) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('attendance')
       .upsert({
         ...attendanceData,
         marked_at: new Date().toISOString(),
-        marked_by: user.user.id,
+        marked_by: 'shared-user',
       })
       .select()
       .single();
@@ -189,19 +223,169 @@ export const lessonService = {
     lesson_id: string,
     attendances: Omit<Attendance, 'id' | 'lesson_id' | 'marked_at' | 'marked_by'>[]
   ) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const records = attendances.map((a) => ({
       ...a,
       lesson_id,
       marked_at: new Date().toISOString(),
-      marked_by: user.user.id,
+      marked_by: 'shared-user',
     }));
 
     const { data, error } = await supabase.from('attendance').upsert(records).select();
 
     if (error) throw error;
     return data;
+  },
+
+  // === LESSON CONTENT RELATIONSHIP METHODS ===
+
+  /**
+   * Add a book to a lesson
+   */
+  async addBookToLesson(lesson_id: string, book_id: string, options: {
+    position?: number;
+    is_required?: boolean;
+    reading_pages?: string;
+    notes?: string;
+  } = {}) {
+    const { data, error } = await supabase
+      .from('lesson_books')
+      .insert({
+        lesson_id,
+        book_id,
+        position: options.position || 0,
+        is_required: options.is_required || false,
+        reading_pages: options.reading_pages,
+        notes: options.notes,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Remove a book from a lesson
+   */
+  async removeBookFromLesson(lesson_id: string, book_id: string) {
+    const { error } = await supabase
+      .from('lesson_books')
+      .delete()
+      .eq('lesson_id', lesson_id)
+      .eq('book_id', book_id);
+
+    if (error) throw error;
+  },
+
+  /**
+   * Add a vocabulary group to a lesson
+   */
+  async addVocabularyGroupToLesson(lesson_id: string, vocabulary_group_id: string, options: {
+    position?: number;
+    focus_words?: string[];
+    notes?: string;
+  } = {}) {
+    const { data, error } = await supabase
+      .from('lesson_vocabulary_groups')
+      .insert({
+        lesson_id,
+        vocabulary_group_id,
+        position: options.position || 0,
+        focus_words: options.focus_words,
+        notes: options.notes,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Remove a vocabulary group from a lesson
+   */
+  async removeVocabularyGroupFromLesson(lesson_id: string, vocabulary_group_id: string) {
+    const { error } = await supabase
+      .from('lesson_vocabulary_groups')
+      .delete()
+      .eq('lesson_id', lesson_id)
+      .eq('vocabulary_group_id', vocabulary_group_id);
+
+    if (error) throw error;
+  },
+
+  /**
+   * Get lessons for a specific course (used in course lessons tab)
+   */
+  async getCourseLessons(course_id: string, filters: {
+    status?: LessonStatus;
+    date_from?: string;
+    date_to?: string;
+  } = {}) {
+    let query = supabase
+      .from('lessons')
+      .select(`
+        *,
+        schedule:schedules(id, name),
+        lesson_books!inner(
+          id,
+          book_id,
+          position,
+          is_required,
+          reading_pages,
+          notes,
+          book:books(id, title, author, cover_image_url)
+        ),
+        lesson_vocabulary_groups(
+          id,
+          vocabulary_group_id,
+          position,
+          focus_words,
+          notes,
+          vocabulary_group:vocabulary_groups(id, name, language, difficulty)
+        ),
+        lesson_objectives(
+          id,
+          objective_id,
+          position,
+          objective:objectives(id, title, description)
+        ),
+        lesson_methods(
+          id,
+          method_id,
+          position,
+          duration_minutes,
+          notes,
+          method:methods(id, name, description)
+        ),
+        lesson_tasks(
+          id,
+          task_id,
+          position,
+          is_homework,
+          due_date,
+          notes,
+          task:tasks(id, title, description)
+        )
+      `)
+      .eq('course_id', course_id)
+      .order('date', { ascending: true })
+      .order('start_time', { ascending: true });
+
+    if (filters.status) {
+      query = query.eq('status', filters.status);
+    }
+    
+    if (filters.date_from) {
+      query = query.gte('date', filters.date_from);
+    }
+    
+    if (filters.date_to) {
+      query = query.lte('date', filters.date_to);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data as Lesson[];
   },
 };

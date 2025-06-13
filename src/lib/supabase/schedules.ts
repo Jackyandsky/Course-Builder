@@ -68,12 +68,15 @@ async function generateRecurringLessons(
         course_id: schedule.course_id,
         user_id: schedule.user_id,
         title: `${schedule.name} - Lesson ${lessonNumber}`,
+        description: `Automatically generated lesson from schedule: ${schedule.name}`,
+        lesson_number: lessonNumber,
         date: currentDate.toISOString().split('T')[0],
         start_time: lessonStartTime.toUTCString().slice(17, 22),
         end_time: lessonEndTime.toUTCString().slice(17, 22),
         duration_minutes: schedule.default_duration_minutes,
         location: schedule.location,
         status: 'scheduled',
+        tags: ['auto-generated', 'from-schedule'],
       });
       lessonNumber++;
     }
@@ -142,19 +145,16 @@ export const scheduleService = {
    * Create a new schedule and generate recurring lessons if applicable.
    */
   async createSchedule(scheduleData: CreateScheduleData) {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
-
     const { data, error } = await supabase
       .from('schedules')
-      .insert({ ...scheduleData, user_id: user.user.id })
+      .insert({ ...scheduleData, user_id: 'shared-user' })
       .select()
       .single();
 
     if (error) throw error;
 
     if (data && scheduleData.recurrence_type !== 'none') {
-      await generateRecurringLessons(data.id, { ...scheduleData, user_id: user.user.id });
+      await generateRecurringLessons(data.id, { ...scheduleData, user_id: 'shared-user' });
     }
 
     return data;

@@ -11,6 +11,7 @@ import { Course } from '@/types/database';
 import { courseService } from '@/lib/supabase/courses';
 import { Button, Card, Badge, Modal, Spinner, Tabs, TabsList, TabsTrigger } from '@/components/ui';
 import { CourseBookManager, CourseVocabularyManager, CourseScheduleList } from '@/components/relationships';
+import { CourseLessonManager } from '@/components/relationships/CourseLessonManager';
 import { cn } from '@/lib/utils';
 
 const statusColors = {
@@ -429,22 +430,11 @@ export default function CourseDetailPage() {
           <Card.Header>
             <h2 className="text-lg font-semibold">Course Lessons</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Manage lessons for this course. Lessons can be embedded into schedules and contain tasks, assignments, and quizzes.
+              Manage lessons for this course. Lessons are automatically created from schedules and can contain books, vocabulary, objectives, methods, and tasks.
             </p>
           </Card.Header>
           <Card.Content>
-            <div className="text-center py-8">
-              <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                Coming Soon
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Lesson management will allow you to create lessons with tasks, assignments, and quizzes that can be embedded into your schedules.
-              </p>
-              <Button variant="outline" disabled>
-                Create Lesson
-              </Button>
-            </div>
+            <CourseLessonManager courseId={courseId} />
           </Card.Content>
         </Card>
       )}
