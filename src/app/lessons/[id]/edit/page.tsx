@@ -11,40 +11,14 @@ import { ArrowLeft } from 'lucide-react';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
-interface LessonWithSchedule {
-  id: string;
-  schedule_id: string;
-  course_id: string;
-  title: string;
-  lesson_number: number;
-  date: string;
-  start_time: string;
-  end_time: string;
-  topic: string;
-  description?: string;
-  location?: string;
-  max_students?: number;
-  homework?: string;
-  notes?: string;
-  status: 'scheduled' | 'completed' | 'cancelled';
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-  schedule?: {
-    id: string;
-    course: {
-      id: string;
-      title: string;
-    };
-  };
-}
+import type { Lesson } from '@/types/schedule';
 
 export default function LessonEditPage() {
   const router = useRouter();
   const params = useParams();
   const lessonId = params.id as string;
   
-  const [lesson, setLesson] = useState<LessonWithSchedule | null>(null);
+  const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -124,7 +98,7 @@ export default function LessonEditPage() {
 
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              Edit Lesson {lesson.lesson_number}: {lesson.title || lesson.topic}
+              Edit Lesson {lesson.lesson_number}: {lesson.title}
             </h1>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
               Update lesson details and content
