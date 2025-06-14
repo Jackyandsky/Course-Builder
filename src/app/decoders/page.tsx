@@ -2,22 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Key, Plus, Search, Lock, Unlock } from 'lucide-react';
+import { Key, Plus, Search, Globe, Shield, BookOpen } from 'lucide-react';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button, Card, Badge, Input, Spinner } from '@/components/ui';
 import { cn } from '@/lib/utils';
-
-// Temporary interface until we have the actual decoder service
-interface Decoder {
-  id: string;
-  name: string;
-  description?: string;
-  type: string;
-  status: 'active' | 'inactive';
-  created_at: string;
-  updated_at: string;
-}
+import { Decoder, decoderService } from '@/lib/supabase/decoders';
 
 export default function DecodersPage() {
   const router = useRouter();
@@ -26,40 +16,19 @@ export default function DecodersPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    // Simulate loading decoders - replace with actual service call
-    setTimeout(() => {
-      setDecoders([
-        {
-          id: '1',
-          name: 'Text Analysis Decoder',
-          description: 'Analyzes text complexity and reading level',
-          type: 'text_analysis',
-          status: 'active',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          name: 'Language Pattern Decoder',
-          description: 'Identifies language patterns and structures',
-          type: 'pattern_analysis',
-          status: 'active',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          id: '3',
-          name: 'Content Difficulty Decoder',
-          description: 'Evaluates content difficulty for different levels',
-          type: 'difficulty_analysis',
-          status: 'inactive',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ]);
-      setLoading(false);
-    }, 1000);
+    loadDecoders();
   }, []);
+
+  const loadDecoders = async () => {
+    try {
+      const data = await decoderService.getDecoders();
+      setDecoders(data);
+    } catch (error) {
+      console.error('Failed to load decoders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredDecoders = decoders.filter(decoder =>
     decoder.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -132,12 +101,12 @@ export default function DecodersPage() {
             <Card>
               <Card.Content className="p-4">
                 <div className="flex items-center">
-                  <Unlock className="h-8 w-8 text-green-600 mr-3" />
+                  <Globe className="h-8 w-8 text-green-600 mr-3" />
                   <div>
                     <p className="text-2xl font-bold">
-                      {decoders.filter(decoder => decoder.status === 'active').length}
+                      {decoders.filter(decoder => decoder.is_public).length}
                     </p>
-                    <p className="text-sm text-gray-600">Active</p>
+                    <p className="text-sm text-gray-600">Public</p>
                   </div>
                 </div>
               </Card.Content>
@@ -146,12 +115,12 @@ export default function DecodersPage() {
             <Card>
               <Card.Content className="p-4">
                 <div className="flex items-center">
-                  <Lock className="h-8 w-8 text-red-600 mr-3" />
+                  <Shield className="h-8 w-8 text-blue-600 mr-3" />
                   <div>
                     <p className="text-2xl font-bold">
-                      {decoders.filter(decoder => decoder.status === 'inactive').length}
+                      {decoders.filter(decoder => !decoder.is_public).length}
                     </p>
-                    <p className="text-sm text-gray-600">Inactive</p>
+                    <p className="text-sm text-gray-600">Private</p>
                   </div>
                 </div>
               </Card.Content>
@@ -163,9 +132,9 @@ export default function DecodersPage() {
                   <Key className="h-8 w-8 text-purple-600 mr-3" />
                   <div>
                     <p className="text-2xl font-bold">
-                      {new Set(decoders.map(d => d.type)).size}
+                      {new Set(decoders.map(d => d.category_data?.name).filter(Boolean)).size}
                     </p>
-                    <p className="text-sm text-gray-600">Types</p>
+                    <p className="text-sm text-gray-600">Categories</p>
                   </div>
                 </div>
               </Card.Content>
@@ -207,12 +176,11 @@ export default function DecodersPage() {
                           <h3 className="font-semibold text-lg">
                             {decoder.name}
                           </h3>
-                          <Badge 
-                            variant={decoder.status === 'active' ? 'success' : 'secondary'} 
-                            size="sm"
-                          >
-                            {decoder.status}
-                          </Badge>
+                          {decoder.is_public && (
+                            <Badge variant="outline" size="sm">
+                              Public
+                            </Badge>
+                          )}
                         </div>
                         {decoder.description && (
                           <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
@@ -223,45 +191,44 @@ export default function DecodersPage() {
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                        <Key className="h-4 w-4 mr-2" />
-                        <span className="capitalize">
-                          {decoder.type.replace('_', ' ')}
-                        </span>
-                      </div>
+                      {decoder.category_data && (
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                          <div 
+                            className="h-3 w-3 rounded-full mr-2" 
+                            style={{ backgroundColor: decoder.category_data.color || '#6b7280' }}
+                          />
+                          <span>{decoder.category_data.name}</span>
+                        </div>
+                      )}
+                      
+                      {decoder.book && (
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                          <BookOpen className="h-4 w-4 mr-2" />
+                          <span className="truncate">
+                            {decoder.book.title}
+                          </span>
+                        </div>
+                      )}
                       
                       <div className="text-xs text-gray-500">
                         Created {new Date(decoder.created_at).toLocaleDateString()}
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => router.push(`/decoders/${decoder.id}`)}
-                        >
-                          View
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => router.push(`/decoders/${decoder.id}/edit`)}
-                        >
-                          Edit
-                        </Button>
-                      </div>
+                    <div className="flex justify-center gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                       <Button
                         variant="outline"
                         size="sm"
-                        className={cn(
-                          decoder.status === 'active' 
-                            ? 'text-red-600 hover:text-red-700' 
-                            : 'text-green-600 hover:text-green-700'
-                        )}
+                        onClick={() => router.push(`/decoders/${decoder.id}`)}
                       >
-                        {decoder.status === 'active' ? 'Deactivate' : 'Activate'}
+                        View
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/decoders/${decoder.id}/edit`)}
+                      >
+                        Edit
                       </Button>
                     </div>
                   </Card.Content>
