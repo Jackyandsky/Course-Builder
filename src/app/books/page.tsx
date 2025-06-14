@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Plus, Search, Filter, BookOpen, FileText, Video, 
@@ -59,9 +59,21 @@ export default function BooksPage() {
     loadInitialData();
   }, []);
 
+  const loadBooks = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await bookService.getBooks(filters);
+      setBooks(data);
+    } catch (error) {
+      console.error('Failed to load books:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters]);
+
   useEffect(() => {
     loadBooks();
-  }, [filters]);
+  }, [loadBooks]);
 
   const loadInitialData = async () => {
     try {
@@ -81,17 +93,6 @@ export default function BooksPage() {
     }
   };
 
-  const loadBooks = async () => {
-    try {
-      setLoading(true);
-      const data = await bookService.getBooks(filters);
-      setBooks(data);
-    } catch (error) {
-      console.error('Failed to load books:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSearch = (search: string) => {
     setFilters({ ...filters, search });

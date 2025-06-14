@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -16,13 +16,7 @@ export default function DecoderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (decoderId) {
-      loadDecoder();
-    }
-  }, [decoderId]);
-
-  const loadDecoder = async () => {
+  const loadDecoder = useCallback(async () => {
     try {
       const data = await decoderService.getDecoder(decoderId);
       setDecoder(data);
@@ -32,7 +26,13 @@ export default function DecoderDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [decoderId]);
+
+  useEffect(() => {
+    if (decoderId) {
+      loadDecoder();
+    }
+  }, [decoderId, loadDecoder]);
 
   if (loading) {
     return (
