@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Key, Plus, Search, Globe, Shield, BookOpen } from 'lucide-react';
 import { AuthGuard } from '@/components/auth/AuthGuard';
@@ -15,11 +15,7 @@ export default function DecodersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    loadDecoders();
-  }, []);
-
-  const loadDecoders = async () => {
+  const loadDecoders = useCallback(async () => {
     try {
       const data = await decoderService.getDecoders();
       setDecoders(data);
@@ -28,7 +24,11 @@ export default function DecodersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadDecoders();
+  }, [loadDecoders]);
 
   const filteredDecoders = decoders.filter(decoder =>
     decoder.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, X, Plus, Key, Search } from 'lucide-react';
 import { Decoder, decoderService, CreateDecoderData, UpdateDecoderData } from '@/lib/supabase/decoders';
@@ -39,12 +39,7 @@ export function DecoderForm({ initialData }: DecoderFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [newTag, setNewTag] = useState('');
 
-  useEffect(() => {
-    loadBooks();
-    loadCategories();
-  }, []);
-
-  const loadBooks = async () => {
+  const loadBooks = useCallback(async () => {
     setLoadingBooks(true);
     try {
       const data = await bookService.getBooks({ limit: 1000 }); // Load all books
@@ -54,16 +49,21 @@ export function DecoderForm({ initialData }: DecoderFormProps) {
     } finally {
       setLoadingBooks(false);
     }
-  };
+  }, []);
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       const data = await categoryService.getCategories({ type: 'decoder' });
       setCategories(data);
     } catch (error) {
       console.error('Failed to load categories:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadBooks();
+    loadCategories();
+  }, [loadBooks, loadCategories]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
