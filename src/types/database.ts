@@ -186,16 +186,10 @@ export interface Objective {
 // Method type
 export interface Method {
   id: string;
-  name: string;
+  title: string;
   description?: string;
   category_id?: string;
-  instructions?: string;
-  duration_minutes?: number;
-  group_size_min: number;
-  group_size_max?: number;
-  materials_needed?: string[];
   tags?: string[];
-  is_template: boolean;
   user_id: string;
   created_at: string;
   updated_at: string;
@@ -211,13 +205,8 @@ export interface Task {
   title: string;
   description?: string;
   category_id?: string;
-  instructions?: string;
-  duration_minutes?: number;
-  difficulty: DifficultyLevel;
-  materials_needed?: string[];
-  assessment_criteria?: string;
-  tags?: string[];
-  is_template: boolean;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  points?: number;
   user_id: string;
   created_at: string;
   updated_at: string;
@@ -321,6 +310,28 @@ export interface CourseObjective {
     // Relations
     course?: Course;
     objective?: Objective;
+}
+
+export interface CourseTask {
+    id: string;
+    course_id: string;
+    task_id: string;
+    position: number;
+    created_at: string;
+    // Relations
+    course?: Course;
+    task?: Task;
+}
+
+export interface CourseMethod {
+    id: string;
+    course_id: string;
+    method_id: string;
+    position: number;
+    created_at: string;
+    // Relations
+    course?: Course;
+    method?: Method;
 }
 
 export interface LessonObjective {

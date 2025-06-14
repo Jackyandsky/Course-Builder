@@ -5,13 +5,20 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { 
   ArrowLeft, Edit, Trash2, Archive, Globe, Lock, 
   Book, Bookmark, Calendar, Clock, Target, AlertCircle,
-  MoreVertical, Share2, Copy, CheckCircle
+  MoreVertical, Share2, Copy, CheckCircle, Settings, FileText
 } from 'lucide-react';
 import { Course } from '@/types/database';
 import { courseService } from '@/lib/supabase/courses';
 import { Button, Card, Badge, Modal, Spinner, Tabs, TabsList, TabsTrigger } from '@/components/ui';
-import { CourseBookManager, CourseVocabularyManager, CourseScheduleList } from '@/components/relationships';
-import { CourseLessonManager } from '@/components/relationships/CourseLessonManager';
+import { 
+  CourseBookManager, 
+  CourseVocabularyManager, 
+  CourseScheduleList,
+  CourseLessonsWithSchedules,
+  CourseObjectiveManager,
+  CourseMethodManager,
+  CourseTaskManager
+} from '@/components/relationships';
 import { cn } from '@/lib/utils';
 
 const statusColors = {
@@ -125,6 +132,9 @@ export default function CourseDetailPage() {
     { id: 'materials', label: 'Materials', icon: <Bookmark className="h-4 w-4" /> },
     { id: 'schedule', label: 'Schedule', icon: <Calendar className="h-4 w-4" /> },
     { id: 'lessons', label: 'Lessons', icon: <Clock className="h-4 w-4" /> },
+    { id: 'objectives', label: 'Objectives', icon: <Target className="h-4 w-4" /> },
+    { id: 'methods', label: 'Methods', icon: <Settings className="h-4 w-4" /> },
+    { id: 'tasks', label: 'Tasks', icon: <FileText className="h-4 w-4" /> },
   ];
 
   return (
@@ -453,11 +463,35 @@ export default function CourseDetailPage() {
           <Card.Header>
             <h2 className="text-lg font-semibold">Course Lessons</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Manage lessons for this course. Lessons are automatically created from schedules and can contain books, vocabulary, objectives, methods, and tasks.
+              Select a schedule to view and manage its lessons. Lessons are automatically created from course schedules.
             </p>
           </Card.Header>
           <Card.Content>
-            <CourseLessonManager courseId={courseId} />
+            <CourseLessonsWithSchedules courseId={courseId} />
+          </Card.Content>
+        </Card>
+      )}
+
+      {activeTab === 'objectives' && (
+        <Card>
+          <Card.Content>
+            <CourseObjectiveManager courseId={courseId} onUpdate={loadCourse} />
+          </Card.Content>
+        </Card>
+      )}
+
+      {activeTab === 'methods' && (
+        <Card>
+          <Card.Content>
+            <CourseMethodManager courseId={courseId} onUpdate={loadCourse} />
+          </Card.Content>
+        </Card>
+      )}
+
+      {activeTab === 'tasks' && (
+        <Card>
+          <Card.Content>
+            <CourseTaskManager courseId={courseId} onUpdate={loadCourse} />
           </Card.Content>
         </Card>
       )}

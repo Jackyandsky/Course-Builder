@@ -12,3 +12,4 @@ export * from './Badge';
 export * from './Spinner';
 export * from './Pagination';
 export * from './Tabs';
+export * from './BelongingSelector';

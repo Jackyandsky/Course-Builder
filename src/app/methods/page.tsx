@@ -18,20 +18,18 @@ export default function MethodsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [showTemplates, setShowTemplates] = useState('all');
-
   useEffect(() => {
     loadData();
   }, []);
 
   useEffect(() => {
     loadMethods();
-  }, [searchQuery, selectedCategory, showTemplates]);
+  }, [searchQuery, selectedCategory]);
 
   const loadData = async () => {
     try {
       const [methodsData, categoriesData] = await Promise.all([
-        methodService.getMethods({}),
+        methodService.getMethodsWithBelongings({}),
         categoryService.getCategories({ type: 'method' })
       ]);
       setMethods(methodsData);
@@ -48,9 +46,8 @@ export default function MethodsPage() {
       const filters: MethodFilters = {};
       if (searchQuery) filters.search = searchQuery;
       if (selectedCategory) filters.categoryId = selectedCategory;
-      if (showTemplates !== 'all') filters.isTemplate = showTemplates === 'templates';
 
-      const data = await methodService.getMethods(filters);
+      const data = await methodService.getMethodsWithBelongings(filters);
       setMethods(data);
     } catch (error) {
       console.error('Failed to load methods:', error);
@@ -106,17 +103,15 @@ export default function MethodsPage() {
           {/* Filters */}
           <Card>
             <Card.Content className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search methods..."
-                      className="pl-10"
-                    />
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search methods..."
+                    className="pl-10"
+                  />
                 </div>
                 
                 <Select
@@ -128,22 +123,12 @@ export default function MethodsPage() {
                   ]}
                   placeholder="Category"
                 />
-                
-                <Select
-                  value={showTemplates}
-                  onChange={(e) => setShowTemplates(e.target.value)}
-                  options={[
-                    { value: 'all', label: 'All Methods' },
-                    { value: 'templates', label: 'Templates Only' },
-                    { value: 'custom', label: 'Custom Only' }
-                  ]}
-                />
               </div>
             </Card.Content>
           </Card>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <Card.Content className="p-4">
                 <div className="flex items-center">
@@ -151,20 +136,6 @@ export default function MethodsPage() {
                   <div>
                     <p className="text-2xl font-bold">{methods.length}</p>
                     <p className="text-sm text-gray-600">Total Methods</p>
-                  </div>
-                </div>
-              </Card.Content>
-            </Card>
-            
-            <Card>
-              <Card.Content className="p-4">
-                <div className="flex items-center">
-                  <Users className="h-8 w-8 text-green-600 mr-3" />
-                  <div>
-                    <p className="text-2xl font-bold">
-                      {methods.filter(method => method.is_template).length}
-                    </p>
-                    <p className="text-sm text-gray-600">Templates</p>
                   </div>
                 </div>
               </Card.Content>
@@ -185,10 +156,12 @@ export default function MethodsPage() {
             <Card>
               <Card.Content className="p-4">
                 <div className="flex items-center">
-                  <Cog className="h-8 w-8 text-orange-600 mr-3" />
+                  <Users className="h-8 w-8 text-green-600 mr-3" />
                   <div>
-                    <p className="text-2xl font-bold">{methods.filter(method => !method.is_template).length}</p>
-                    <p className="text-sm text-gray-600">Custom Methods</p>
+                    <p className="text-2xl font-bold">
+                      {methods.reduce((sum, method) => sum + (method.tags?.length || 0), 0)}
+                    </p>
+                    <p className="text-sm text-gray-600">Total Tags</p>
                   </div>
                 </div>
               </Card.Content>
@@ -228,32 +201,13 @@ export default function MethodsPage() {
                           {method.description}
                         </p>
                       </div>
-                      {method.is_template && (
-                        <Badge variant="outline" size="sm" className="ml-2">
-                          Template
-                        </Badge>
-                      )}
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center text-gray-600 dark:text-gray-400">
-                          <Clock className="h-4 w-4 mr-1" />
-                          {method.duration_minutes ? `${method.duration_minutes}m` : 'Flexible'}
-                        </div>
-                        <div className="flex items-center text-gray-600 dark:text-gray-400">
-                          <Users className="h-4 w-4 mr-1" />
-                          {method.group_size_min}-{method.group_size_max || '∞'}
-                        </div>
-                      </div>
-
-                      {method.materials_needed && method.materials_needed.length > 0 && (
-                        <div className="text-sm">
-                          <span className="text-gray-600 dark:text-gray-400">Materials: </span>
-                          <span className="text-gray-900 dark:text-gray-100">
-                            {method.materials_needed.slice(0, 2).join(', ')}
-                            {method.materials_needed.length > 2 && ` +${method.materials_needed.length - 2} more`}
-                          </span>
+                      {method.category && (
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                          <span className="font-medium">Category:</span>
+                          <span className="ml-1">{method.category.name}</span>
                         </div>
                       )}
 
@@ -271,25 +225,40 @@ export default function MethodsPage() {
                           )}
                         </div>
                       )}
+
+                      {/* Belonging Information */}
+                      {((method as any).belongingCourses?.length > 0 || (method as any).belongingLessons?.length > 0) && (
+                        <div className="text-xs text-gray-500">
+                          {(method as any).belongingCourses?.length > 0 && (
+                            <div className="flex items-center gap-1 mb-1">
+                              <Users className="h-3 w-3" />
+                              <span>
+                                Courses: {(method as any).belongingCourses.slice(0, 2).map((c: any) => c.title).join(', ')}
+                                {(method as any).belongingCourses.length > 2 && ` +${(method as any).belongingCourses.length - 2} more`}
+                              </span>
+                            </div>
+                          )}
+                          {(method as any).belongingLessons?.length > 0 && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              <span>
+                                Lessons: {(method as any).belongingLessons.slice(0, 2).map((l: any) => l.topic || l.title || `Lesson ${l.lesson_number}`).join(', ')}
+                                {(method as any).belongingLessons.length > 2 && ` +${(method as any).belongingLessons.length - 2} more`}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => router.push(`/methods/${method.id}`)}
-                        >
-                          View
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => router.push(`/methods/${method.id}/edit`)}
-                        >
-                          Edit
-                        </Button>
-                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/methods/${method.id}/edit`)}
+                      >
+                        Edit
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"

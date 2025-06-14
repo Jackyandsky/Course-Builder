@@ -6,11 +6,6 @@ const supabase = createClientComponentClient();
 
 export interface MethodFilters {
   categoryId?: string;
-  durationMin?: number;
-  durationMax?: number;
-  groupSizeMin?: number;
-  groupSizeMax?: number;
-  isTemplate?: boolean;
   search?: string;
   tags?: string[];
 }
@@ -19,13 +14,7 @@ export interface CreateMethodData {
   name: string;
   description?: string;
   category_id?: string;
-  instructions?: string;
-  duration_minutes?: number;
-  group_size_min?: number;
-  group_size_max?: number;
-  materials_needed?: string[];
   tags?: string[];
-  is_template?: boolean;
 }
 
 export interface UpdateMethodData extends Partial<CreateMethodData> {
@@ -48,28 +37,8 @@ export const methodService = {
       query = query.eq('category_id', filters.categoryId);
     }
     
-    if (filters.durationMin !== undefined) {
-      query = query.gte('duration_minutes', filters.durationMin);
-    }
-    
-    if (filters.durationMax !== undefined) {
-      query = query.lte('duration_minutes', filters.durationMax);
-    }
-    
-    if (filters.groupSizeMin !== undefined) {
-      query = query.gte('group_size_min', filters.groupSizeMin);
-    }
-    
-    if (filters.groupSizeMax !== undefined) {
-      query = query.lte('group_size_max', filters.groupSizeMax);
-    }
-    
-    if (filters.isTemplate !== undefined) {
-      query = query.eq('is_template', filters.isTemplate);
-    }
-    
     if (filters.search) {
-      query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%,instructions.ilike.%${filters.search}%`);
+      query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
     }
     
     if (filters.tags && filters.tags.length > 0) {
@@ -103,9 +72,7 @@ export const methodService = {
       .from('methods')
       .insert({
         ...methodData,
-        user_id: SHARED_USER_ID, // Use a shared user ID since authentication is not required
-        group_size_min: methodData.group_size_min ?? 1,
-        is_template: methodData.is_template ?? false,
+        user_id: SHARED_USER_ID,
       })
       .select()
       .single();
@@ -152,59 +119,15 @@ export const methodService = {
     return data as Method[];
   },
 
-  // Get template methods
-  async getTemplateMethods() {
-    const { data, error } = await supabase
-      .from('methods')
-      .select('*')
-      .eq('is_template', true)
-      .order('name', { ascending: true });
-    
-    if (error) throw error;
-    return data as Method[];
-  },
-
-  // Get methods by duration range
-  async getMethodsByDuration(minMinutes: number, maxMinutes: number) {
-    const { data, error } = await supabase
-      .from('methods')
-      .select('*')
-      .gte('duration_minutes', minMinutes)
-      .lte('duration_minutes', maxMinutes)
-      .order('duration_minutes', { ascending: true });
-    
-    if (error) throw error;
-    return data as Method[];
-  },
-
-  // Get methods by group size
-  async getMethodsByGroupSize(groupSize: number) {
-    const { data, error } = await supabase
-      .from('methods')
-      .select('*')
-      .lte('group_size_min', groupSize)
-      .or(`group_size_max.gte.${groupSize},group_size_max.is.null`)
-      .order('name', { ascending: true });
-    
-    if (error) throw error;
-    return data as Method[];
-  },
-
   // Clone method as template
-  async cloneAsTemplate(id: string, newName?: string) {
+  async cloneAsTemplate(id: string, newTitle?: string) {
     const original = await this.getMethod(id);
     
     return this.createMethod({
-      name: newName || `${original.name} (Template)`,
+      name: newTitle || `${original.name} (Copy)`,
       description: original.description,
       category_id: original.category_id,
-      instructions: original.instructions,
-      duration_minutes: original.duration_minutes,
-      group_size_min: original.group_size_min,
-      group_size_max: original.group_size_max,
-      materials_needed: original.materials_needed,
       tags: original.tags,
-      is_template: true,
     });
   },
 
@@ -212,51 +135,189 @@ export const methodService = {
   async getMethodStats() {
     const { data, error } = await supabase
       .from('methods')
-      .select('duration_minutes, group_size_min, group_size_max, is_template', { count: 'exact' });
+      .select('tags', { count: 'exact' });
     
     if (error) throw error;
 
     const stats = {
       total: data?.length || 0,
-      templates: data?.filter(m => m.is_template).length || 0,
-      averageDuration: data?.length ? 
-        Math.round(data.reduce((sum, m) => sum + (m.duration_minutes || 0), 0) / data.length) : 0,
-      byDurationRange: {
-        short: data?.filter(m => (m.duration_minutes || 0) <= 15).length || 0, // 0-15 mins
-        medium: data?.filter(m => (m.duration_minutes || 0) > 15 && (m.duration_minutes || 0) <= 45).length || 0, // 16-45 mins
-        long: data?.filter(m => (m.duration_minutes || 0) > 45).length || 0, // 45+ mins
-      },
-      byGroupSize: {
-        individual: data?.filter(m => (m.group_size_min || 1) === 1 && (m.group_size_max || 1) === 1).length || 0,
-        small: data?.filter(m => (m.group_size_min || 1) <= 5 && (m.group_size_max || 100) > 1).length || 0,
-        large: data?.filter(m => (m.group_size_min || 1) > 5).length || 0,
-      },
+      byCategory: {} as Record<string, number>,
+      popularTags: [] as Array<{ tag: string; count: number }>,
     };
+
+    // Count popular tags
+    const tagCounts: Record<string, number> = {};
+    data?.forEach(method => {
+      method.tags?.forEach((tag: string) => {
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      });
+    });
+
+    // Sort tags by popularity and get top 10
+    stats.popularTags = Object.entries(tagCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 10)
+      .map(([tag, count]) => ({ tag, count }));
 
     return stats;
   },
 
-  // Get popular materials
-  async getPopularMaterials(limit: number = 10) {
+  // Course relationship methods
+  async getCourseMethods(courseId: string) {
     const { data, error } = await supabase
-      .from('methods')
-      .select('materials_needed')
-      .not('materials_needed', 'is', null);
+      .from('course_methods')
+      .select(`
+        id,
+        position,
+        method:methods(
+          id,
+          name,
+          description,
+          tags,
+          category:categories(id, name, color, icon)
+        )
+      `)
+      .eq('course_id', courseId)
+      .order('position', { ascending: true });
     
     if (error) throw error;
+    return data;
+  },
 
-    // Flatten and count materials
-    const materialCounts: Record<string, number> = {};
-    data?.forEach(method => {
-      method.materials_needed?.forEach((material: string) => {
-        materialCounts[material] = (materialCounts[material] || 0) + 1;
-      });
-    });
+  async addMethodToCourse(courseId: string, methodId: string, options: { position: number }) {
+    const { data, error } = await supabase
+      .from('course_methods')
+      .insert({
+        course_id: courseId,
+        method_id: methodId,
+        position: options.position
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
 
-    // Sort by count and return top items
-    return Object.entries(materialCounts)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, limit)
-      .map(([material, count]) => ({ material, count }));
+  async removeMethodFromCourse(relationId: string) {
+    const { error } = await supabase
+      .from('course_methods')
+      .delete()
+      .eq('id', relationId);
+    
+    if (error) throw error;
+  },
+
+  // Lesson relationship methods
+  async getLessonMethods(lessonId: string) {
+    const { data, error } = await supabase
+      .from('lesson_methods')
+      .select(`
+        id,
+        position,
+        method:methods(
+          id,
+          name,
+          description,
+          tags,
+          category:categories(id, name, color, icon)
+        )
+      `)
+      .eq('lesson_id', lessonId)
+      .order('position', { ascending: true });
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async addMethodToLesson(lessonId: string, methodId: string, options: { position: number }) {
+    const { data, error } = await supabase
+      .from('lesson_methods')
+      .insert({
+        lesson_id: lessonId,
+        method_id: methodId,
+        position: options.position
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async removeMethodFromLesson(relationId: string) {
+    const { error } = await supabase
+      .from('lesson_methods')
+      .delete()
+      .eq('id', relationId);
+    
+    if (error) throw error;
+  },
+
+  // Get method with its belonging relationships
+  async getMethodWithBelongings(methodId: string) {
+    const [method, courseRelations, lessonRelations] = await Promise.all([
+      this.getMethod(methodId),
+      supabase
+        .from('course_methods')
+        .select('course:courses(id, title)')
+        .eq('method_id', methodId),
+      supabase
+        .from('lesson_methods')
+        .select('lesson:lessons(id, topic, title, lesson_number)')
+        .eq('method_id', methodId)
+    ]);
+
+    return {
+      ...method,
+      belongingCourses: courseRelations.data?.map(r => r.course) || [],
+      belongingLessons: lessonRelations.data?.map(r => r.lesson) || [],
+    };
+  },
+
+  // Get all methods with their belonging relationships
+  async getMethodsWithBelongings(filters: MethodFilters = {}) {
+    const methods = await this.getMethods(filters);
+    
+    // Get all relationships in parallel
+    const methodIds = methods.map(m => m.id);
+    
+    const [courseRelations, lessonRelations] = await Promise.all([
+      supabase
+        .from('course_methods')
+        .select('method_id, course:courses(id, title)')
+        .in('method_id', methodIds),
+      supabase
+        .from('lesson_methods')
+        .select('method_id, lesson:lessons(id, topic, title, lesson_number)')
+        .in('method_id', methodIds)
+    ]);
+
+    // Map relationships to methods
+    return methods.map(method => ({
+      ...method,
+      belongingCourses: courseRelations.data?.filter(r => r.method_id === method.id)?.map(r => r.course) || [],
+      belongingLessons: lessonRelations.data?.filter(r => r.method_id === method.id)?.map(r => r.lesson) || [],
+    }));
+  },
+
+  // Remove method from all courses
+  async removeMethodFromAllCourses(methodId: string) {
+    const { error } = await supabase
+      .from('course_methods')
+      .delete()
+      .eq('method_id', methodId);
+    
+    if (error) throw error;
+  },
+
+  // Remove method from all lessons
+  async removeMethodFromAllLessons(methodId: string) {
+    const { error } = await supabase
+      .from('lesson_methods')
+      .delete()
+      .eq('method_id', methodId);
+    
+    if (error) throw error;
   },
 };

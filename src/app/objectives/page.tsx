@@ -32,8 +32,6 @@ export default function ObjectivesPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedBloomLevel, setSelectedBloomLevel] = useState('');
-  const [showTemplates, setShowTemplates] = useState('all');
 
   useEffect(() => {
     loadData();
@@ -42,7 +40,7 @@ export default function ObjectivesPage() {
   const loadData = async () => {
     try {
       const [objectivesData, categoriesData] = await Promise.all([
-        objectiveService.getObjectives({}),
+        objectiveService.getObjectivesWithBelongings({}),
         categoryService.getCategories({ type: 'objective' })
       ]);
       setObjectives(objectivesData);
@@ -62,8 +60,7 @@ export default function ObjectivesPage() {
         const matchesSearch = 
           objective.title.toLowerCase().includes(query) ||
           (objective.description && objective.description.toLowerCase().includes(query)) ||
-          (objective.tags && objective.tags.some(tag => tag.toLowerCase().includes(query))) ||
-          (objective.bloom_level && objective.bloom_level.toLowerCase().includes(query));
+          (objective.tags && objective.tags.some(tag => tag.toLowerCase().includes(query)));
         if (!matchesSearch) return false;
       }
 
@@ -72,22 +69,9 @@ export default function ObjectivesPage() {
         return false;
       }
 
-      // Bloom level filter
-      if (selectedBloomLevel && objective.bloom_level !== selectedBloomLevel) {
-        return false;
-      }
-
-      // Template filter
-      if (showTemplates === 'templates' && !objective.is_template) {
-        return false;
-      }
-      if (showTemplates === 'custom' && objective.is_template) {
-        return false;
-      }
-
       return true;
     });
-  }, [objectives, searchQuery, selectedCategory, selectedBloomLevel, showTemplates]);
+  }, [objectives, searchQuery, selectedCategory]);
 
   const handleDelete = async (objectiveId: string) => {
     if (!confirm('Are you sure you want to delete this objective?')) return;
@@ -133,17 +117,15 @@ export default function ObjectivesPage() {
       {/* Filters */}
       <Card>
         <Card.Content className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="lg:col-span-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search objectives..."
-                  className="pl-10"
-                />
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search objectives..."
+                className="pl-10"
+              />
             </div>
             
             <Select
@@ -155,37 +137,12 @@ export default function ObjectivesPage() {
               ]}
               placeholder="Category"
             />
-            
-            <Select
-              value={selectedBloomLevel}
-              onChange={(e) => setSelectedBloomLevel(e.target.value)}
-              options={[
-                { value: '', label: 'All Levels' },
-                { value: 'remember', label: 'Remember' },
-                { value: 'understand', label: 'Understand' },
-                { value: 'apply', label: 'Apply' },
-                { value: 'analyze', label: 'Analyze' },
-                { value: 'evaluate', label: 'Evaluate' },
-                { value: 'create', label: 'Create' }
-              ]}
-              placeholder="Bloom Level"
-            />
-            
-            <Select
-              value={showTemplates}
-              onChange={(e) => setShowTemplates(e.target.value)}
-              options={[
-                { value: 'all', label: 'All Objectives' },
-                { value: 'templates', label: 'Templates Only' },
-                { value: 'custom', label: 'Custom Only' }
-              ]}
-            />
           </div>
         </Card.Content>
       </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <Card.Content className="p-4">
             <div className="flex items-center">
@@ -193,20 +150,6 @@ export default function ObjectivesPage() {
               <div>
                 <p className="text-2xl font-bold">{objectives.length}</p>
                 <p className="text-sm text-gray-600">Total Objectives</p>
-              </div>
-            </div>
-          </Card.Content>
-        </Card>
-        
-        <Card>
-          <Card.Content className="p-4">
-            <div className="flex items-center">
-              <Users className="h-8 w-8 text-green-600 mr-3" />
-              <div>
-                <p className="text-2xl font-bold">
-                  {objectives.filter(obj => obj.is_template).length}
-                </p>
-                <p className="text-sm text-gray-600">Templates</p>
               </div>
             </div>
           </Card.Content>
@@ -227,10 +170,12 @@ export default function ObjectivesPage() {
         <Card>
           <Card.Content className="p-4">
             <div className="flex items-center">
-              <CheckCircle className="h-8 w-8 text-orange-600 mr-3" />
+              <Users className="h-8 w-8 text-green-600 mr-3" />
               <div>
-                <p className="text-2xl font-bold">{filteredObjectives.length}</p>
-                <p className="text-sm text-gray-600">Filtered Results</p>
+                <p className="text-2xl font-bold">
+                  {objectives.reduce((sum, obj) => sum + (obj.tags?.length || 0), 0)}
+                </p>
+                <p className="text-sm text-gray-600">Total Tags</p>
               </div>
             </div>
           </Card.Content>
@@ -246,12 +191,12 @@ export default function ObjectivesPage() {
               No objectives found
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              {searchQuery || selectedCategory || selectedBloomLevel || showTemplates !== 'all'
+              {searchQuery || selectedCategory
                 ? 'Try adjusting your filters to see more results.'
                 : 'Get started by creating your first teaching objective.'
               }
             </p>
-            {!searchQuery && !selectedCategory && !selectedBloomLevel && showTemplates === 'all' && (
+            {!searchQuery && !selectedCategory && (
               <Button
                 onClick={() => router.push('/objectives/new')}
                 leftIcon={<Plus className="h-4 w-4" />}
@@ -283,17 +228,12 @@ export default function ObjectivesPage() {
                 </div>
 
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center text-gray-600 dark:text-gray-400">
-                      <Target className="h-4 w-4 mr-1" />
-                      {objective.measurable ? 'Measurable' : 'Qualitative'}
+                  {objective.category && (
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <span className="font-medium">Category:</span>
+                      <span className="ml-1">{objective.category.name}</span>
                     </div>
-                    {objective.bloom_level && (
-                      <Badge variant="secondary" size="sm">
-                        {objective.bloom_level.charAt(0).toUpperCase() + objective.bloom_level.slice(1)}
-                      </Badge>
-                    )}
-                  </div>
+                  )}
 
                   {objective.tags && objective.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1">
@@ -306,6 +246,30 @@ export default function ObjectivesPage() {
                         <Badge variant="outline" size="sm">
                           +{objective.tags.length - 3}
                         </Badge>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Belonging Information */}
+                  {((objective as any).belongingCourses?.length > 0 || (objective as any).belongingLessons?.length > 0) && (
+                    <div className="text-xs text-gray-500">
+                      {(objective as any).belongingCourses?.length > 0 && (
+                        <div className="flex items-center gap-1 mb-1">
+                          <BookOpen className="h-3 w-3" />
+                          <span>
+                            Courses: {(objective as any).belongingCourses.slice(0, 2).map((c: any) => c.title).join(', ')}
+                            {(objective as any).belongingCourses.length > 2 && ` +${(objective as any).belongingCourses.length - 2} more`}
+                          </span>
+                        </div>
+                      )}
+                      {(objective as any).belongingLessons?.length > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>
+                            Lessons: {(objective as any).belongingLessons.slice(0, 2).map((l: any) => l.topic || l.title || `Lesson ${l.lesson_number}`).join(', ')}
+                            {(objective as any).belongingLessons.length > 2 && ` +${(objective as any).belongingLessons.length - 2} more`}
+                          </span>
+                        </div>
                       )}
                     </div>
                   )}
