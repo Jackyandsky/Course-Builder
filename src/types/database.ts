@@ -207,6 +207,9 @@ export interface Task {
   category_id?: string;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   points?: number;
+  tags?: string[];
+  belongingCourses?: any[];
+  belongingLessons?: any[];
   user_id: string;
   created_at: string;
   updated_at: string;

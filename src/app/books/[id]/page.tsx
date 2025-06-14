@@ -260,7 +260,7 @@ export default function BookDetailPage() {
         className="max-w-md"
       >
         <p className="text-gray-600 dark:text-gray-400">
-          Are you sure you want to delete "{book.title}"? This action cannot be undone.
+          Are you sure you want to delete &quot;{book.title}&quot;? This action cannot be undone.
         </p>
         <div className="flex justify-end gap-3 mt-6">
           <Button variant="outline" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
