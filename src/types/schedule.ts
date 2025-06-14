@@ -82,16 +82,20 @@ export interface Objective {
   title: string;
   description?: string;
   category_id?: string;
+  bloom_level?: string;
+  measurable: boolean;
   tags?: string[];
+  is_template: boolean;
   user_id: string;
   created_at: string;
   updated_at: string;
+  metadata?: Record<string, any>;
 }
 
 // Method type (simplified for now)
 export interface Method {
   id: string;
-  name: string;
+  title: string;
   description?: string;
   category_id?: string;
   estimated_minutes?: number;
@@ -100,6 +104,7 @@ export interface Method {
   user_id: string;
   created_at: string;
   updated_at: string;
+  metadata?: Record<string, any>;
 }
 
 // Task type (simplified for now)
@@ -109,12 +114,17 @@ export interface Task {
   description?: string;
   type: 'quiz' | 'assignment' | 'reading' | 'writing' | 'speaking' | 'listening' | 'other';
   category_id?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  points?: number;
   estimated_minutes?: number;
   instructions?: string;
   tags?: string[];
+  belongingCourses?: any[];
+  belongingLessons?: any[];
   user_id: string;
   created_at: string;
   updated_at: string;
+  metadata?: Record<string, any>;
 }
 
 // Lesson-Objective relation

@@ -5,6 +5,7 @@ import { Search, BookOpen, GraduationCap } from 'lucide-react';
 import { Button } from './Button';
 import { Modal } from './Modal';
 import { Input } from './Input';
+import { SearchBox } from './SearchBox';
 import { Badge } from './Badge';
 import { Spinner } from './Spinner';
 import { courseService } from '@/lib/supabase/courses';
@@ -283,11 +284,10 @@ export function BelongingSelector({
       >
         <div className="space-y-4">
           {/* Search */}
-          <Input
+          <SearchBox
             placeholder="Search courses and lessons..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            leftIcon={<Search className="h-4 w-4" />}
+            onSearch={setSearchTerm}
+            defaultValue={searchTerm}
           />
 
           {loading ? (

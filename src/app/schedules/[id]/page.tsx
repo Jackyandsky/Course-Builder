@@ -125,7 +125,7 @@ export default function ScheduleDetailPage() {
 
         {/* Delete Schedule Modal */}
         <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Schedule" className="max-w-md">
-            <p className="text-gray-600">Are you sure you want to delete "{schedule.name}"? This will also delete all associated lessons and cannot be undone.</p>
+            <p className="text-gray-600">Are you sure you want to delete &quot;{schedule.name}&quot;? This will also delete all associated lessons and cannot be undone.</p>
             <div className="flex justify-end gap-3 mt-6">
                 <Button variant="outline" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
                 <Button variant="danger" onClick={handleDelete} loading={deleting}>Delete Schedule</Button>

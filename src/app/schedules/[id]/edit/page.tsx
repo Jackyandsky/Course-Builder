@@ -67,7 +67,7 @@ export default function EditSchedulePage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Edit Schedule</h1>
         <p className="mt-1 text-sm text-gray-600">
-          Update the schedule details for "{schedule.name}"
+          Update the schedule details for &quot;{schedule.name}&quot;
         </p>
       </div>
 

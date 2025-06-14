@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
+import { SearchBox } from '@/components/ui/SearchBox';
 import { Spinner } from '@/components/ui/Spinner';
 import { 
   FileText,
@@ -254,11 +255,10 @@ export function CourseTaskManager({ courseId, onUpdate }: CourseTaskManagerProps
         size="lg"
       >
         <div className="space-y-4">
-          <Input
-            leftIcon={<Search className="h-4 w-4" />}
+          <SearchBox
             placeholder="Search tasks..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onSearch={setSearchTerm}
+            defaultValue={searchTerm}
           />
 
           <div className="max-h-96 overflow-y-auto space-y-2">

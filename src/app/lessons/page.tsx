@@ -10,7 +10,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button, Card, Badge, Input, Select, Spinner } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
-const statusColors: Record<LessonStatus, string> = {
+const statusColors: Record<LessonStatus, 'default' | 'warning' | 'success' | 'danger'> = {
   draft: 'default',
   scheduled: 'warning',
   completed: 'success',
