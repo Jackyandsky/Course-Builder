@@ -6,25 +6,18 @@ const supabase = createClientComponentClient();
 
 export interface TaskFilters {
   categoryId?: string;
-  difficulty?: DifficultyLevel;
-  durationMin?: number;
-  durationMax?: number;
-  isTemplate?: boolean;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
   search?: string;
-  tags?: string[];
+  pointsMin?: number;
+  pointsMax?: number;
 }
 
 export interface CreateTaskData {
   title: string;
   description?: string;
   category_id?: string;
-  instructions?: string;
-  duration_minutes?: number;
-  difficulty?: DifficultyLevel;
-  materials_needed?: string[];
-  assessment_criteria?: string;
-  tags?: string[];
-  is_template?: boolean;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  points?: number;
 }
 
 export interface UpdateTaskData extends Partial<CreateTaskData> {
@@ -47,28 +40,20 @@ export const taskService = {
       query = query.eq('category_id', filters.categoryId);
     }
     
-    if (filters.difficulty) {
-      query = query.eq('difficulty', filters.difficulty);
+    if (filters.priority) {
+      query = query.eq('priority', filters.priority);
     }
     
-    if (filters.durationMin !== undefined) {
-      query = query.gte('duration_minutes', filters.durationMin);
+    if (filters.pointsMin !== undefined) {
+      query = query.gte('points', filters.pointsMin);
     }
     
-    if (filters.durationMax !== undefined) {
-      query = query.lte('duration_minutes', filters.durationMax);
-    }
-    
-    if (filters.isTemplate !== undefined) {
-      query = query.eq('is_template', filters.isTemplate);
+    if (filters.pointsMax !== undefined) {
+      query = query.lte('points', filters.pointsMax);
     }
     
     if (filters.search) {
-      query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,instructions.ilike.%${filters.search}%`);
-    }
-    
-    if (filters.tags && filters.tags.length > 0) {
-      query = query.contains('tags', filters.tags);
+      query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
     }
 
     const { data, error } = await query;
@@ -99,8 +84,7 @@ export const taskService = {
       .insert({
         ...taskData,
         user_id: SHARED_USER_ID,
-        difficulty: taskData.difficulty ?? 'beginner',
-        is_template: taskData.is_template ?? false,
+        priority: taskData.priority ?? 'medium',
       })
       .select()
       .single();
@@ -159,46 +143,16 @@ export const taskService = {
     return data as Task[];
   },
 
-  // Get tasks by difficulty
-  async getTasksByDifficulty(difficulty: DifficultyLevel) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('difficulty', difficulty)
-      .order('title', { ascending: true });
-    
-    if (error) throw error;
-    return data as Task[];
-  },
-
-  // Get tasks by duration range
-  async getTasksByDuration(minMinutes: number, maxMinutes: number) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .gte('duration_minutes', minMinutes)
-      .lte('duration_minutes', maxMinutes)
-      .order('duration_minutes', { ascending: true });
-    
-    if (error) throw error;
-    return data as Task[];
-  },
-
-  // Clone task as template
-  async cloneAsTemplate(id: string, newTitle?: string) {
+  // Clone task
+  async cloneTask(id: string, newTitle?: string) {
     const original = await this.getTask(id);
     
     return this.createTask({
-      title: newTitle || `${original.title} (Template)`,
+      title: newTitle || `${original.title} (Copy)`,
       description: original.description,
       category_id: original.category_id,
-      instructions: original.instructions,
-      duration_minutes: original.duration_minutes,
-      difficulty: original.difficulty,
-      materials_needed: original.materials_needed,
-      assessment_criteria: original.assessment_criteria,
-      tags: original.tags,
-      is_template: true,
+      priority: original.priority,
+      points: original.points,
     });
   },
 
@@ -206,94 +160,185 @@ export const taskService = {
   async getTaskStats() {
     const { data, error } = await supabase
       .from('tasks')
-      .select('difficulty, duration_minutes, is_template', { count: 'exact' })
+      .select('priority, points', { count: 'exact' })
       .eq('user_id', SHARED_USER_ID);
     
     if (error) throw error;
 
     const stats = {
       total: data?.length || 0,
-      templates: data?.filter(t => t.is_template).length || 0,
-      averageDuration: data?.length ? 
-        Math.round(data.reduce((sum, t) => sum + (t.duration_minutes || 0), 0) / data.length) : 0,
-      byDifficulty: {
-        beginner: data?.filter(t => t.difficulty === 'beginner').length || 0,
-        intermediate: data?.filter(t => t.difficulty === 'intermediate').length || 0,
-        advanced: data?.filter(t => t.difficulty === 'advanced').length || 0,
-        expert: data?.filter(t => t.difficulty === 'expert').length || 0,
-      },
-      byDurationRange: {
-        short: data?.filter(t => (t.duration_minutes || 0) <= 15).length || 0, // 0-15 mins
-        medium: data?.filter(t => (t.duration_minutes || 0) > 15 && (t.duration_minutes || 0) <= 45).length || 0, // 16-45 mins
-        long: data?.filter(t => (t.duration_minutes || 0) > 45).length || 0, // 45+ mins
+      totalPoints: data?.reduce((sum, t) => sum + (t.points || 0), 0) || 0,
+      averagePoints: data?.length ? 
+        Math.round((data.reduce((sum, t) => sum + (t.points || 0), 0) / data.length) * 100) / 100 : 0,
+      byPriority: {
+        low: data?.filter(t => t.priority === 'low').length || 0,
+        medium: data?.filter(t => t.priority === 'medium').length || 0,
+        high: data?.filter(t => t.priority === 'high').length || 0,
+        urgent: data?.filter(t => t.priority === 'urgent').length || 0,
       },
     };
 
     return stats;
   },
 
-  // Get popular materials for tasks
-  async getPopularMaterials(limit: number = 10) {
+  // Course relationship methods
+  async getCourseTasks(courseId: string) {
     const { data, error } = await supabase
-      .from('tasks')
-      .select('materials_needed')
-      .eq('user_id', SHARED_USER_ID)
-      .not('materials_needed', 'is', null);
+      .from('course_tasks')
+      .select(`
+        id,
+        position,
+        task:tasks(
+          id,
+          title,
+          description,
+          priority,
+          points,
+          category:categories(id, name, color, icon)
+        )
+      `)
+      .eq('course_id', courseId)
+      .order('position', { ascending: true });
     
     if (error) throw error;
-
-    // Flatten and count materials
-    const materialCounts: Record<string, number> = {};
-    data?.forEach(task => {
-      task.materials_needed?.forEach((material: string) => {
-        materialCounts[material] = (materialCounts[material] || 0) + 1;
-      });
-    });
-
-    // Sort by count and return top items
-    return Object.entries(materialCounts)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, limit)
-      .map(([material, count]) => ({ material, count }));
+    return data;
   },
 
-  // Get tasks suitable for specific lesson duration
-  async getTasksForLessonDuration(lessonDurationMinutes: number, bufferMinutes: number = 5) {
-    const maxTaskDuration = lessonDurationMinutes - bufferMinutes;
-    
+  async addTaskToCourse(courseId: string, taskId: string, options: { position: number }) {
     const { data, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .lte('duration_minutes', maxTaskDuration)
-      .order('duration_minutes', { ascending: false });
+      .from('course_tasks')
+      .insert({
+        course_id: courseId,
+        task_id: taskId,
+        position: options.position
+      })
+      .select()
+      .single();
     
     if (error) throw error;
-    return data as Task[];
+    return data;
   },
 
-  // Get assessment rubric suggestions
-  getAssessmentCriteriaSuggestions() {
-    return [
-      'Accuracy of completion',
-      'Time management',
-      'Following instructions',
-      'Creativity and innovation',
-      'Collaboration and teamwork',
-      'Communication skills',
-      'Problem-solving approach',
-      'Quality of final product',
-      'Use of resources',
-      'Reflection and self-assessment',
-    ];
+  async removeTaskFromCourse(relationId: string) {
+    const { error } = await supabase
+      .from('course_tasks')
+      .delete()
+      .eq('id', relationId);
+    
+    if (error) throw error;
   },
 
-  // Get difficulty level descriptions
-  getDifficultyDescriptions() {
+  // Lesson relationship methods
+  async getLessonTasks(lessonId: string) {
+    const { data, error } = await supabase
+      .from('lesson_tasks')
+      .select(`
+        id,
+        position,
+        task:tasks(
+          id,
+          title,
+          description,
+          priority,
+          points,
+          category:categories(id, name, color, icon)
+        )
+      `)
+      .eq('lesson_id', lessonId)
+      .order('position', { ascending: true });
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async addTaskToLesson(lessonId: string, taskId: string, options: { position: number }) {
+    const { data, error } = await supabase
+      .from('lesson_tasks')
+      .insert({
+        lesson_id: lessonId,
+        task_id: taskId,
+        position: options.position
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async removeTaskFromLesson(relationId: string) {
+    const { error } = await supabase
+      .from('lesson_tasks')
+      .delete()
+      .eq('id', relationId);
+    
+    if (error) throw error;
+  },
+
+  // Get task with its belonging relationships
+  async getTaskWithBelongings(taskId: string) {
+    const [task, courseRelations, lessonRelations] = await Promise.all([
+      this.getTask(taskId),
+      supabase
+        .from('course_tasks')
+        .select('course:courses(id, title)')
+        .eq('task_id', taskId),
+      supabase
+        .from('lesson_tasks')
+        .select('lesson:lessons(id, topic, title, lesson_number)')
+        .eq('task_id', taskId)
+    ]);
+
     return {
-      beginner: 'Basic concepts, minimal prior knowledge required',
-      intermediate: 'Some familiarity with topic, moderate complexity',
-      advanced: 'Strong foundation required, complex problem-solving',
-      expert: 'Mastery level, highly complex and nuanced tasks',
+      ...task,
+      belongingCourses: courseRelations.data?.map(r => r.course) || [],
+      belongingLessons: lessonRelations.data?.map(r => r.lesson) || [],
     };
+  },
+
+  // Get all tasks with their belonging relationships
+  async getTasksWithBelongings(filters: TaskFilters = {}) {
+    const tasks = await this.getTasks(filters);
+    
+    // Get all relationships in parallel
+    const taskIds = tasks.map(t => t.id);
+    
+    const [courseRelations, lessonRelations] = await Promise.all([
+      supabase
+        .from('course_tasks')
+        .select('task_id, course:courses(id, title)')
+        .in('task_id', taskIds),
+      supabase
+        .from('lesson_tasks')
+        .select('task_id, lesson:lessons(id, topic, title, lesson_number)')
+        .in('task_id', taskIds)
+    ]);
+
+    // Map relationships to tasks
+    return tasks.map(task => ({
+      ...task,
+      belongingCourses: courseRelations.data?.filter(r => r.task_id === task.id)?.map(r => r.course) || [],
+      belongingLessons: lessonRelations.data?.filter(r => r.task_id === task.id)?.map(r => r.lesson) || [],
+    }));
+  },
+
+  // Remove task from all courses
+  async removeTaskFromAllCourses(taskId: string) {
+    const { error } = await supabase
+      .from('course_tasks')
+      .delete()
+      .eq('task_id', taskId);
+    
+    if (error) throw error;
+  },
+
+  // Remove task from all lessons
+  async removeTaskFromAllLessons(taskId: string) {
+    const { error } = await supabase
+      .from('lesson_tasks')
+      .delete()
+      .eq('task_id', taskId);
+    
+    if (error) throw error;
   },
 };
