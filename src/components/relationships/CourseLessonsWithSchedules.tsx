@@ -223,7 +223,7 @@ export function CourseLessonsWithSchedules({ courseId }: CourseLessonsWithSchedu
                 <Card
                   key={lesson.id}
                   className="hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => router.push(`/lessons/${lesson.id}`)}
+                  onClick={() => router.push(`/lessons/${lesson.id}/edit`)}
                 >
                   <Card.Content className="p-4">
                     <div className="flex items-start justify-between">

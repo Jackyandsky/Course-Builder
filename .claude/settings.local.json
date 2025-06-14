@@ -17,7 +17,9 @@
       "mcp__supabase__apply_migration",
       "Bash(rm:*)",
       "Bash(pkill:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run typecheck:*)"
     ],
     "deny": []
   }

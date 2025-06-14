@@ -36,8 +36,17 @@ export default function EditSchedulePage() {
   };
 
   const handleSuccess = () => {
-    router.push(`/schedules/${scheduleId}`);
-    router.refresh();
+    handleBack();
+  };
+
+  const handleBack = () => {
+    // Use browser history to go back if possible
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      // Fallback - go to schedule detail page
+      router.push(`/schedules/${scheduleId}`);
+    }
   };
 
   if (loading) {
@@ -57,11 +66,11 @@ export default function EditSchedulePage() {
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => router.push(`/schedules/${scheduleId}`)}
+        onClick={handleBack}
         className="mb-4"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Schedule
+        Back
       </Button>
 
       <div className="mb-6">
