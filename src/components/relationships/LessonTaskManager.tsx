@@ -110,7 +110,7 @@ export function LessonTaskManager({ lessonId, courseId, onUpdate }: LessonTaskMa
 
   const getPriorityColor = (priority?: string) => {
     switch (priority?.toLowerCase()) {
-      case 'high': return 'destructive';
+      case 'high': return 'danger';
       case 'medium': return 'warning';
       case 'low': return 'secondary';
       default: return 'outline';
@@ -243,7 +243,7 @@ export function LessonTaskManager({ lessonId, courseId, onUpdate }: LessonTaskMa
         <div className="space-y-4">
           <SearchBox
             value={searchTerm}
-            onChange={setSearchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search tasks..."
           />
 
