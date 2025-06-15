@@ -272,6 +272,8 @@ export interface Lesson {
   methods?: LessonMethod[];
   tasks?: LessonTask[];
   books?: LessonBook[];
+  lesson_books?: LessonBook[];  // Add for service layer compatibility
+  lesson_tasks?: LessonTask[];  // Add for service layer compatibility
   vocabulary?: LessonVocabulary[];
   attendance?: Attendance[];
 }

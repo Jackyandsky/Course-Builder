@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Decoder, decoderService } from '@/lib/supabase/decoders';
-import { Button, Card, Badge, Spinner } from '@/components/ui';
+import { Button, Card, Badge, Spinner, RichTextDisplay, RichTextTruncate } from '@/components/ui';
 import { ArrowLeft, Edit, Key, BookOpen, Calendar, User } from 'lucide-react';
 
 export default function DecoderDetailPage() {
@@ -110,9 +110,13 @@ export default function DecoderDetailPage() {
                   )}
                 </div>
                 {decoder.description && (
-                  <p className="text-gray-600 dark:text-gray-400 text-lg">
-                    {decoder.description}
-                  </p>
+                  <RichTextTruncate
+                    content={decoder.description}
+                    maxLength={200}
+                    maxLines={2}
+                    className="mt-2 text-lg"
+                    showReadMore={false}
+                  />
                 )}
               </div>
               <Button
@@ -124,99 +128,118 @@ export default function DecoderDetailPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="space-y-6">
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Associated Book */}
-              {decoder.book && (
+            <div className="space-y-6">
+              {/* Decoder Description/Content */}
+              {decoder.description && (
                 <Card>
                   <Card.Header>
                     <div className="flex items-center gap-2">
-                      <BookOpen className="h-5 w-5" />
-                      <h2 className="text-lg font-semibold">Associated Book</h2>
+                      <Key className="h-5 w-5" />
+                      <h2 className="text-lg font-semibold">Decoder Content</h2>
                     </div>
                   </Card.Header>
                   <Card.Content>
-                    <div className="flex items-start gap-4">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{decoder.book.title}</h3>
-                        {decoder.book.author && (
-                          <p className="text-gray-600 dark:text-gray-400 mb-2">
-                            by {decoder.book.author}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-2">
-                          {decoder.book.content_type && (
-                            <Badge variant="outline" className="text-xs">
-                              {decoder.book.content_type}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => router.push(`/books/${decoder.book?.id}`)}
-                      >
-                        View Book
-                      </Button>
-                    </div>
+                    <RichTextDisplay
+                      content={decoder.description}
+                      size="md"
+                    />
                   </Card.Content>
                 </Card>
               )}
 
-            </div>
+              {/* Bottom Section - Book and Details */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Associated Book */}
+                {decoder.book && (
+                  <Card>
+                    <Card.Header>
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-5 w-5" />
+                        <h2 className="text-lg font-semibold">Associated Book</h2>
+                      </div>
+                    </Card.Header>
+                    <Card.Content>
+                      <div className="space-y-3">
+                        <div>
+                          <h3 className="font-semibold text-lg">{decoder.book.title}</h3>
+                          {decoder.book.author && (
+                            <p className="text-gray-600 dark:text-gray-400 mt-1">
+                              by {decoder.book.author}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {decoder.book.content_type && (
+                              <Badge variant="outline" className="text-xs">
+                                {decoder.book.content_type}
+                              </Badge>
+                            )}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push(`/books/${decoder.book?.id}`)}
+                          >
+                            View Book
+                          </Button>
+                        </div>
+                      </div>
+                    </Card.Content>
+                  </Card>
+                )}
 
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Details */}
-              <Card>
-                <Card.Header>
-                  <h2 className="text-lg font-semibold">Details</h2>
-                </Card.Header>
-                <Card.Content className="space-y-4">
-                  {decoder.category_data && (
+                {/* Details */}
+                <Card>
+                  <Card.Header>
+                    <h2 className="text-lg font-semibold">Details</h2>
+                  </Card.Header>
+                  <Card.Content className="space-y-4">
+                    {decoder.category_data && (
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="h-4 w-4 rounded" 
+                          style={{ backgroundColor: decoder.category_data.color || '#6b7280' }}
+                        />
+                        <div>
+                          <p className="text-sm text-gray-500">Category</p>
+                          <p className="font-medium">{decoder.category_data.name}</p>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-3">
-                      <div 
-                        className="h-4 w-4 rounded" 
-                        style={{ backgroundColor: decoder.category_data.color || '#6b7280' }}
-                      />
+                      <div className="h-4 w-4 rounded bg-blue-500" />
                       <div>
-                        <p className="text-sm text-gray-500">Category</p>
-                        <p className="font-medium">{decoder.category_data.name}</p>
+                        <p className="text-sm text-gray-500">Visibility</p>
+                        <p className="font-medium">{decoder.is_public ? 'Public' : 'Private'}</p>
                       </div>
                     </div>
-                  )}
 
-                  <div className="flex items-center gap-3">
-                    <div className="h-4 w-4 rounded bg-blue-500" />
-                    <div>
-                      <p className="text-sm text-gray-500">Visibility</p>
-                      <p className="font-medium">{decoder.is_public ? 'Public' : 'Private'}</p>
+                    <div className="flex items-center gap-3">
+                      <Calendar className="h-4 w-4 text-gray-500" />
+                      <div>
+                        <p className="text-sm text-gray-500">Created</p>
+                        <p className="font-medium">
+                          {new Date(decoder.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <div>
-                      <p className="text-sm text-gray-500">Created</p>
-                      <p className="font-medium">
-                        {new Date(decoder.created_at).toLocaleDateString()}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <Calendar className="h-4 w-4 text-gray-500" />
+                      <div>
+                        <p className="text-sm text-gray-500">Updated</p>
+                        <p className="font-medium">
+                          {new Date(decoder.updated_at).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <div>
-                      <p className="text-sm text-gray-500">Updated</p>
-                      <p className="font-medium">
-                        {new Date(decoder.updated_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                </Card.Content>
-              </Card>
+                  </Card.Content>
+                </Card>
+              </div>
 
               {/* Tags */}
               {decoder.tags && decoder.tags.length > 0 && (

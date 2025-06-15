@@ -146,16 +146,20 @@ export function LessonForm({ scheduleId, lesson, onSuccess }: LessonFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="col-span-2">
+        {!isEditing && (
+          <div className="col-span-2">
             <Select
                 label="Schedule"
                 value={formData.schedule_id}
                 onChange={(e) => setFormData({ ...formData, schedule_id: e.target.value })}
                 required
-                disabled={isEditing}
-                options={schedules.map(s => ({ value: s.id, label: s.name }))}
+                options={schedules.map(s => ({ 
+                    value: s.id, 
+                    label: `${s.name}${s.course ? ` (${s.course.title})` : ''}` 
+                }))}
             />
-        </div>
+          </div>
+        )}
 
         <div className="col-span-2"><Input label="Lesson Title" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required /></div>
         <div className="col-span-2"><Textarea label="Description" value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} /></div>

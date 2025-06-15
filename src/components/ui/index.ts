@@ -13,3 +13,5 @@ export * from './Spinner';
 export * from './Pagination';
 export * from './Tabs';
 export * from './BelongingSelector';
+export * from './RichTextTruncate';
+export * from './RichTextDisplay';

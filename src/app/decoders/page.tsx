@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Key, Plus, Search, Globe, Shield, BookOpen } from 'lucide-react';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Button, Card, Badge, Input, Spinner } from '@/components/ui';
+import { Button, Card, Badge, Input, Spinner, RichTextTruncate } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { Decoder, decoderService } from '@/lib/supabase/decoders';
 
@@ -183,9 +183,14 @@ export default function DecodersPage() {
                           )}
                         </div>
                         {decoder.description && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                            {decoder.description}
-                          </p>
+                          <div className="mb-3">
+                            <RichTextTruncate
+                              content={decoder.description}
+                              maxLength={120}
+                              maxLines={2}
+                              showReadMore={false}
+                            />
+                          </div>
                         )}
                       </div>
                     </div>

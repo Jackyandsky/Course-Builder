@@ -7,7 +7,7 @@ export interface Decoder {
   id: string;
   name: string;
   description?: string;
-  category?: string;
+  category?: string | null;
   tags?: string[];
   book_id: string;
   is_public: boolean;
@@ -40,7 +40,7 @@ export interface DecoderFilters {
 export interface CreateDecoderData {
   name: string;
   description?: string;
-  category?: string;
+  category?: string | null;
   tags?: string[];
   book_id: string;
   is_public?: boolean;
