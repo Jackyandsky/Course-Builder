@@ -209,7 +209,7 @@ export function LessonBookManager({ lessonId, courseId, onUpdate }: LessonBookMa
         <div className="space-y-4">
           <SearchBox
             value={searchQuery}
-            onChange={setSearchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={courseId ? "Search course books..." : "Search all books..."}
           />
 
@@ -219,10 +219,14 @@ export function LessonBookManager({ lessonId, courseId, onUpdate }: LessonBookMa
             </div>
           ) : filteredBooks.length > 0 ? (
             <div className="max-h-96 overflow-y-auto">
-              <Table>
-                <Table.Header>
-                  <Table.Row>
-                    <Table.HeaderCell className="w-12">
+              <Table
+                responsive={false}
+                size="sm"
+                className="w-full"
+                columns={[
+                  {
+                    key: 'select',
+                    label: (
                       <input
                         type="checkbox"
                         checked={selectedBooks.length === filteredBooks.length && filteredBooks.length > 0}
@@ -233,51 +237,56 @@ export function LessonBookManager({ lessonId, courseId, onUpdate }: LessonBookMa
                             setSelectedBooks([])
                           }
                         }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                    </Table.HeaderCell>
-                    <Table.HeaderCell>Book</Table.HeaderCell>
-                    <Table.HeaderCell>Author</Table.HeaderCell>
-                    <Table.HeaderCell>Category</Table.HeaderCell>
-                    <Table.HeaderCell>Type</Table.HeaderCell>
-                  </Table.Row>
-                </Table.Header>
-                <Table.Body>
-                  {filteredBooks.map((book) => (
-                    <Table.Row key={book.id}>
-                      <Table.Cell>
-                        <input
-                          type="checkbox"
-                          checked={selectedBooks.includes(book.id)}
-                          onChange={() => toggleBookSelection(book.id)}
-                        />
-                      </Table.Cell>
-                      <Table.Cell>
-                        <div className="flex items-center space-x-3">
-                          {book.cover_image_url && (
-                            <img
-                              src={book.cover_image_url}
-                              alt={book.title}
-                              className="w-8 h-8 object-cover rounded"
-                            />
-                          )}
-                          <span className="font-medium">{book.title}</span>
-                        </div>
-                      </Table.Cell>
-                      <Table.Cell>{book.author || '-'}</Table.Cell>
-                      <Table.Cell>
-                        {book.category && (
-                          <Badge variant="outline">{book.category}</Badge>
+                    ),
+                    render: (book) => (
+                      <input
+                        type="checkbox"
+                        checked={selectedBooks.includes(book.id)}
+                        onChange={() => toggleBookSelection(book.id)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    )
+                  },
+                  {
+                    key: 'title',
+                    label: 'Book',
+                    render: (book) => (
+                      <div className="flex items-center space-x-3">
+                        {book.cover_image_url && (
+                          <img
+                            src={book.cover_image_url}
+                            alt={book.title}
+                            className="w-8 h-8 object-cover rounded"
+                          />
                         )}
-                      </Table.Cell>
-                      <Table.Cell>
-                        {book.content_type && (
-                          <Badge variant="secondary">{book.content_type}</Badge>
-                        )}
-                      </Table.Cell>
-                    </Table.Row>
-                  ))}
-                </Table.Body>
-              </Table>
+                        <span className="font-medium">{book.title}</span>
+                      </div>
+                    )
+                  },
+                  { 
+                    key: 'author', 
+                    label: 'Author',
+                    render: (book) => book.author || '-'
+                  },
+                  {
+                    key: 'category',
+                    label: 'Category',
+                    render: (book) => book.category ? (
+                      <Badge variant="outline">{book.category}</Badge>
+                    ) : '-'
+                  },
+                  {
+                    key: 'content_type',
+                    label: 'Type',
+                    render: (book) => book.content_type ? (
+                      <Badge variant="secondary">{book.content_type}</Badge>
+                    ) : '-'
+                  }
+                ]}
+                data={filteredBooks}
+              />
             </div>
           ) : (
             <p className="text-center py-8 text-gray-500">
