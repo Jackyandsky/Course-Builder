@@ -39,47 +39,7 @@ export const lessonService = {
       .select(
         `
         *,
-        schedule:schedules(id, name, course:courses(id, title)),
-        lesson_books(
-          id,
-          book_id,
-          position,
-          is_required,
-          reading_pages,
-          notes,
-          book:books(id, title, author, cover_image_url)
-        ),
-        lesson_vocabulary_groups(
-          id,
-          vocabulary_group_id,
-          position,
-          focus_words,
-          notes,
-          vocabulary_group:vocabulary_groups(id, name, language, difficulty)
-        ),
-        lesson_objectives(
-          id,
-          objective_id,
-          position,
-          objective:objectives(id, title, description)
-        ),
-        lesson_methods(
-          id,
-          method_id,
-          position,
-          duration_minutes,
-          notes,
-          method:methods(id, name, description, duration_minutes)
-        ),
-        lesson_tasks(
-          id,
-          task_id,
-          position,
-          is_homework,
-          due_date,
-          notes,
-          task:tasks(id, title, description, estimated_minutes)
-        )
+        schedule:schedules(id, name, course:courses(id, title))
       `
       )
       .order('date', { ascending: true })
@@ -101,9 +61,74 @@ export const lessonService = {
       query = query.eq('user_id', filters.user_id);
     }
 
-    const { data, error } = await query;
+    const { data: lessons, error } = await query;
     if (error) throw error;
-    return data as Lesson[];
+
+    if (!lessons || lessons.length === 0) {
+      return [];
+    }
+
+    // Get lesson IDs for fetching related data
+    const lessonIds = lessons.map(lesson => lesson.id);
+
+    // Fetch lesson_books and lesson_tasks separately
+    const [lessonBooksResult, lessonTasksResult] = await Promise.all([
+      supabase
+        .from('lesson_books')
+        .select(`
+          id,
+          lesson_id,
+          book_id,
+          pages_from,
+          pages_to,
+          notes,
+          book:books(id, title, author, cover_image_url)
+        `)
+        .in('lesson_id', lessonIds),
+      supabase
+        .from('lesson_tasks')
+        .select(`
+          id,
+          lesson_id,
+          task_id,
+          position,
+          is_homework,
+          due_date,
+          duration_override,
+          notes,
+          task:tasks(id, title, description, duration_minutes)
+        `)
+        .in('lesson_id', lessonIds)
+    ]);
+
+    if (lessonBooksResult.error) throw lessonBooksResult.error;
+    if (lessonTasksResult.error) throw lessonTasksResult.error;
+
+    // Group lesson_books and lesson_tasks by lesson_id
+    const lessonBooksMap = new Map();
+    lessonBooksResult.data?.forEach(lessonBook => {
+      if (!lessonBooksMap.has(lessonBook.lesson_id)) {
+        lessonBooksMap.set(lessonBook.lesson_id, []);
+      }
+      lessonBooksMap.get(lessonBook.lesson_id).push(lessonBook);
+    });
+
+    const lessonTasksMap = new Map();
+    lessonTasksResult.data?.forEach(lessonTask => {
+      if (!lessonTasksMap.has(lessonTask.lesson_id)) {
+        lessonTasksMap.set(lessonTask.lesson_id, []);
+      }
+      lessonTasksMap.get(lessonTask.lesson_id).push(lessonTask);
+    });
+
+    // Attach lesson_books and lesson_tasks to lessons
+    const enrichedLessons = lessons.map(lesson => ({
+      ...lesson,
+      lesson_books: lessonBooksMap.get(lesson.id) || [],
+      lesson_tasks: lessonTasksMap.get(lesson.id) || []
+    }));
+
+    return enrichedLessons as Lesson[];
   },
 
   /**
@@ -125,25 +150,46 @@ export const lessonService = {
    * Get a single lesson by its ID, including all related content.
    */
   async getLesson(id: string) {
-    const { data, error } = await supabase
+    const { data: lesson, error } = await supabase
       .from('lessons')
       .select(
         `
         *,
-        schedule:schedules(*, course:courses(*)),
-        objectives:lesson_objectives(*, objective:objectives(*)),
-        methods:lesson_methods(*, method:methods(*)),
-        tasks:lesson_tasks(*, task:tasks(*)),
-        books:lesson_books(*, book:books(*)),
-        vocabulary:lesson_vocabulary(*, vocabulary:vocabulary(*)),
-        attendance(*)
+        schedule:schedules(*, course:courses(*))
       `
       )
       .eq('id', id)
       .single();
 
     if (error) throw error;
-    return data;
+    if (!lesson) return null;
+
+    // Fetch lesson_books and lesson_tasks separately
+    const [lessonBooksResult, lessonTasksResult] = await Promise.all([
+      supabase
+        .from('lesson_books')
+        .select(`
+          *,
+          book:books(*)
+        `)
+        .eq('lesson_id', id),
+      supabase
+        .from('lesson_tasks')
+        .select(`
+          *,
+          task:tasks(*)
+        `)
+        .eq('lesson_id', id)
+    ]);
+
+    if (lessonBooksResult.error) throw lessonBooksResult.error;
+    if (lessonTasksResult.error) throw lessonTasksResult.error;
+
+    return {
+      ...lesson,
+      lesson_books: lessonBooksResult.data || [],
+      lesson_tasks: lessonTasksResult.data || []
+    };
   },
 
   /**
@@ -327,47 +373,7 @@ export const lessonService = {
       .from('lessons')
       .select(`
         *,
-        schedule:schedules(id, name),
-        lesson_books!inner(
-          id,
-          book_id,
-          position,
-          is_required,
-          reading_pages,
-          notes,
-          book:books(id, title, author, cover_image_url)
-        ),
-        lesson_vocabulary_groups(
-          id,
-          vocabulary_group_id,
-          position,
-          focus_words,
-          notes,
-          vocabulary_group:vocabulary_groups(id, name, language, difficulty)
-        ),
-        lesson_objectives(
-          id,
-          objective_id,
-          position,
-          objective:objectives(id, title, description)
-        ),
-        lesson_methods(
-          id,
-          method_id,
-          position,
-          duration_minutes,
-          notes,
-          method:methods(id, name, description)
-        ),
-        lesson_tasks(
-          id,
-          task_id,
-          position,
-          is_homework,
-          due_date,
-          notes,
-          task:tasks(id, title, description)
-        )
+        schedule:schedules(id, name)
       `)
       .eq('course_id', course_id)
       .order('date', { ascending: true })
@@ -385,8 +391,73 @@ export const lessonService = {
       query = query.lte('date', filters.date_to);
     }
 
-    const { data, error } = await query;
+    const { data: lessons, error } = await query;
     if (error) throw error;
-    return data as Lesson[];
+
+    if (!lessons || lessons.length === 0) {
+      return [];
+    }
+
+    // Get lesson IDs for fetching related data
+    const lessonIds = lessons.map(lesson => lesson.id);
+
+    // Fetch lesson_books and lesson_tasks separately
+    const [lessonBooksResult, lessonTasksResult] = await Promise.all([
+      supabase
+        .from('lesson_books')
+        .select(`
+          id,
+          lesson_id,
+          book_id,
+          pages_from,
+          pages_to,
+          notes,
+          book:books(id, title, author, cover_image_url)
+        `)
+        .in('lesson_id', lessonIds),
+      supabase
+        .from('lesson_tasks')
+        .select(`
+          id,
+          lesson_id,
+          task_id,
+          position,
+          is_homework,
+          due_date,
+          duration_override,
+          notes,
+          task:tasks(id, title, description)
+        `)
+        .in('lesson_id', lessonIds)
+    ]);
+
+    if (lessonBooksResult.error) throw lessonBooksResult.error;
+    if (lessonTasksResult.error) throw lessonTasksResult.error;
+
+    // Group lesson_books and lesson_tasks by lesson_id
+    const lessonBooksMap = new Map();
+    lessonBooksResult.data?.forEach(lessonBook => {
+      if (!lessonBooksMap.has(lessonBook.lesson_id)) {
+        lessonBooksMap.set(lessonBook.lesson_id, []);
+      }
+      lessonBooksMap.get(lessonBook.lesson_id).push(lessonBook);
+    });
+
+    const lessonTasksMap = new Map();
+    lessonTasksResult.data?.forEach(lessonTask => {
+      if (!lessonTasksMap.has(lessonTask.lesson_id)) {
+        lessonTasksMap.set(lessonTask.lesson_id, []);
+      }
+      lessonTasksMap.get(lessonTask.lesson_id).push(lessonTask);
+    });
+
+    // Attach lesson_books and lesson_tasks to lessons
+    const enrichedLessons = lessons.map(lesson => ({
+      ...lesson,
+      lesson_books: lessonBooksMap.get(lesson.id) || [],
+      lesson_tasks: lessonTasksMap.get(lesson.id) || []
+    }));
+
+    return enrichedLessons as Lesson[];
   },
 };

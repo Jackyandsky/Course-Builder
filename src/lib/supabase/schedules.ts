@@ -94,6 +94,25 @@ async function generateRecurringLessons(
 
 export const scheduleService = {
   /**
+   * Generate lessons for a schedule manually
+   */
+  async generateLessonsForSchedule(scheduleId: string) {
+    const schedule = await this.getSchedule(scheduleId);
+    if (!schedule) throw new Error('Schedule not found');
+    
+    // Delete existing auto-generated lessons for this schedule
+    await supabase
+      .from('lessons')
+      .delete()
+      .eq('schedule_id', scheduleId)
+      .contains('tags', ['auto-generated']);
+    
+    // Generate new lessons
+    await generateRecurringLessons(scheduleId, schedule);
+    
+    return this.getScheduleLessons(scheduleId);
+  },
+  /**
    * Get all schedules with optional filters.
    */
   async getSchedules(filters: ScheduleFilters = {}) {
@@ -171,6 +190,43 @@ export const scheduleService = {
       .eq('id', id)
       .select()
       .single();
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Get all lessons for a specific schedule
+   */
+  async getScheduleLessons(scheduleId: string) {
+    const { data, error } = await supabase
+      .from('lessons')
+      .select(`
+        *,
+        lesson_books(
+          id,
+          lesson_id,
+          book_id,
+          pages_from,
+          pages_to,
+          notes,
+          book:books(id, title, author, cover_image_url)
+        ),
+        lesson_tasks(
+          id,
+          lesson_id,
+          task_id,
+          position,
+          is_homework,
+          due_date,
+          duration_override,
+          notes,
+          task:tasks(id, title, description, estimated_minutes)
+        )
+      `)
+      .eq('schedule_id', scheduleId)
+      .order('date', { ascending: true })
+      .order('start_time', { ascending: true });
+
     if (error) throw error;
     return data;
   },

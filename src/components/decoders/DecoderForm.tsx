@@ -31,7 +31,7 @@ export function DecoderForm({ initialData }: DecoderFormProps) {
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     description: initialData?.description || '',
-    category: initialData?.category || '',
+    category: initialData?.category || null,
     tags: initialData?.tags || [],
     book_id: initialData?.book_id || '',
     is_public: initialData?.is_public || false,
@@ -107,7 +107,14 @@ export function DecoderForm({ initialData }: DecoderFormProps) {
     try {
       const decoderData = {
         ...formData,
+        // Remove category if it's null or empty to avoid UUID validation error
+        ...(formData.category ? { category: formData.category } : {}),
       };
+      
+      // Remove the category field if it's null to avoid sending it
+      if (!formData.category) {
+        delete (decoderData as any).category;
+      }
       
       if (isEditing) {
         await decoderService.updateDecoder({ id: initialData.id, ...decoderData } as UpdateDecoderData);
@@ -193,8 +200,8 @@ export function DecoderForm({ initialData }: DecoderFormProps) {
                 <div className="flex items-center gap-2">
                   <Select
                     className="flex-grow"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    value={formData.category || ''}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value || null })}
                     options={[
                       { value: '', label: 'No category' },
                       ...categories.map(c => ({ value: c.id, label: c.name }))
