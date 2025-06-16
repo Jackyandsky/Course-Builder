@@ -112,7 +112,7 @@ export default function DashboardPage() {
         vocabularyStats,
       ] = await Promise.all([
         courseService.getCourses({}).then(data => data.length).catch(() => 0),
-        bookService.getBooks({}).then(data => data.length).catch(() => 0),
+        bookService.getBookStats().then(stats => stats.total).catch(() => 0),
         scheduleService.getSchedules({}).then(data => data.length).catch(() => 0),
         lessonService.getLessons({}).then(data => data.length).catch(() => 0),
         taskService.getTasks({}).then(data => data.length).catch(() => 0),
