@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { taskService } from '@/lib/supabase/tasks';
 import { lessonService } from '@/lib/supabase/lessons';
@@ -40,13 +40,13 @@ export function LessonTaskManager({ lessonId, courseId, onUpdate }: LessonTaskMa
 
   useEffect(() => {
     loadData();
-  }, [lessonId]);
+  }, [lessonId, loadData]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [allTasks, lesson] = await Promise.all([
-        courseId ? taskService.getCourseTasks(courseId) : taskService.getTasks({}),
+        taskService.getTasks({}),
         lessonService.getLesson(lessonId)
       ]);
       
@@ -57,11 +57,11 @@ export function LessonTaskManager({ lessonId, courseId, onUpdate }: LessonTaskMa
     } finally {
       setLoading(false);
     }
-  };
+  }, [lessonId]);
 
   const availableTasks = tasks.filter(task => 
     !lessonTasks.some(lt => lt.task_id === task.id) &&
-    task.title.toLowerCase().includes(searchTerm.toLowerCase())
+    task.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAddTasks = async () => {
@@ -146,10 +146,6 @@ export function LessonTaskManager({ lessonId, courseId, onUpdate }: LessonTaskMa
           </div>
         </div>
         
-        {/* Debug info */}
-        <div className="text-sm text-gray-500">
-          Debug: lessonId={lessonId}, courseId={courseId}, tasks count={lessonTasks.length}, loading={loading}
-        </div>
 
         {lessonTasks.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2">

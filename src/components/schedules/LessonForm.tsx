@@ -6,13 +6,11 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Select } from '@/components/ui/Select';
-import { Badge } from '@/components/ui/Badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { scheduleService } from '@/lib/supabase/schedules';
 import { lessonService } from '@/lib/supabase/lessons';
 import type { Lesson, Schedule } from '@/types/schedule';
 import type { LessonStatus } from '@/types/database';
-import { Plus, X } from 'lucide-react';
 
 interface LessonFormProps {
   scheduleId?: string;
@@ -37,9 +35,6 @@ const initialFormData = {
     duration_minutes: 60,
     location: '',
     status: 'scheduled' as LessonStatus,
-    notes: '',
-    homework: '',
-    resources: [] as string[],
 };
 
 export function LessonForm({ scheduleId, lesson, onSuccess }: LessonFormProps) {
@@ -49,7 +44,6 @@ export function LessonForm({ scheduleId, lesson, onSuccess }: LessonFormProps) {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [formData, setFormData] = useState(initialFormData);
   
-  const [newResource, setNewResource] = useState('');
 
   const isEditing = !!(lesson && lesson.id);
 
@@ -71,9 +65,6 @@ export function LessonForm({ scheduleId, lesson, onSuccess }: LessonFormProps) {
         duration_minutes: lesson.duration_minutes || 60,
         location: lesson.location || '',
         status: lesson.status,
-        notes: lesson.description || '',
-        homework: '',
-        resources: [],
       });
     } else {
       setFormData({ ...initialFormData, schedule_id: scheduleId || '' });
@@ -107,22 +98,28 @@ export function LessonForm({ scheduleId, lesson, onSuccess }: LessonFormProps) {
     if (!user) return;
     setLoading(true);
     try {
-      // Get the course_id from the schedule
-      const selectedSchedule = schedules.find(s => s.id === formData.schedule_id);
-      if (!selectedSchedule) {
-        throw new Error("Please select a valid schedule");
-      }
-
-      const lessonData = { 
-        ...formData, 
-        user_id: user.id,
-        course_id: selectedSchedule.course_id
-      };
-
+      let lessonData;
+      
       if (isEditing) {
         if (!lesson) throw new Error("Lesson to update is missing.");
+        // For editing, use existing course_id and don't validate schedule
+        lessonData = { 
+          ...formData, 
+          user_id: user.id,
+          course_id: lesson.course_id
+        };
         await lessonService.updateLesson(lesson.id, lessonData);
       } else {
+        // For creating new lessons, validate schedule selection
+        const selectedSchedule = schedules.find(s => s.id === formData.schedule_id);
+        if (!selectedSchedule) {
+          throw new Error("Please select a valid schedule");
+        }
+        lessonData = { 
+          ...formData, 
+          user_id: user.id,
+          course_id: selectedSchedule.course_id
+        };
         await lessonService.createLesson(lessonData);
       }
 
@@ -140,8 +137,6 @@ export function LessonForm({ scheduleId, lesson, onSuccess }: LessonFormProps) {
   // ... (Other handlers like handleStartTimeChange remain the same)
   const handleStartTimeChange = (value: string) => { setFormData(prev => ({ ...prev, start_time: value })); calculateEndTime(value, formData.duration_minutes); };
   const handleDurationChange = (value: number) => { setFormData(prev => ({ ...prev, duration_minutes: value })); calculateEndTime(formData.start_time, value); };
-  const handleAddResource = () => { if (newResource.trim()) { setFormData(prev => ({ ...prev, resources: [...(prev.resources || []), newResource.trim()] })); setNewResource(''); } };
-  const handleRemoveResource = (index: number) => { setFormData(prev => ({ ...prev, resources: (prev.resources || []).filter((_, i) => i !== index) })); };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -169,22 +164,6 @@ export function LessonForm({ scheduleId, lesson, onSuccess }: LessonFormProps) {
         <div><Input type="number" label="Duration (minutes)" value={formData.duration_minutes} onChange={(e) => handleDurationChange(parseInt(e.target.value))} required /></div>
         <div><Input type="time" label="End Time" value={formData.end_time} readOnly disabled helperText="Auto-calculated" /></div>
         <div><Input label="Location" value={formData.location || ''} onChange={(e) => setFormData({ ...formData, location: e.target.value })} /></div>
-        <div className="col-span-2"><Textarea label="Teaching Notes" value={formData.notes || ''} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} rows={3} /></div>
-        <div className="col-span-2"><Textarea label="Homework Assignment" value={formData.homework || ''} onChange={(e) => setFormData({ ...formData, homework: e.target.value })} rows={3} /></div>
-        <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Resources & Links</label>
-          <div className="space-y-2">
-            <div className="flex gap-2"><Input value={newResource} onChange={(e) => setNewResource(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddResource())} /><Button type="button" onClick={handleAddResource} size="sm"><Plus className="h-4 w-4"/></Button></div>
-            <div className="flex flex-wrap gap-2">
-              {(formData.resources || []).map((resource, index) => (
-                <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                  {resource}
-                  <button type="button" onClick={() => handleRemoveResource(index)} className="ml-1 text-gray-500 hover:text-gray-700"><X className="h-3 w-3" /></button>
-                </Badge>
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
       <div className="flex justify-end space-x-4 mt-6">
         <Button type="button" variant="outline" onClick={onSuccess || (() => router.back())}>Cancel</Button>

@@ -29,14 +29,14 @@ export function LessonBookManager({ lessonId, courseId, onUpdate }: LessonBookMa
   const [loadingBooks, setLoadingBooks] = useState(false)
 
   // Load lesson books
-  const loadLessonBooks = async () => {
+  const loadLessonBooks = useCallback(async () => {
     try {
       const lesson = await lessonService.getLesson(lessonId)
       setLessonBooks(lesson?.lesson_books || [])
     } catch (error) {
       console.error('Failed to load lesson books:', error)
     }
-  }
+  }, [lessonId])
 
   // Load available books with search and filters
   const loadAvailableBooks = useCallback(async (search = '') => {
@@ -70,14 +70,14 @@ export function LessonBookManager({ lessonId, courseId, onUpdate }: LessonBookMa
   // Initial load
   useEffect(() => {
     loadLessonBooks()
-  }, [lessonId])
+  }, [lessonId, loadLessonBooks])
 
   // Open modal and load data
   const openModal = async () => {
     setIsModalOpen(true)
     setSelectedBooks([])
     setSearchQuery('')
-    await loadAvailableBooks('')
+    // Don't load here - let the useEffect handle it
   }
 
   // Debounced search handler
@@ -146,10 +146,6 @@ export function LessonBookManager({ lessonId, courseId, onUpdate }: LessonBookMa
           </Button>
         </div>
         
-        {/* Debug info */}
-        <div className="text-sm text-gray-500">
-          Debug: lessonId={lessonId}, courseId={courseId}, books count={lessonBooks.length}
-        </div>
 
         {lessonBooks.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">

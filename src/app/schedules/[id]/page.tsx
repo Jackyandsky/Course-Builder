@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Edit, Trash2, Calendar, Clock, Users } from 'lucide-react';
 import { Schedule, Lesson } from '@/types/schedule';
@@ -26,9 +26,9 @@ export default function ScheduleDetailPage() {
     if (scheduleId) {
       loadSchedule();
     }
-  }, [scheduleId]);
+  }, [scheduleId, loadSchedule]);
 
-  const loadSchedule = async () => {
+  const loadSchedule = useCallback(async () => {
     try {
       setLoading(true);
       const data = await scheduleService.getSchedule(scheduleId);
@@ -39,7 +39,7 @@ export default function ScheduleDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [scheduleId, router]);
   
   const handleDelete = async () => {
     if (!schedule) return;
@@ -64,6 +64,10 @@ export default function ScheduleDetailPage() {
   const handleFinishEdit = () => {
     setEditingLesson(null); // Close the edit modal
     loadSchedule(); // Refresh data to see changes
+  };
+
+  const handleRelationshipUpdate = () => {
+    loadSchedule(); // Refresh data when books/tasks are updated
   };
 
   if (loading) {
@@ -139,6 +143,7 @@ export default function ScheduleDetailPage() {
         onClose={() => setSelectedLesson(null)}
         lesson={selectedLesson}
         onEdit={handleStartEditLesson}
+        onUpdate={handleRelationshipUpdate}
       />
 
       {editingLesson && (
