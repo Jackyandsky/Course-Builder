@@ -166,14 +166,21 @@ export const bookService = {
 
   // Get book statistics
   async getBookStats() {
+    const { count: totalCount, error: totalError } = await supabase
+      .from('books')
+      .select('*', { count: 'exact', head: true });
+    
+    if (totalError) throw totalError;
+
+    // Get count by content type
     const { data, error } = await supabase
       .from('books')
-      .select('content_type', { count: 'exact' });
+      .select('content_type');
     
     if (error) throw error;
 
     const stats = {
-      total: data?.length || 0,
+      total: totalCount || 0,
       text: data?.filter(b => b.content_type === 'text').length || 0,
       video: data?.filter(b => b.content_type === 'video').length || 0,
       audio: data?.filter(b => b.content_type === 'audio').length || 0,
