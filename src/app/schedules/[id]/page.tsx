@@ -22,12 +22,6 @@ export default function ScheduleDetailPage() {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null); // <-- State for editing modal
 
-  useEffect(() => {
-    if (scheduleId) {
-      loadSchedule();
-    }
-  }, [scheduleId, loadSchedule]);
-
   const loadSchedule = useCallback(async () => {
     try {
       setLoading(true);
@@ -40,6 +34,12 @@ export default function ScheduleDetailPage() {
       setLoading(false);
     }
   }, [scheduleId, router]);
+
+  useEffect(() => {
+    if (scheduleId) {
+      loadSchedule();
+    }
+  }, [scheduleId, loadSchedule]);
   
   const handleDelete = async () => {
     if (!schedule) return;

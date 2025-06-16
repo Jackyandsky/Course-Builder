@@ -38,10 +38,6 @@ export function LessonTaskManager({ lessonId, courseId, onUpdate }: LessonTaskMa
   const [adding, setAdding] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
 
-  useEffect(() => {
-    loadData();
-  }, [lessonId, loadData]);
-
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -58,6 +54,10 @@ export function LessonTaskManager({ lessonId, courseId, onUpdate }: LessonTaskMa
       setLoading(false);
     }
   }, [lessonId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const availableTasks = tasks.filter(task => 
     !lessonTasks.some(lt => lt.task_id === task.id) &&
