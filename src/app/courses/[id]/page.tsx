@@ -5,7 +5,7 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { 
   ArrowLeft, Edit, Trash2, Archive, Globe, Lock, 
   Book, Bookmark, Calendar, Clock, Target, AlertCircle,
-  MoreVertical, Share2, Copy, CheckCircle, Settings, FileText
+  MoreVertical, Share2, Copy, CheckCircle, Settings, FileText, ExternalLink
 } from 'lucide-react';
 import { Course } from '@/types/database';
 import { courseService } from '@/lib/supabase/courses';
@@ -409,10 +409,11 @@ export default function CourseDetailPage() {
                     variant="ghost"
                     size="sm"
                     onClick={handleShareCourse}
-                    className="h-6 w-6 p-0"
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
                     title="Share course publicly"
                   >
-                    <Share2 className="h-4 w-4" />
+                    <span className="text-sm">Share</span>
+                    <ExternalLink className="h-5 w-5 text-gray-400 flex-shrink-0" />
                   </Button>
                 </div>
               </Card.Header>
