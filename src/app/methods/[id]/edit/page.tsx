@@ -44,7 +44,7 @@ export default function EditMethodPage() {
       const currentMethod = methodWithBelongings.find(m => m.id === methodId);
       
       setFormData({
-        name: method.title,
+        name: method.name,
         description: method.description || '',
         category_id: method.category_id || '',
         tags: method.tags || [],

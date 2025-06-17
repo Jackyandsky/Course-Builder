@@ -195,7 +195,7 @@ export default function MethodsPage() {
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg mb-1 line-clamp-2">
-                          {method.title}
+                          {method.name}
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
                           {method.description}
