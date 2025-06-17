@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   AcademicCapIcon, BookOpenIcon, CalendarIcon, ClockIcon, 
   CheckCircleIcon, DocumentTextIcon, CogIcon, LanguageIcon, 
@@ -80,6 +81,7 @@ const colorClasses = {
 } as const;
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [stats, setStats] = useState<DashboardStats>({
     courses: 0,
     schedules: 0,
@@ -218,7 +220,7 @@ export default function DashboardPage() {
       value: stats.vocabularyGroups,
       icon: UsersIcon,
       color: 'teal' as keyof typeof colorClasses,
-      href: '/vocabulary/groups'
+      href: '/vocabulary'
     },
     {
       title: 'Objectives',
@@ -260,7 +262,11 @@ export default function DashboardPage() {
               const IconComponent = card.icon;
               const colors = colorClasses[card.color];
               return (
-                <Card key={card.title} className="hover:shadow-md transition-shadow cursor-pointer">
+                <Card 
+                  key={card.title} 
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => router.push(card.href)}
+                >
                   <Card.Content className="p-4">
                     <div className="flex items-center">
                       <div className={`flex-shrink-0 p-2 ${colors.bg} rounded-lg`}>

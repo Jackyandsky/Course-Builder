@@ -22,7 +22,9 @@
       "Bash(npm run typecheck:*)",
       "Bash(npm run lint)",
       "Bash(timeout 10s npm run dev)",
-      "Bash(timeout 15s npm run dev)"
+      "Bash(timeout 15s npm run dev)",
+      "WebFetch(domain:edx.quizmk.com)",
+      "Bash(npx next lint:*)"
     ],
     "deny": []
   }

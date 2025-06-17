@@ -77,7 +77,7 @@ export const courseService = {
   // Get single course by ID
   async getCourse(id: string) {
     try {
-      // Try to get course with objectives first
+      // Try to get course with all relationships including schedules and methods
       const { data, error } = await supabase
         .from('courses')
         .select(`
@@ -102,6 +102,28 @@ export const courseService = {
             objective_id,
             position,
             objective:objectives(id, title, description, bloom_level, measurable, tags, is_template)
+          ),
+          course_methods(
+            id,
+            method_id,
+            position,
+            method:methods(id, name, description, tags)
+          ),
+          schedules(
+            id,
+            name,
+            description,
+            start_date,
+            end_date,
+            recurrence_type,
+            recurrence_days,
+            default_start_time,
+            default_duration_minutes,
+            timezone,
+            location,
+            max_students,
+            is_active,
+            lessons(count)
           )
         `)
         .eq('id', id)
@@ -110,33 +132,78 @@ export const courseService = {
       if (error) throw error;
       return data as Course;
     } catch (error: any) {
-      // If the course_objectives table doesn't exist, fall back to basic query
-      if (error.message?.includes('course_objectives') || error.code === '42P01') {
-        const { data, error: fallbackError } = await supabase
-          .from('courses')
-          .select(`
-            *,
-            category:categories(id, name, color, icon),
-            course_books(
-              id,
-              book_id,
-              is_required,
-              notes,
-              position,
-              book:books(id, title, author, cover_image_url)
-            ),
-            course_vocabulary_groups(
-              id,
-              vocabulary_group_id,
-              position,
-              vocabulary_group:vocabulary_groups(id, name, language, difficulty)
-            )
-          `)
-          .eq('id', id)
-          .single();
-        
-        if (fallbackError) throw fallbackError;
-        return { ...data, course_objectives: [] } as Course;
+      // If some tables don't exist, fall back progressively
+      if (error.message?.includes('course_objectives') || error.message?.includes('course_methods') || error.code === '42P01') {
+        try {
+          const { data, error: fallbackError } = await supabase
+            .from('courses')
+            .select(`
+              *,
+              category:categories(id, name, color, icon),
+              course_books(
+                id,
+                book_id,
+                is_required,
+                notes,
+                position,
+                book:books(id, title, author, cover_image_url)
+              ),
+              course_vocabulary_groups(
+                id,
+                vocabulary_group_id,
+                position,
+                vocabulary_group:vocabulary_groups(id, name, language, difficulty)
+              ),
+              schedules(
+                id,
+                name,
+                description,
+                start_date,
+                end_date,
+                recurrence_type,
+                recurrence_days,
+                default_start_time,
+                default_duration_minutes,
+                timezone,
+                location,
+                max_students,
+                is_active,
+                lessons(count)
+              )
+            `)
+            .eq('id', id)
+            .single();
+          
+          if (fallbackError) throw fallbackError;
+          return { ...data, course_objectives: [], course_methods: [] } as Course;
+        } catch (scheduleError: any) {
+          // Final fallback without schedules if needed
+          const { data, error: finalError } = await supabase
+            .from('courses')
+            .select(`
+              *,
+              category:categories(id, name, color, icon),
+              course_books(
+                id,
+                book_id,
+                is_required,
+                notes,
+                position,
+                book:books(id, title, author, cover_image_url)
+              ),
+              course_vocabulary_groups(
+                id,
+                vocabulary_group_id,
+                position,
+                vocabulary_group:vocabulary_groups(id, name, language, difficulty)
+              )
+            `)
+            .eq('id', id)
+            .single();
+          
+          if (finalError) throw finalError;
+          return { ...data, course_objectives: [], course_methods: [], schedules: [] } as Course;
+        }
       }
       throw error;
     }

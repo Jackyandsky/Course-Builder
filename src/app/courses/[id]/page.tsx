@@ -115,6 +115,11 @@ export default function CourseDetailPage() {
     }
   };
 
+  const handleShareCourse = () => {
+    const shareUrl = `${window.location.origin}/share/${courseId}`;
+    window.open(shareUrl, '_blank');
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -398,7 +403,18 @@ export default function CourseDetailPage() {
             {/* Metadata */}
             <Card>
               <Card.Header>
-                <h3 className="text-sm font-semibold">Course Information</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold">Course Information</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleShareCourse}
+                    className="h-6 w-6 p-0"
+                    title="Share course publicly"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </Card.Header>
               <Card.Content>
                 <dl className="space-y-3 text-sm">

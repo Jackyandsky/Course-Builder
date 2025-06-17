@@ -54,6 +54,8 @@ export interface Course {
   course_books?: CourseBook[];
   course_vocabulary_groups?: CourseVocabularyGroup[];
   course_objectives?: CourseObjective[];
+  course_methods?: CourseMethod[];
+  schedules?: Schedule[];
 }
 
 // Book type
@@ -186,7 +188,7 @@ export interface Objective {
 // Method type
 export interface Method {
   id: string;
-  title: string;
+  name: string;
   description?: string;
   category_id?: string;
   tags?: string[];

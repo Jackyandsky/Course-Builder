@@ -124,7 +124,7 @@ export const methodService = {
     const original = await this.getMethod(id);
     
     return this.createMethod({
-      name: newTitle || `${original.title} (Copy)`,
+      name: newTitle || `${original.name} (Copy)`,
       description: original.description,
       category_id: original.category_id,
       tags: original.tags,
