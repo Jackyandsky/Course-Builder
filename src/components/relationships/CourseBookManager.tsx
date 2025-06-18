@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { SearchBox } from '@/components/ui/SearchBox'
@@ -22,61 +22,90 @@ export function CourseBookManager({ courseId, onUpdate }: CourseBookManagerProps
   const [courseBooks, setCourseBooks] = useState<any[]>([])
   const [availableBooks, setAvailableBooks] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-  const [loadingBooks, setLoadingBooks] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
   // Load course books
-  const loadCourseBooks = async () => {
+  const loadCourseBooks = useCallback(async () => {
     try {
       const books = await courseBookService.getCourseBooksWithDetails(courseId)
       setCourseBooks(books || [])
     } catch (error) {
       console.error('Failed to load course books:', error)
     }
-  }
+  }, [courseId])
+
+  // Memoize course book IDs to prevent unnecessary re-renders
+  const courseBooksIds = useMemo(() => {
+    return courseBooks.map(cb => cb.book_id)
+  }, [courseBooks])
 
   // Load available books with search and filters
-  const loadAvailableBooks = useCallback(async (search = '') => {
-    setLoadingBooks(true)
+  const loadAvailableBooks = useCallback(async (search = '', isSearch = false) => {
     try {
-      // Use server-side search with limit for better performance
+      // Set appropriate loading state without clearing the list
+      if (isSearch) {
+        setIsSearching(true)
+      } else if (isInitialLoad) {
+        // Only show main loading for initial load
+        setIsInitialLoad(true)
+      }
+
+      // Use server-side search with smaller limit for better performance
       const books = await bookService.getBooks({
         search: search.trim(),
-        limit: 100 // Limit results for performance
+        limit: 20 // Further reduced for optimal performance
       })
+      
       // Filter out books already in the course
-      const courseBooksIds = courseBooks.map(cb => cb.book_id)
       const available = books.filter(book => !courseBooksIds.includes(book.id))
+      
+      // Update the list only when we have new data
       setAvailableBooks(available)
     } catch (error) {
       console.error('Failed to load available books:', error)
+      // Only clear list on error, not during normal loading
+      setAvailableBooks([])
     } finally {
-      setLoadingBooks(false)
+      if (isSearch) {
+        setIsSearching(false)
+      } else {
+        setIsInitialLoad(false)
+      }
     }
-  }, [courseBooks])
+  }, [courseBooksIds, isInitialLoad])
 
   // Initial load
   useEffect(() => {
     loadCourseBooks()
-  }, [courseId])
+  }, [loadCourseBooks])
 
   // Open modal and load data
   const openModal = async () => {
     setIsModalOpen(true)
     setSelectedBooks([])
     setSearchQuery('')
-    await loadAvailableBooks('')
+    setIsInitialLoad(true)
+    await loadAvailableBooks('', false) // Initial load, not a search
   }
 
-  // Debounced search handler
-  useEffect(() => {
-    if (!isModalOpen) return
-    
-    const timeoutId = setTimeout(() => {
-      loadAvailableBooks(searchQuery)
-    }, 300) // 300ms debounce
+  // Search handler - only called after debouncing by SearchBox
+  const handleSearchChange = useCallback((query: string) => {
+    // This is called only after debouncing is complete, so safe to load books
+    loadAvailableBooks(query, true) // Mark as search to show subtle loading
+  }, [loadAvailableBooks])
 
-    return () => clearTimeout(timeoutId)
-  }, [searchQuery, isModalOpen, loadAvailableBooks])
+  // Handle search input changes (immediate, for UI responsiveness)
+  const handleSearchInput = useCallback((query: string) => {
+    setSearchQuery(query)
+  }, [])
+
+  // Load books when modal opens
+  useEffect(() => {
+    if (isModalOpen && availableBooks.length === 0 && isInitialLoad) {
+      loadAvailableBooks('', false) // Initial load
+    }
+  }, [isModalOpen, loadAvailableBooks, availableBooks.length, isInitialLoad])
 
   // Add selected books to course
   const handleAddBooks = async () => {
@@ -121,14 +150,88 @@ export function CourseBookManager({ courseId, onUpdate }: CourseBookManagerProps
     }
   }
 
-  // Toggle book selection
-  const toggleBookSelection = (bookId: string) => {
-    if (selectedBooks.includes(bookId)) {
-      setSelectedBooks(selectedBooks.filter(id => id !== bookId))
-    } else {
-      setSelectedBooks([...selectedBooks, bookId])
+  // Toggle book selection - optimized with useCallback
+  const toggleBookSelection = useCallback((bookId: string) => {
+    setSelectedBooks(prev => {
+      if (prev.includes(bookId)) {
+        return prev.filter(id => id !== bookId)
+      } else {
+        return [...prev, bookId]
+      }
+    })
+  }, [])
+
+  // Memoize table columns for better performance
+  const tableColumns = useMemo(() => [
+    {
+      key: 'select',
+      label: (
+        <input
+          type="checkbox"
+          checked={availableBooks.length > 0 && availableBooks.every(book => selectedBooks.includes(book.id))}
+          onChange={(e) => {
+            if (e.target.checked) {
+              setSelectedBooks(availableBooks.map(book => book.id))
+            } else {
+              setSelectedBooks([])
+            }
+          }}
+          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+      ),
+      render: (book: any) => (
+        <input
+          type="checkbox"
+          checked={selectedBooks.includes(book.id)}
+          onChange={() => toggleBookSelection(book.id)}
+          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+      )
+    },
+    { 
+      key: 'title', 
+      label: 'Title',
+      render: (book: any) => (
+        <div className="max-w-xs">
+          <p className="font-medium truncate" title={book.title}>{book.title}</p>
+          {book.isbn && (
+            <p className="text-xs text-gray-500 truncate">ISBN: {book.isbn}</p>
+          )}
+        </div>
+      )
+    },
+    { 
+      key: 'author', 
+      label: 'Author',
+      render: (book: any) => (
+        <div className="max-w-32">
+          <span className="truncate block" title={book.author}>
+            {book.author || '-'}
+          </span>
+        </div>
+      )
+    },
+    {
+      key: 'category',
+      label: 'Category',
+      render: (book: any) => (
+        <div className="max-w-24">
+          <span className="truncate block" title={book.category?.name}>
+            {book.category?.name || '-'}
+          </span>
+        </div>
+      )
+    },
+    {
+      key: 'type',
+      label: 'Type',
+      render: (book: any) => (
+        <Badge variant="warning" className="text-xs whitespace-nowrap">
+          {book.content_type || 'text'}
+        </Badge>
+      )
     }
-  }
+  ], [availableBooks, selectedBooks, toggleBookSelection])
 
   // No need for client-side filtering since we're using server-side search
   const filteredBooks = availableBooks
@@ -202,13 +305,22 @@ export function CourseBookManager({ courseId, onUpdate }: CourseBookManagerProps
         size="lg"
       >
         <div className="space-y-4">
-          <SearchBox
-            value={searchQuery}
-            onSearch={setSearchQuery}
-            placeholder="Search books by title, author, or ISBN..."
-          />
+          <div className="relative">
+            <SearchBox
+              value={searchQuery}
+              onChange={(e) => handleSearchInput(e.target.value)}
+              onSearch={handleSearchChange}
+              placeholder="Search books by title, author, or ISBN..."
+              debounceDelay={300}
+            />
+            {isSearching && (
+              <div className="absolute right-10 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+              </div>
+            )}
+          </div>
 
-          {loadingBooks ? (
+          {isInitialLoad ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
             </div>
@@ -218,76 +330,7 @@ export function CourseBookManager({ courseId, onUpdate }: CourseBookManagerProps
                 responsive={false}
                 size="sm"
                 className="w-full"
-                columns={[
-                  {
-                    key: 'select',
-                    label: (
-                      <input
-                        type="checkbox"
-                        checked={filteredBooks.length > 0 && filteredBooks.every(book => selectedBooks.includes(book.id))}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedBooks(filteredBooks.map(book => book.id))
-                          } else {
-                            setSelectedBooks([])
-                          }
-                        }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    ),
-                    render: (book) => (
-                      <input
-                        type="checkbox"
-                        checked={selectedBooks.includes(book.id)}
-                        onChange={() => toggleBookSelection(book.id)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    )
-                  },
-                  { 
-                    key: 'title', 
-                    label: 'Title',
-                    render: (book) => (
-                      <div className="max-w-xs">
-                        <p className="font-medium truncate" title={book.title}>{book.title}</p>
-                        {book.isbn && (
-                          <p className="text-xs text-gray-500 truncate">ISBN: {book.isbn}</p>
-                        )}
-                      </div>
-                    )
-                  },
-                  { 
-                    key: 'author', 
-                    label: 'Author',
-                    render: (book) => (
-                      <div className="max-w-32">
-                        <span className="truncate block" title={book.author}>
-                          {book.author || '-'}
-                        </span>
-                      </div>
-                    )
-                  },
-                  {
-                    key: 'category',
-                    label: 'Category',
-                    render: (book) => (
-                      <div className="max-w-24">
-                        <span className="truncate block" title={book.category?.name}>
-                          {book.category?.name || '-'}
-                        </span>
-                      </div>
-                    )
-                  },
-                  {
-                    key: 'type',
-                    label: 'Type',
-                    render: (book) => (
-                      <Badge variant="warning" className="text-xs whitespace-nowrap">
-                        {book.content_type || 'text'}
-                      </Badge>
-                    )
-                  }
-                ]}
+                columns={tableColumns}
                 data={filteredBooks}
               />
             </div>

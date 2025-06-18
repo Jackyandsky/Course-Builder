@@ -34,6 +34,13 @@ const difficultyColors = {
   expert: 'primary',
 } as const;
 
+const difficultyLabels = {
+  beginner: 'Level 1',
+  intermediate: 'Level 2',
+  advanced: 'Level 3',
+  expert: 'Level 4',
+} as const;
+
 export default function CourseDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -189,7 +196,7 @@ export default function CourseDetailPage() {
                 
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
                   <Badge variant={difficultyColors[course.difficulty]} size="sm">
-                    {course.difficulty}
+                    {difficultyLabels[course.difficulty]}
                   </Badge>
                   
                   {course.duration_hours && (

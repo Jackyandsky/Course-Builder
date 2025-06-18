@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -10,7 +10,11 @@ export const metadata: Metadata = {
   description: 'A flexible, customizable online course construction tool for educators, trainers, and content creators.',
   keywords: 'course builder, education, training, course management, curriculum design',
   authors: [{ name: 'Course Builder Team' }],
-  viewport: 'width=device-width, initial-scale=1',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({

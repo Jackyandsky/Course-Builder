@@ -17,6 +17,13 @@ const difficultyColors = {
   expert: 'bg-red-100 text-red-800',
 } as const;
 
+const difficultyLabels = {
+  beginner: 'Level 1',
+  intermediate: 'Level 2',
+  advanced: 'Level 3',
+  expert: 'Level 4',
+} as const;
+
 export default function CourseSharePage() {
   const params = useParams();
   const courseId = params.id as string;
@@ -102,7 +109,7 @@ export default function CourseSharePage() {
                 <Badge 
                   className={`${difficultyColors[course.difficulty]} border-0`}
                 >
-                  {course.difficulty.charAt(0).toUpperCase() + course.difficulty.slice(1)} Level
+                  {difficultyLabels[course.difficulty]}
                 </Badge>
                 {course.category && (
                   <span className="text-sm text-gray-600">

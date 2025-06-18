@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { BookForm } from '@/components/books/BookForm';
 import { bookService } from '@/lib/supabase/books';
@@ -14,13 +14,7 @@ export default function EditBookPage() {
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (bookId) {
-      loadBook();
-    }
-  }, [bookId]);
-
-  const loadBook = async () => {
+  const loadBook = useCallback(async () => {
     try {
       setLoading(true);
       const data = await bookService.getBook(bookId);
@@ -31,7 +25,13 @@ export default function EditBookPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [bookId, router]);
+
+  useEffect(() => {
+    if (bookId) {
+      loadBook();
+    }
+  }, [bookId, loadBook]);
 
   if (loading) {
     return (
