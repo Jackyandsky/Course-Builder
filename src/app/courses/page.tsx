@@ -21,6 +21,13 @@ const difficultyColors: Record<DifficultyLevel, string> = {
   expert: 'primary',
 };
 
+const difficultyLabels = {
+  beginner: 'Level 1',
+  intermediate: 'Level 2',
+  advanced: 'Level 3',
+  expert: 'Level 4',
+} as const;
+
 export default function CoursesPage() {
   const router = useRouter();
   const [courses, setCourses] = useState<Course[]>([]);
@@ -85,10 +92,10 @@ export default function CoursesPage() {
       label: 'Difficulty',
       type: 'radio' as const,
       options: [
-        { value: 'beginner', label: 'Beginner' },
-        { value: 'intermediate', label: 'Intermediate' },
-        { value: 'advanced', label: 'Advanced' },
-        { value: 'expert', label: 'Expert' },
+        { value: 'beginner', label: 'Level 1' },
+        { value: 'intermediate', label: 'Level 2' },
+        { value: 'advanced', label: 'Level 3' },
+        { value: 'expert', label: 'Level 4' },
       ],
     },
   ];
@@ -253,7 +260,7 @@ export default function CoursesPage() {
                       variant={difficultyColors[course.difficulty] as any}
                       size="sm"
                     >
-                      {course.difficulty}
+                      {difficultyLabels[course.difficulty]}
                     </Badge>
                     {course.duration_hours && (
                       <span className="text-sm text-gray-500">

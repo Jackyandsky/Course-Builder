@@ -20,12 +20,9 @@ export interface CreateCourseData {
   category_id?: string;
   status?: CourseStatus;
   difficulty?: DifficultyLevel;
-  duration_hours?: number;
   objectives?: string[];
   prerequisites?: string[];
   tags?: string[];
-  thumbnail_url?: string;
-  is_public?: boolean;
 }
 
 export interface UpdateCourseData extends Partial<CreateCourseData> {
@@ -218,7 +215,6 @@ export const courseService = {
         user_id: SHARED_USER_ID, // Use shared user ID since authentication is not required
         status: courseData.status || 'draft',
         difficulty: courseData.difficulty || 'beginner',
-        is_public: courseData.is_public || false,
       })
       .select()
       .single();

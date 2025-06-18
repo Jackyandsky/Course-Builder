@@ -3,10 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, X, Plus, GripVertical } from 'lucide-react';
-import { Course, CourseStatus, DifficultyLevel, Category, CourseObjective } from '@/types/database';
+import { Course, CourseStatus, DifficultyLevel, Category } from '@/types/database';
 import { courseService, CreateCourseData, UpdateCourseData } from '@/lib/supabase/courses';
 import { categoryService } from '@/lib/supabase/categories';
-import { ObjectiveSelector } from './ObjectiveSelector';
 import { 
   Button, Card, Input, Textarea, Select, Badge, Modal, Spinner 
 } from '@/components/ui';
@@ -26,9 +25,6 @@ export function CourseForm({ initialData }: CourseFormProps) {
   
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [courseObjectives, setCourseObjectives] = useState<CourseObjective[]>(
-    initialData?.course_objectives || []
-  );
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
     short_description: initialData?.short_description || '',
@@ -36,11 +32,8 @@ export function CourseForm({ initialData }: CourseFormProps) {
     category_id: initialData?.category_id || '',
     status: initialData?.status || 'draft' as CourseStatus,
     difficulty: initialData?.difficulty || 'beginner' as DifficultyLevel,
-    duration_hours: initialData?.duration_hours || '',
     prerequisites: initialData?.prerequisites || [],
     tags: initialData?.tags || [],
-    thumbnail_url: initialData?.thumbnail_url || '',
-    is_public: initialData?.is_public || false,
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -75,9 +68,6 @@ export function CourseForm({ initialData }: CourseFormProps) {
       newErrors.short_description = 'Short description must be less than 300 characters';
     }
     
-    if (formData.duration_hours && isNaN(Number(formData.duration_hours))) {
-      newErrors.duration_hours = 'Duration must be a number';
-    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -95,7 +85,6 @@ export function CourseForm({ initialData }: CourseFormProps) {
       
       const courseData = {
         ...formData,
-        duration_hours: formData.duration_hours ? Number(formData.duration_hours) : undefined,
       };
       
       if (isEditing) {
@@ -182,10 +171,10 @@ export function CourseForm({ initialData }: CourseFormProps) {
   ];
 
   const difficultyOptions = [
-    { value: 'beginner', label: 'Beginner' },
-    { value: 'intermediate', label: 'Intermediate' },
-    { value: 'advanced', label: 'Advanced' },
-    { value: 'expert', label: 'Expert' },
+    { value: 'beginner', label: 'Level 1' },
+    { value: 'intermediate', label: 'Level 2' },
+    { value: 'advanced', label: 'Level 3' },
+    { value: 'expert', label: 'Level 4' },
   ];
 
   return (
@@ -248,14 +237,14 @@ export function CourseForm({ initialData }: CourseFormProps) {
                 rows={6}
               />
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Category
                   </label>
                   <div className="flex items-center gap-2">
                     <Select
-                      className="flex-grow"
+                      className="flex-grow min-w-0"
                       value={formData.category_id}
                       onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
                       options={[
@@ -275,73 +264,31 @@ export function CourseForm({ initialData }: CourseFormProps) {
                   </div>
                 </div>
                 
-                <Input
-                  label="Duration (hours)"
-                  type="number"
-                  value={formData.duration_hours}
-                  onChange={(e) => setFormData({ ...formData, duration_hours: e.target.value })}
-                  error={errors.duration_hours}
-                  placeholder="e.g., 24"
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Select
-                  label="Status"
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as CourseStatus })}
-                  options={statusOptions}
-                />
+                <div className="min-w-0">
+                  <Select
+                    label="Status"
+                    fullWidth
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as CourseStatus })}
+                    options={statusOptions}
+                  />
+                </div>
                 
-                <Select
-                  label="Difficulty Level"
-                  value={formData.difficulty}
-                  onChange={(e) => setFormData({ ...formData, difficulty: e.target.value as DifficultyLevel })}
-                  options={difficultyOptions}
-                />
+                <div className="min-w-0">
+                  <Select
+                    label="Level"
+                    fullWidth
+                    value={formData.difficulty}
+                    onChange={(e) => setFormData({ ...formData, difficulty: e.target.value as DifficultyLevel })}
+                    options={difficultyOptions}
+                  />
+                </div>
               </div>
               
-              <Input
-                label="Thumbnail URL"
-                type="url"
-                value={formData.thumbnail_url}
-                onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
-                placeholder="https://example.com/image.jpg"
-              />
-              
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="is_public"
-                  checked={formData.is_public}
-                  onChange={(e) => setFormData({ ...formData, is_public: e.target.checked })}
-                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                />
-                <label htmlFor="is_public" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Make this course publicly accessible
-                </label>
-              </div>
             </div>
           </Card.Content>
         </Card>
 
-        {/* Learning Objectives */}
-        <Card>
-          <Card.Header>
-            <h2 className="text-lg font-semibold">Learning Objectives</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Define what students will achieve by completing this course
-            </p>
-          </Card.Header>
-          <Card.Content>
-            <ObjectiveSelector
-              courseId={isEditing ? initialData?.id : undefined}
-              selectedObjectives={courseObjectives}
-              onObjectivesChange={setCourseObjectives}
-              disabled={loading}
-            />
-          </Card.Content>
-        </Card>
 
         {/* Prerequisites */}
         <Card>
