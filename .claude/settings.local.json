@@ -25,7 +25,8 @@
       "Bash(timeout 15s npm run dev)",
       "WebFetch(domain:edx.quizmk.com)",
       "Bash(npx next lint:*)",
-      "Bash(timeout 30 npm run build)"
+      "Bash(timeout 30 npm run build)",
+      "Bash(timeout 30s npm run dev)"
     ],
     "deny": []
   }

@@ -16,6 +16,7 @@ export interface ScheduleFilters {
   course_id?: string;
   is_active?: boolean;
   user_id?: string;
+  search?: string;
 }
 
 export interface CreateScheduleData
@@ -135,6 +136,9 @@ export const scheduleService = {
     }
     if (filters.user_id) {
       query = query.eq('user_id', filters.user_id);
+    }
+    if (filters.search) {
+      query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
     }
 
     const { data, error } = await query;

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { Course } from '@/types/database';
 import { courseService } from '@/lib/supabase/courses';
-import { Badge, Card, Spinner } from '@/components/ui';
+import { Badge, Card, Spinner, RichTextDisplay } from '@/components/ui';
 
 const difficultyColors = {
   beginner: 'bg-green-100 text-green-800',
@@ -131,13 +131,15 @@ export default function CourseSharePage() {
           </h2>
           <Card className="bg-white shadow-sm">
             <Card.Content className="p-6">
-              <div className="prose prose-gray max-w-none">
-                {course.description ? (
-                  <p className="text-gray-700 leading-relaxed">{course.description}</p>
-                ) : (
-                  <p className="text-gray-500 italic">No description provided</p>
-                )}
-              </div>
+              {course.description ? (
+                <RichTextDisplay 
+                  content={course.description} 
+                  size="md"
+                  className="max-w-none"
+                />
+              ) : (
+                <p className="text-gray-500 italic">No description provided</p>
+              )}
             </Card.Content>
           </Card>
         </section>

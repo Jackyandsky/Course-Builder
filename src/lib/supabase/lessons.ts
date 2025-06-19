@@ -17,6 +17,7 @@ export interface LessonFilters {
   date_from?: string;
   date_to?: string;
   user_id?: string;
+  search?: string;
 }
 
 export interface CreateLessonData
@@ -59,6 +60,9 @@ export const lessonService = {
     }
     if (filters.user_id) {
       query = query.eq('user_id', filters.user_id);
+    }
+    if (filters.search) {
+      query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
     }
 
     const { data: lessons, error } = await query;
