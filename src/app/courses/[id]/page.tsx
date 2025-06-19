@@ -373,50 +373,6 @@ export default function CourseDetailPage() {
               </Card.Content>
             </Card>
 
-            {/* Learning Objectives */}
-            {course.course_objectives && course.course_objectives.length > 0 && (
-              <Card>
-                <Card.Header>
-                  <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <Target className="h-5 w-5" />
-                    Learning Objectives
-                  </h2>
-                </Card.Header>
-                <Card.Content>
-                  <ul className="space-y-3">
-                    {course.course_objectives
-                      .sort((a, b) => a.position - b.position)
-                      .map((courseObjective) => (
-                        <li key={courseObjective.id} className="flex items-start gap-3">
-                          <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                          <div className="flex-1">
-                            <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                              {courseObjective.objective?.title}
-                            </h4>
-                            {courseObjective.objective?.description && (
-                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                {courseObjective.objective.description}
-                              </p>
-                            )}
-                            <div className="flex items-center gap-2 mt-2">
-                              {courseObjective.objective?.bloom_level && (
-                                <Badge variant="secondary" size="sm">
-                                  {courseObjective.objective.bloom_level}
-                                </Badge>
-                              )}
-                              {courseObjective.objective?.measurable && (
-                                <Badge variant="outline" size="sm">
-                                  Measurable
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </li>
-                      ))}
-                  </ul>
-                </Card.Content>
-              </Card>
-            )}
 
             {/* Prerequisites */}
             {course.prerequisites && course.prerequisites.length > 0 && (
