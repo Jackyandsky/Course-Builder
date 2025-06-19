@@ -16,6 +16,8 @@ import {
   DocumentTextIcon,
   LanguageIcon,
   KeyIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -32,7 +34,14 @@ const navigation = [
   { name: 'Methods', href: '/methods', icon: CogIcon },
   { name: 'Books', href: '/books', icon: BookOpenIcon },
   { name: 'Vocabulary', href: '/vocabulary', icon: LanguageIcon },
-  { name: 'Decoders', href: '/decoders', icon: KeyIcon },
+  {
+    name: 'Proprietary Product',
+    icon: CogIcon,
+    isCategory: true,
+    children: [
+      { name: 'Decoders', href: '/decoders', icon: KeyIcon },
+    ]
+  },
 ];
 
 interface DashboardLayoutProps {
@@ -41,7 +50,96 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<string[]>(['Proprietary Product']);
   const pathname = usePathname();
+
+  const toggleCategory = (categoryName: string) => {
+    setExpandedCategories(prev => 
+      prev.includes(categoryName) 
+        ? prev.filter(name => name !== categoryName)
+        : [...prev, categoryName]
+    );
+  };
+
+  const renderNavigationItem = (item: any, isMobile: boolean = false) => {
+    if (item.isCategory) {
+      const isExpanded = expandedCategories.includes(item.name);
+      return (
+        <li key={item.name}>
+          <button
+            onClick={() => toggleCategory(item.name)}
+            className="w-full group flex items-center gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold text-gray-700 hover:text-primary-600 hover:bg-gray-50"
+          >
+            <item.icon
+              className="h-6 w-6 shrink-0 text-gray-400 group-hover:text-primary-600"
+              aria-hidden="true"
+            />
+            <span className="flex-1 text-left">{item.name}</span>
+            {isExpanded ? (
+              <ChevronDownIcon className="h-4 w-4 text-gray-400" />
+            ) : (
+              <ChevronRightIcon className="h-4 w-4 text-gray-400" />
+            )}
+          </button>
+          {isExpanded && item.children && (
+            <ul className="ml-6 mt-1 space-y-1">
+              {item.children.map((child: any) => (
+                <li key={child.name}>
+                  <Link
+                    href={child.href}
+                    className={cn(
+                      pathname === child.href
+                        ? 'bg-gray-50 text-primary-600'
+                        : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50',
+                      'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
+                    )}
+                    onClick={isMobile ? () => setSidebarOpen(false) : undefined}
+                  >
+                    <child.icon
+                      className={cn(
+                        pathname === child.href
+                          ? 'text-primary-600'
+                          : 'text-gray-400 group-hover:text-primary-600',
+                        'h-6 w-6 shrink-0'
+                      )}
+                      aria-hidden="true"
+                    />
+                    {child.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </li>
+      );
+    } else {
+      return (
+        <li key={item.name}>
+          <Link
+            href={item.href}
+            className={cn(
+              pathname === item.href
+                ? 'bg-gray-50 text-primary-600'
+                : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50',
+              'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
+            )}
+            onClick={isMobile ? () => setSidebarOpen(false) : undefined}
+          >
+            <item.icon
+              className={cn(
+                pathname === item.href
+                  ? 'text-primary-600'
+                  : 'text-gray-400 group-hover:text-primary-600',
+                'h-6 w-6 shrink-0'
+              )}
+              aria-hidden="true"
+            />
+            {item.name}
+          </Link>
+        </li>
+      );
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -100,31 +198,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     <ul role="list" className="flex flex-1 flex-col gap-y-7">
                       <li>
                         <ul role="list" className="-mx-2 space-y-1">
-                          {navigation.map((item) => (
-                            <li key={item.name}>
-                              <Link
-                                href={item.href}
-                                className={cn(
-                                  pathname === item.href
-                                    ? 'bg-gray-50 text-primary-600'
-                                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50',
-                                  'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
-                                )}
-                                onClick={() => setSidebarOpen(false)}
-                              >
-                                <item.icon
-                                  className={cn(
-                                    pathname === item.href
-                                      ? 'text-primary-600'
-                                      : 'text-gray-400 group-hover:text-primary-600',
-                                    'h-6 w-6 shrink-0'
-                                  )}
-                                  aria-hidden="true"
-                                />
-                                {item.name}
-                              </Link>
-                            </li>
-                          ))}
+                          {navigation.map((item) => renderNavigationItem(item, true))}
                         </ul>
                       </li>
                     </ul>
@@ -146,30 +220,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <ul role="list" className="flex flex-1 flex-col gap-y-7">
               <li>
                 <ul role="list" className="-mx-2 space-y-1">
-                  {navigation.map((item) => (
-                    <li key={item.name}>
-                      <Link
-                        href={item.href}
-                        className={cn(
-                          pathname === item.href
-                            ? 'bg-gray-50 text-primary-600'
-                            : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50',
-                          'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
-                        )}
-                      >
-                        <item.icon
-                          className={cn(
-                            pathname === item.href
-                              ? 'text-primary-600'
-                              : 'text-gray-400 group-hover:text-primary-600',
-                            'h-6 w-6 shrink-0'
-                          )}
-                          aria-hidden="true"
-                        />
-                        {item.name}
-                      </Link>
-                    </li>
-                  ))}
+                  {navigation.map((item) => renderNavigationItem(item, false))}
                 </ul>
               </li>
             </ul>

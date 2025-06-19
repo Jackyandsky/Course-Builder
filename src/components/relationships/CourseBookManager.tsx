@@ -254,13 +254,17 @@ export function CourseBookManager({ courseId, onUpdate }: CourseBookManagerProps
                 key={courseBook.id}
                 className="border rounded-lg p-2 hover:shadow-md transition-shadow group relative"
               >
-                {courseBook.book?.cover_image_url && (
-                  <img
-                    src={courseBook.book.cover_image_url}
-                    alt={courseBook.book.title}
-                    className="w-full h-24 object-cover rounded mb-2"
-                  />
-                )}
+                <div className="w-full h-24 bg-gray-100 dark:bg-gray-800 rounded mb-2 flex items-center justify-center">
+                  {courseBook.book?.cover_image_url ? (
+                    <img
+                      src={courseBook.book.cover_image_url}
+                      alt={courseBook.book.title}
+                      className="w-full h-full object-cover rounded"
+                    />
+                  ) : (
+                    <Book className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+                  )}
+                </div>
                 <div className="space-y-1">
                   <h4 className="font-medium text-xs line-clamp-2" title={courseBook.book?.title}>
                     {courseBook.book?.title}
@@ -272,11 +276,14 @@ export function CourseBookManager({ courseId, onUpdate }: CourseBookManagerProps
                   )}
                   <div className="flex items-center justify-between">
                     <Badge
-                      variant={courseBook.is_required ? 'default' : 'secondary'}
-                      className="cursor-pointer text-xs px-1 py-0.5"
-                      onClick={() => handleToggleRequired(courseBook.book_id, courseBook.is_required)}
+                      variant="outline"
+                      className="text-xs px-1 py-0.5"
+                      style={courseBook.book?.category?.color ? {
+                        borderColor: courseBook.book.category.color,
+                        color: courseBook.book.category.color
+                      } : undefined}
                     >
-                      {courseBook.is_required ? 'Req' : 'Opt'}
+                      {courseBook.book?.category?.name || 'Uncategorized'}
                     </Badge>
                     <Button
                       variant="ghost"

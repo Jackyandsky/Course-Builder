@@ -54,7 +54,14 @@ export class CourseBookService {
           publication_year,
           cover_image_url,
           content_type,
-          file_url
+          file_url,
+          category_id,
+          category:categories (
+            id,
+            name,
+            color,
+            icon
+          )
         )
       `)
       .eq('course_id', courseId)

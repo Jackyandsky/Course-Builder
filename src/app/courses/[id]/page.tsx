@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { Course } from '@/types/database';
 import { courseService } from '@/lib/supabase/courses';
-import { Button, Card, Badge, Modal, Spinner, Tabs, TabsList, TabsTrigger } from '@/components/ui';
+import { Button, Card, Badge, Modal, Spinner, Tabs, TabsList, TabsTrigger, RichTextDisplay } from '@/components/ui';
 import { 
   CourseBookManager, 
   CourseVocabularyManager, 
@@ -308,11 +308,15 @@ export default function CourseDetailPage() {
                 <h2 className="text-lg font-semibold">Description</h2>
               </Card.Header>
               <Card.Content>
-                <div className="prose prose-sm max-w-none dark:prose-invert">
-                  {course.description || (
-                    <p className="text-gray-500 italic">No description provided</p>
-                  )}
-                </div>
+                {course.description ? (
+                  <RichTextDisplay 
+                    content={course.description} 
+                    size="sm"
+                    className="max-w-none"
+                  />
+                ) : (
+                  <p className="text-gray-500 italic">No description provided</p>
+                )}
               </Card.Content>
             </Card>
 

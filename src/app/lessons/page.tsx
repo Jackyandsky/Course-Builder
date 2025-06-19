@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Clock, Search, Calendar, Users, BookOpen, CheckSquare, Edit, BarChart3 } from 'lucide-react';
 import { Lesson, LessonStatus } from '@/types/database';
@@ -9,7 +9,7 @@ import { scheduleService } from '@/lib/supabase/schedules';
 import { courseService } from '@/lib/supabase/courses';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Button, Card, Badge, Input, Select, Spinner, Tabs, TabsList, TabsTrigger, TabsContent, RichTextTruncate } from '@/components/ui';
+import { Button, Card, Badge, SearchBox, Select, Spinner, Tabs, TabsList, TabsTrigger, TabsContent, RichTextTruncate } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 interface Course {
@@ -37,6 +37,8 @@ export default function LessonsPage() {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [allSchedules, setAllSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
+  const [filtering, setFiltering] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('');
   const [selectedSchedule, setSelectedSchedule] = useState('');
@@ -53,9 +55,85 @@ export default function LessonsPage() {
     loadInitialData();
   }, []);
 
+  // Memoize the load function to prevent unnecessary recreations
+  const loadLessons = useCallback(async (search?: string, isFilterChange = false) => {
+    try {
+      const isInitialLoad = !search && !searchQuery && !isFilterChange;
+      
+      if (isInitialLoad) {
+        setLoading(true);
+      } else if (search) {
+        setSearching(true);
+      } else if (isFilterChange) {
+        setFiltering(true);
+      }
+      
+      // Build filters
+      const filters: LessonFilters = {};
+      
+      if (search) {
+        filters.search = search;
+      }
+      if (selectedSchedule) {
+        filters.schedule_id = selectedSchedule;
+      }
+      if (selectedStatus) {
+        filters.status = selectedStatus as LessonStatus;
+      }
+
+      const data = await lessonService.getLessons(filters);
+      
+      // Filter by course (if no schedule selected) - now done client-side only for course filtering
+      let filteredLessons = data;
+      
+      if (selectedCourse && !selectedSchedule) {
+        filteredLessons = filteredLessons.filter(lesson => 
+          lesson.schedule?.course?.id === selectedCourse
+        );
+      }
+      
+      setLessons(filteredLessons);
+    } catch (error) {
+      console.error('Failed to load lessons:', error);
+    } finally {
+      setLoading(false);
+      setSearching(false);
+      setFiltering(false);
+    }
+  }, [selectedCourse, selectedSchedule, selectedStatus, searchQuery]);
+
+  // Handle search with debouncing
+  const handleSearch = useCallback((search: string) => {
+    setSearchQuery(search);
+    loadLessons(search);
+  }, [loadLessons]);
+
+  // Handle course selection
+  const handleCourseChange = useCallback((courseId: string) => {
+    setSelectedCourse(courseId);
+    // Don't trigger immediate reload, let useEffect handle it
+  }, []);
+
+  // Handle schedule selection
+  const handleScheduleChange = useCallback((scheduleId: string) => {
+    setSelectedSchedule(scheduleId);
+    // Don't trigger immediate reload, let useEffect handle it
+  }, []);
+
+  // Handle status selection
+  const handleStatusChange = useCallback((status: string) => {
+    setSelectedStatus(status);
+    // Don't trigger immediate reload, let useEffect handle it
+  }, []);
+
+  // Reload when filters change (with debounced effect)
   useEffect(() => {
-    loadLessons();
-  }, [searchQuery, selectedCourse, selectedSchedule, selectedStatus]);
+    const timeoutId = setTimeout(() => {
+      loadLessons(undefined, true);
+    }, 100); // Small delay to prevent rapid successive calls
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedCourse, selectedSchedule, selectedStatus, loadLessons]);
 
   useEffect(() => {
     // Filter schedules based on selected course
@@ -103,43 +181,6 @@ export default function LessonsPage() {
     }
   };
 
-  const loadLessons = async () => {
-    try {
-      setLoading(true);
-      const filters: LessonFilters = {};
-      
-      if (selectedSchedule) {
-        filters.schedule_id = selectedSchedule;
-      }
-      if (selectedStatus) {
-        filters.status = selectedStatus as LessonStatus;
-      }
-
-      const data = await lessonService.getLessons(filters);
-      
-      // Filter by search query and course (if no schedule selected)
-      let filteredLessons = data;
-      
-      if (selectedCourse && !selectedSchedule) {
-        filteredLessons = filteredLessons.filter(lesson => 
-          lesson.schedule?.course?.id === selectedCourse
-        );
-      }
-      
-      if (searchQuery) {
-        filteredLessons = filteredLessons.filter(lesson => 
-          lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (lesson.description && lesson.description.toLowerCase().includes(searchQuery.toLowerCase()))
-        );
-      }
-      
-      setLessons(filteredLessons);
-    } catch (error) {
-      console.error('Failed to load lessons:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
 
   const renderOverviewContent = () => (
@@ -547,50 +588,89 @@ export default function LessonsPage() {
           {/* Cascade Filters */}
           <Card>
             <Card.Content className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
+                  <SearchBox
+                    placeholder="Search lessons..."
+                    onSearch={handleSearch}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search lessons..."
-                    className="pl-10"
+                    fullWidth
+                    debounceDelay={300}
+                    showClearButton={!searching}
                   />
+                  {searching && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <Spinner size="sm" />
+                    </div>
+                  )}
                 </div>
                 
-                <Select
-                  value={selectedCourse}
-                  onChange={(e) => setSelectedCourse(e.target.value)}
-                  options={[
-                    { value: '', label: 'All Courses' },
-                    ...courses.map(course => ({ value: course.id, label: course.title }))
-                  ]}
-                  placeholder="Select Course"
-                />
+                <div className="relative">
+                  <Select
+                    value={selectedCourse}
+                    onChange={(e) => handleCourseChange(e.target.value)}
+                    options={[
+                      { value: '', label: 'All Courses' },
+                      ...courses.map(course => ({ 
+                        value: course.id, 
+                        label: course.title.length > 40 ? course.title.substring(0, 40) + '...' : course.title 
+                      }))
+                    ]}
+                    placeholder="Select Course"
+                    className="text-sm"
+                    disabled={filtering}
+                  />
+                  {filtering && (
+                    <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <Spinner size="sm" />
+                    </div>
+                  )}
+                </div>
 
-                <Select
-                  value={selectedSchedule}
-                  onChange={(e) => setSelectedSchedule(e.target.value)}
-                  options={[
-                    { value: '', label: 'All Schedules' },
-                    ...schedules.map(schedule => ({ value: schedule.id, label: schedule.name }))
-                  ]}
-                  placeholder="Select Schedule"
-                  disabled={schedules.length === 0}
-                />
+                <div className="relative">
+                  <Select
+                    value={selectedSchedule}
+                    onChange={(e) => handleScheduleChange(e.target.value)}
+                    options={[
+                      { value: '', label: 'All Schedules' },
+                      ...schedules.map(schedule => ({ 
+                        value: schedule.id, 
+                        label: schedule.name.length > 25 ? schedule.name.substring(0, 25) + '...' : schedule.name 
+                      }))
+                    ]}
+                    placeholder="Select Schedule"
+                    disabled={schedules.length === 0 || filtering}
+                    className="text-sm"
+                  />
+                  {filtering && (
+                    <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <Spinner size="sm" />
+                    </div>
+                  )}
+                </div>
                 
-                <Select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  options={[
-                    { value: '', label: 'All Statuses' },
-                    { value: 'draft', label: 'Draft' },
-                    { value: 'scheduled', label: 'Scheduled' },
-                    { value: 'completed', label: 'Completed' },
-                    { value: 'cancelled', label: 'Cancelled' }
-                  ]}
-                  placeholder="Status"
-                />
+                <div className="relative">
+                  <Select
+                    value={selectedStatus}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    options={[
+                      { value: '', label: 'All Statuses' },
+                      { value: 'draft', label: 'Draft' },
+                      { value: 'scheduled', label: 'Scheduled' },
+                      { value: 'completed', label: 'Completed' },
+                      { value: 'cancelled', label: 'Cancelled' }
+                    ]}
+                    placeholder="Status"
+                    className="text-sm"
+                    disabled={filtering}
+                  />
+                  {filtering && (
+                    <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <Spinner size="sm" />
+                    </div>
+                  )}
+                </div>
               </div>
             </Card.Content>
           </Card>

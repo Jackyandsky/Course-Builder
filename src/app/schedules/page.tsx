@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus, Search, Calendar, Copy, ArrowLeft, CheckCircle } from 'lucide-react';
 import { Schedule } from '@/types/schedule';
@@ -14,6 +14,8 @@ export default function SchedulesPage() {
   const searchParams = useSearchParams();
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedSchedules, setSelectedSchedules] = useState<Set<string>>(new Set());
   const [attaching, setAttaching] = useState(false);
   
@@ -25,11 +27,24 @@ export default function SchedulesPage() {
     loadSchedules();
   }, []);
 
-  const loadSchedules = async () => {
+  const loadSchedules = useCallback(async (search?: string) => {
     try {
-      setLoading(true);
-      // Get all schedules
-      const data = await scheduleService.getSchedules({});
+      const isInitialLoad = !search && !searchQuery;
+      
+      if (isInitialLoad) {
+        setLoading(true);
+      } else {
+        setSearching(true);
+      }
+      
+      // Build filters
+      const filters: any = {};
+      if (search) {
+        filters.search = search;
+      }
+      
+      // Get schedules with search
+      const data = await scheduleService.getSchedules(filters);
       
       // If in attach mode, filter out schedules that already belong to this course
       if (isAttachMode && courseId) {
@@ -42,13 +57,14 @@ export default function SchedulesPage() {
       console.error('Failed to load schedules:', error);
     } finally {
       setLoading(false);
+      setSearching(false);
     }
-  };
+  }, [isAttachMode, courseId, searchQuery]);
 
-  const handleSearch = (search: string) => {
-    // For now, re-fetches all. Can be optimized with search filter later.
-    loadSchedules(); 
-  };
+  const handleSearch = useCallback((search: string) => {
+    setSearchQuery(search);
+    loadSchedules(search);
+  }, [loadSchedules]);
 
   const toggleScheduleSelection = (scheduleId: string) => {
     const newSelection = new Set(selectedSchedules);
@@ -151,13 +167,22 @@ export default function SchedulesPage() {
         </div>
       </div>
 
-      {/* Search and Filters Placeholder */}
-      <div className="flex-1">
+      {/* Search and Filters */}
+      <div className="flex-1 relative">
         <SearchBox
           placeholder="Search schedules..."
           onSearch={handleSearch}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
           fullWidth
+          debounceDelay={300}
+          showClearButton={!searching}
         />
+        {searching && (
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+            <Spinner size="sm" />
+          </div>
+        )}
       </div>
 
       {/* Schedules Display */}

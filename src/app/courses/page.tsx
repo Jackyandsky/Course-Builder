@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Search, Filter, BookOpen, Clock, BarChart3 } from 'lucide-react';
 import { Course, CourseStatus, DifficultyLevel } from '@/types/database';
@@ -32,6 +32,7 @@ export default function CoursesPage() {
   const router = useRouter();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [filters, setFilters] = useState<CourseFilters>({});
   const [stats, setStats] = useState({
     total: 0,
@@ -42,22 +43,27 @@ export default function CoursesPage() {
   // State to control the visibility of the filter panel
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
-  useEffect(() => {
-    loadCourses();
-    loadStats();
-  }, [filters]);
-
-  const loadCourses = async () => {
+  const loadCourses = useCallback(async () => {
     try {
-      setLoading(true);
+      if (filters.search !== undefined) {
+        setSearchLoading(true);
+      } else {
+        setLoading(true);
+      }
       const data = await courseService.getCourses(filters);
       setCourses(data);
     } catch (error) {
       console.error('Failed to load courses:', error);
     } finally {
       setLoading(false);
+      setSearchLoading(false);
     }
-  };
+  }, [filters]);
+
+  useEffect(() => {
+    loadCourses();
+    loadStats();
+  }, [loadCourses]);
 
   const loadStats = async () => {
     try {
@@ -68,15 +74,15 @@ export default function CoursesPage() {
     }
   };
 
-  const handleSearch = (search: string) => {
-    setFilters({ ...filters, search });
-  };
+  const handleSearch = useCallback((search: string) => {
+    setFilters(prev => ({ ...prev, search }));
+  }, []);
 
-  const handleFilterChange = (filterId: string, value: any) => {
-    setFilters({ ...filters, [filterId]: value });
-  };
+  const handleFilterChange = useCallback((filterId: string, value: any) => {
+    setFilters(prev => ({ ...prev, [filterId]: value }));
+  }, []);
 
-  const filterGroups = [
+  const filterGroups = useMemo(() => [
     {
       id: 'status',
       label: 'Status',
@@ -98,7 +104,7 @@ export default function CoursesPage() {
         { value: 'expert', label: 'Level 4' },
       ],
     },
-  ];
+  ], [stats]);
 
   return (
     <div className="space-y-6 p-6">
@@ -169,12 +175,17 @@ export default function CoursesPage() {
       {/* Search and Filters */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
+            <div className="flex-1 relative">
                 <SearchBox
                     placeholder="Search courses..."
                     onSearch={handleSearch}
                     fullWidth
                 />
+                {searchLoading && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <Spinner size="sm" />
+                    </div>
+                )}
             </div>
             <Button
                 variant="outline"
@@ -202,6 +213,91 @@ export default function CoursesPage() {
       {loading ? (
         <div className="flex justify-center py-12">
           <Spinner size="lg" />
+        </div>
+      ) : searchLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {courses.map((course) => (
+            <Card
+              key={course.id}
+              className="hover:shadow-lg transition-shadow cursor-pointer opacity-60 animate-pulse"
+              onClick={() => router.push(`/courses/${course.id}`)}
+            >
+              {course.thumbnail_url && (
+                <div className="h-48 overflow-hidden rounded-t-lg">
+                  <img
+                    src={course.thumbnail_url}
+                    alt={course.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              <Card.Content className="p-6">
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 line-clamp-1">
+                    {course.title}
+                  </h3>
+                  <Badge
+                    variant={statusColors[course.status] as any}
+                    size="sm"
+                  >
+                    {course.status}
+                  </Badge>
+                </div>
+                
+                {course.short_description && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-4">
+                    {course.short_description}
+                  </p>
+                )}
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Badge
+                      variant={difficultyColors[course.difficulty] as any}
+                      size="sm"
+                    >
+                      {difficultyLabels[course.difficulty]}
+                    </Badge>
+                    {course.duration_hours && (
+                      <span className="text-sm text-gray-500">
+                        {course.duration_hours}h
+                      </span>
+                    )}
+                  </div>
+                  
+                  {course.category && (
+                    <span
+                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                      style={{
+                        backgroundColor: course.category.color ? `${course.category.color}20` : undefined,
+                        color: course.category.color || undefined,
+                      }}
+                    >
+                      {course.category.name}
+                    </span>
+                  )}
+                </div>
+                
+                {course.tags && course.tags.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1">
+                    {course.tags.slice(0, 3).map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                    {course.tags.length > 3 && (
+                      <span className="text-xs text-gray-500">
+                        +{course.tags.length - 3}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </Card.Content>
+            </Card>
+          ))}
         </div>
       ) : courses.length === 0 ? (
         <Card className="p-12 text-center">
