@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Edit, Trash2, Calendar, Clock, Users } from 'lucide-react';
 import { Schedule, Lesson } from '@/types/schedule';
 import { scheduleService } from '@/lib/supabase/schedules';
@@ -13,6 +13,7 @@ import { LessonForm } from '@/components/schedules/LessonForm'; // <-- Import Le
 export default function ScheduleDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const scheduleId = params.id as string;
 
   const [schedule, setSchedule] = useState<Schedule | null>(null);
@@ -41,12 +42,30 @@ export default function ScheduleDetailPage() {
     }
   }, [scheduleId, loadSchedule]);
   
+  const handleBack = () => {
+    const source = searchParams.get('source');
+    const courseId = searchParams.get('courseId');
+    const sourceView = searchParams.get('sourceView');
+    const sourceTab = searchParams.get('sourceTab');
+    
+    if (source === 'course' && courseId) {
+      let backUrl = `/courses/${courseId}`;
+      if (sourceView === 'tabs') {
+        backUrl += '?view=tabs';
+        if (sourceTab) backUrl += `&tab=${sourceTab}`;
+      }
+      router.push(backUrl);
+    } else {
+      router.push('/schedules');
+    }
+  };
+
   const handleDelete = async () => {
     if (!schedule) return;
     setDeleting(true);
     try {
       await scheduleService.deleteSchedule(schedule.id);
-      router.push('/schedules');
+      handleBack();
       router.refresh();
     } catch (error) {
       console.error('Failed to delete schedule:', error);
@@ -88,9 +107,11 @@ export default function ScheduleDetailPage() {
         {/* Header and Details Card... (code remains the same) */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-                <Button variant="ghost" size="sm" onClick={() => router.push('/schedules')} className="mb-4">
+                <Button variant="ghost" size="sm" onClick={handleBack} className="mb-4">
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back to Schedules
+                    {searchParams.get('source') === 'course' && searchParams.get('courseId') 
+                      ? `Back to ${schedule.course?.title || 'Course'}` 
+                      : 'Back to Schedules'}
                 </Button>
                 <h1 className="text-2xl font-bold text-gray-900">{schedule.name}</h1>
                 <p className="mt-1 text-sm text-gray-600">
