@@ -15,3 +15,4 @@ export * from './Tabs';
 export * from './BelongingSelector';
 export * from './RichTextTruncate';
 export * from './RichTextDisplay';
+export * from './AccordionSection';

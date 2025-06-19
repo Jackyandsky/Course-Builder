@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { scheduleService } from '@/lib/supabase/schedules'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -21,8 +21,28 @@ interface CourseScheduleListProps {
 
 export function CourseScheduleList({ courseId }: CourseScheduleListProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [schedules, setSchedules] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Build source URL for navigation back to this course
+  const buildSourceParams = () => {
+    const currentView = searchParams.get('view')
+    const currentTab = searchParams.get('tab')
+    
+    const params = new URLSearchParams()
+    params.set('source', 'course')
+    params.set('courseId', courseId)
+    
+    if (currentView === 'tabs' || currentTab) {
+      params.set('sourceView', 'tabs')
+      if (currentTab) params.set('sourceTab', currentTab)
+    } else {
+      params.set('sourceView', 'accordion')
+    }
+    
+    return params.toString()
+  }
 
   useEffect(() => {
     loadSchedules()
@@ -140,7 +160,7 @@ export function CourseScheduleList({ courseId }: CourseScheduleListProps) {
               <Card
                 key={schedule.id}
                 className="hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => router.push(`/schedules/${schedule.id}`)}
+                onClick={() => router.push(`/schedules/${schedule.id}?${buildSourceParams()}`)}
               >
                 <Card.Content className="p-4">
                   <div className="flex items-start justify-between">

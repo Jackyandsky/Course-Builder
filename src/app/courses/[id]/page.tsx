@@ -5,7 +5,7 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { 
   ArrowLeft, Edit, Trash2, Archive, Globe, Lock, 
   Book, Bookmark, Calendar, Clock, Target, AlertCircle,
-  MoreVertical, Share2, Copy, CheckCircle, Settings, FileText, ExternalLink
+  MoreVertical, Share2, Copy, CheckCircle, Settings, FileText, ExternalLink, LayoutList, Rows
 } from 'lucide-react';
 import { Course } from '@/types/database';
 import { courseService } from '@/lib/supabase/courses';
@@ -19,6 +19,7 @@ import {
   CourseMethodManager,
   CourseTaskManager
 } from '@/components/relationships';
+import { AccordionCourseView } from '@/components/courses/AccordionCourseView';
 import { cn } from '@/lib/utils';
 
 const statusColors = {
@@ -52,6 +53,9 @@ export default function CourseDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
+  const [viewMode, setViewMode] = useState<'tabs' | 'accordion'>(
+    searchParams.get('view') === 'tabs' ? 'tabs' : 'accordion'
+  );
   const [copied, setCopied] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
@@ -125,6 +129,17 @@ export default function CourseDetailPage() {
   const handleShareCourse = () => {
     const shareUrl = `${window.location.origin}/share/${courseId}`;
     window.open(shareUrl, '_blank');
+  };
+
+  const handleViewModeChange = (mode: 'tabs' | 'accordion') => {
+    setViewMode(mode);
+    const currentUrl = new URL(window.location.href);
+    if (mode === 'tabs') {
+      currentUrl.searchParams.set('view', 'tabs');
+    } else {
+      currentUrl.searchParams.delete('view'); // accordion is default, no need for param
+    }
+    router.replace(currentUrl.pathname + currentUrl.search);
   };
 
   if (loading) {
@@ -224,6 +239,34 @@ export default function CourseDetailPage() {
           
           {/* Actions */}
           <div className="flex items-center gap-2">
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1 mr-2">
+              <button
+                onClick={() => handleViewModeChange('tabs')}
+                className={cn(
+                  "p-2 rounded text-sm font-medium transition-colors",
+                  viewMode === 'tabs'
+                    ? "bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100"
+                    : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                )}
+                title="Tab View"
+              >
+                <LayoutList className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => handleViewModeChange('accordion')}
+                className={cn(
+                  "p-2 rounded text-sm font-medium transition-colors",
+                  viewMode === 'accordion'
+                    ? "bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100"
+                    : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                )}
+                title="Accordion View"
+              >
+                <Rows className="h-4 w-4" />
+              </button>
+            </div>
+
             {course.status === 'draft' && (
               <Button
                 variant="primary"
@@ -286,19 +329,29 @@ export default function CourseDetailPage() {
         </div>
       )}
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList>
-          {tabs.map((tab) => (
-            <TabsTrigger key={tab.id} value={tab.id}>
-              {tab.icon}
-              <span className="ml-2">{tab.label}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      {/* Conditional View Rendering */}
+      {viewMode === 'accordion' ? (
+        <AccordionCourseView 
+          course={course}
+          courseId={courseId}
+          onUpdate={loadCourse}
+          onShare={handleShareCourse}
+        />
+      ) : (
+        <>
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+            <TabsList>
+              {tabs.map((tab) => (
+                <TabsTrigger key={tab.id} value={tab.id}>
+                  {tab.icon}
+                  <span className="ml-2">{tab.label}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
 
-      {/* Tab Content */}
+          {/* Tab Content */}
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
@@ -522,6 +575,8 @@ export default function CourseDetailPage() {
             <CourseTaskManager courseId={courseId} onUpdate={loadCourse} />
           </Card.Content>
         </Card>
+      )}
+        </>
       )}
 
       {/* Delete Confirmation Modal */}
