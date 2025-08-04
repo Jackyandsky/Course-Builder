@@ -36,7 +36,36 @@ export const courseService = {
       .from('courses')
       .select(`
         *,
-        category:categories(id, name, color, icon)
+        category:categories(id, name, color, icon),
+        course_books(
+          id,
+          book_id,
+          is_required,
+          notes,
+          position,
+          book:books(id, title, author, isbn, publisher)
+        ),
+        course_objectives(
+          id,
+          objective_id,
+          position,
+          objective:objectives(id, title, description)
+        ),
+        course_methods(
+          id,
+          method_id,
+          position,
+          method:methods(id, name, description)
+        ),
+        schedules(
+          id,
+          name,
+          description,
+          start_date,
+          end_date,
+          recurrence_type,
+          is_active
+        )
       `)
       .order('created_at', { ascending: false });
 

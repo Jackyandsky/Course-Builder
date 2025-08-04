@@ -1,8 +1,7 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { SHARED_USER_ID } from '@/lib/constants/shared';
+import { contentService } from './content';
+import { Content, ContentFilters, CreateContentData, UpdateContentData } from '@/types/content';
 
-const supabase = createClientComponentClient();
-
+// Legacy decoder interface for backward compatibility
 export interface Decoder {
   id: string;
   name: string;
@@ -14,6 +13,7 @@ export interface Decoder {
   user_id: string;
   created_at: string;
   updated_at: string;
+  usage_instructions?: string;
   book?: {
     id: string;
     title: string;
@@ -44,186 +44,170 @@ export interface CreateDecoderData {
   tags?: string[];
   book_id: string;
   is_public?: boolean;
+  usage_instructions?: string;
 }
 
 export interface UpdateDecoderData extends Partial<CreateDecoderData> {
   id: string;
 }
 
+// Helper function to convert Content to Decoder format
+function contentToDecoder(content: Content): Decoder {
+  return {
+    id: content.id,
+    name: content.name,
+    description: content.content || '',
+    category: content.content_data?.legacy_category || null,
+    tags: content.tags,
+    book_id: content.book_id || '',
+    is_public: content.is_public,
+    user_id: content.user_id,
+    created_at: content.created_at,
+    updated_at: content.updated_at,
+    usage_instructions: content.content_data?.usage_instructions,
+    book: content.book,
+    category_data: content.category,
+  };
+}
+
+// Helper function to get decoder category ID
+async function getDecoderCategoryId(): Promise<string> {
+  const categories = await contentService.getProprietaryProductCategories();
+  const decoderCategory = categories.find(cat => cat.name === 'Decoders');
+  if (!decoderCategory) {
+    throw new Error('Decoder category not found. Please run migrations.');
+  }
+  return decoderCategory.id;
+}
+
 export const decoderService = {
   // Get all decoders with optional filters
   async getDecoders(filters: DecoderFilters = {}) {
-    let query = supabase
-      .from('decoders')
-      .select(`
-        *,
-        book:books(
-          id,
-          title,
-          author,
-          content_type
-        ),
-        category_data:categories(
-          id,
-          name,
-          color,
-          icon
-        )
-      `)
-      .order('created_at', { ascending: false })
-      .limit(filters.limit || 50);
-
-    // Apply filters
-    if (filters.search) {
-      query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%,category.ilike.%${filters.search}%`);
+    try {
+      const decoderCategoryId = await getDecoderCategoryId();
+      
+      const contentFilters: ContentFilters = {
+        category_id: decoderCategoryId,
+        search: filters.search,
+        book_id: filters.book_id,
+        tags: filters.tags,
+        is_public: filters.is_public,
+        limit: filters.limit || 50,
+      };
+      
+      const contents = await contentService.getContent(contentFilters);
+      return contents.map(contentToDecoder);
+    } catch (error) {
+      console.error('Failed to get decoders:', error);
+      throw error;
     }
-    
-    if (filters.book_id) {
-      query = query.eq('book_id', filters.book_id);
-    }
-    
-    
-    if (filters.category) {
-      query = query.ilike('category', `%${filters.category}%`);
-    }
-    
-    if (filters.is_public !== undefined) {
-      query = query.eq('is_public', filters.is_public);
-    }
-    
-    if (filters.tags && filters.tags.length > 0) {
-      query = query.contains('tags', filters.tags);
-    }
-
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    return data as Decoder[];
   },
 
   // Get single decoder by ID
   async getDecoder(id: string) {
-    const { data, error } = await supabase
-      .from('decoders')
-      .select(`
-        *,
-        book:books(
-          id,
-          title,
-          author,
-          content_type,
-          description,
-          publication_year,
-          publisher,
-          category:categories(id, name, color, icon)
-        )
-      `)
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
-    return data as Decoder;
+    try {
+      const content = await contentService.getContentById(id);
+      return contentToDecoder(content);
+    } catch (error) {
+      console.error('Failed to get decoder:', error);
+      throw error;
+    }
   },
 
   // Create new decoder
   async createDecoder(decoderData: CreateDecoderData) {
-    const dataWithDefaults = {
-      ...decoderData,
-      is_public: decoderData.is_public || false,
-      user_id: SHARED_USER_ID,
-    };
-
-    const { data, error } = await supabase
-      .from('decoders')
-      .insert(dataWithDefaults)
-      .select(`
-        *,
-        book:books(
-          id,
-          title,
-          author,
-          content_type
-        ),
-        category_data:categories(
-          id,
-          name,
-          color,
-          icon
-        )
-      `)
-      .single();
-    
-    if (error) throw error;
-    return data as Decoder;
+    try {
+      const decoderCategoryId = await getDecoderCategoryId();
+      
+      const contentData: CreateContentData = {
+        name: decoderData.name,
+        content: decoderData.description,
+        category_id: decoderCategoryId,
+        tags: decoderData.tags,
+        book_id: decoderData.book_id,
+        is_public: decoderData.is_public,
+        content_data: {
+          type: 'decoder',
+          usage_instructions: decoderData.usage_instructions,
+          legacy_category: decoderData.category,
+        },
+      };
+      
+      const content = await contentService.createContent(contentData);
+      return contentToDecoder(content);
+    } catch (error) {
+      console.error('Failed to create decoder:', error);
+      throw error;
+    }
   },
 
   // Update decoder
   async updateDecoder({ id, ...decoderData }: UpdateDecoderData) {
-    const { data, error } = await supabase
-      .from('decoders')
-      .update({
-        ...decoderData,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select(`
-        *,
-        book:books(
-          id,
-          title,
-          author,
-          content_type
-        ),
-        category_data:categories(
-          id,
-          name,
-          color,
-          icon
-        )
-      `)
-      .single();
-    
-    if (error) throw error;
-    return data as Decoder;
+    try {
+      const updateData: UpdateContentData = {
+        id,
+        name: decoderData.name,
+        content: decoderData.description,
+        tags: decoderData.tags,
+        book_id: decoderData.book_id,
+        is_public: decoderData.is_public,
+      };
+      
+      // If content_data fields need updating
+      if (decoderData.usage_instructions !== undefined || decoderData.category !== undefined) {
+        const existing = await contentService.getContentById(id);
+        updateData.content_data = {
+          ...existing.content_data,
+          type: 'decoder',
+          usage_instructions: decoderData.usage_instructions ?? existing.content_data?.usage_instructions,
+          legacy_category: decoderData.category ?? existing.content_data?.legacy_category,
+        };
+      }
+      
+      const content = await contentService.updateContent(updateData);
+      return contentToDecoder(content);
+    } catch (error) {
+      console.error('Failed to update decoder:', error);
+      throw error;
+    }
   },
 
   // Delete decoder
   async deleteDecoder(id: string) {
-    const { error } = await supabase
-      .from('decoders')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
+    try {
+      await contentService.deleteContent(id);
+    } catch (error) {
+      console.error('Failed to delete decoder:', error);
+      throw error;
+    }
   },
 
   // Get decoder statistics
   async getDecoderStats() {
-    const { data, error } = await supabase
-      .from('decoders')
-      .select('*', { count: 'exact' });
-    
-    if (error) throw error;
-
-    const stats = {
-      total: data?.length || 0,
-      public: data?.filter(d => d.is_public).length || 0,
-      private: data?.filter(d => !d.is_public).length || 0,
-    };
-
-    return stats;
+    try {
+      const stats = await contentService.getContentStats();
+      const decoderStats = stats.find(s => s.category === 'Decoders');
+      
+      return {
+        total: decoderStats?.total || 0,
+        public: decoderStats?.public || 0,
+        private: decoderStats?.private || 0,
+      };
+    } catch (error) {
+      console.error('Failed to get decoder stats:', error);
+      throw error;
+    }
   },
 
-  // Get categories for decoders
+  // Get categories for decoders (legacy support)
   async getCategories() {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('type', 'decoder')
-      .order('name');
-    
-    if (error) throw error;
-    return data || [];
+    try {
+      // Return legacy decoder categories if any exist
+      // In the new system, we use the main Decoders category
+      return [];
+    } catch (error) {
+      console.error('Failed to get categories:', error);
+      return [];
+    }
   },
-
 };
