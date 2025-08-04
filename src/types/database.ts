@@ -39,6 +39,7 @@ export interface Course {
   thumbnail_url?: string;
   is_public: boolean;
   public_slug?: string;
+  instructor_name?: string;
   user_id: string;
   created_at: string;
   updated_at: string;
@@ -191,6 +192,7 @@ export interface Method {
   name: string;
   description?: string;
   category_id?: string;
+  duration_minutes?: number;
   tags?: string[];
   user_id: string;
   created_at: string;
@@ -212,6 +214,9 @@ export interface Task {
   tags?: string[];
   belongingCourses?: any[];
   belongingLessons?: any[];
+  due_date?: string;
+  assigned_to?: string;
+  status?: string;
   user_id: string;
   created_at: string;
   updated_at: string;
@@ -372,8 +377,11 @@ export interface LessonBook {
     id: string;
     lesson_id: string;
     book_id: string;
+    position?: number;
+    is_required?: boolean;
     pages_from?: number;
     pages_to?: number;
+    reading_pages?: string;
     notes?: string;
 }
 export interface LessonVocabulary {

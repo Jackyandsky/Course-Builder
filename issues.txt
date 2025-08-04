@@ -1,0 +1,66 @@
+1. now I would like to archieve some features, primary is to extend the project make it a whole business website include landing page, course list/detail, library list/detail (virual, on site), Store/(Decoder,LEX vocabulary...), booking (front page), user interface (account) which allow user to manage bookings, orders, courses (submission eg. task, quiz...). the landing page you can quote https://dev.igpsedu.com/, the landing page static resourse(php, css) stored in /landingpageSRC.
+2. the current area , taken as /dashboard area that used for tutors to build course and manage the students, and website settings (some further features we will create in the futher).
+3. first I suppose to do is to restructure our project, /index /account / dashboard, and second, focus on the front page development and then make the landing page and courses and store area, and then do the addtional feature of the dashboard and the others.
+4. combine above fragments give me you advices.
+update the plan to clickup //https://app.clickup.com/9014065917/v/l/li/901409392385?pr=90140298904
+1. I think the router /account and /admin can be identify the differ area, no need to use a dashboard.
+2. I use jackyandsky@gmail.com Jacky789 not enter the admin area.
+3. can you connect the supabase server using mcp ability? let me know which project you can control (should be "Course Builder").
+
+sounds good, now all of pages under /admin work, then I want to discuss a question with you.
+1. focus on the Proprietary Product/ Decoders area. I have a multiple content like this with title, content,... associate with a book. then I think if we can create a principle which allows us to create a category (of course in our category table) which can under the Proprietary Product section as subsections, such as decoders, complete study package, standardizer. when you create a category under the Proprietary Product, you can operate the subsection like the current decoder and enable you to create multiple subsection under the Proprietary Product.
+
+I think we should change the decoder table to content table with a category column to identify them
+1. no direct access to the page /proprietary-categories, I think should be a entry on the navigations bar the proprietary-categories label can be used to into the page and simultenously extend the subsection when enter /admin/proprietary-categories, occur error while add category //Unhandled Runtime Error
+Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+
+Check the render method of `ProprietaryCategoriesPage`.
+
+1. on the page /admin/proprietary-categories when conduct add category then occur //Unhandled Runtime Error
+Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+
+Check the render method of `ProprietaryCategoriesPage`.
+I have already launch the dev server at https://builder.vanboss.work/ you can use the credential jackyandsky@gmail.com Jacky789 to log in
+using pupeteer to explore the /admin/proprietary-categories section, and test the add category function.
+1. on the page /admin/proprietary-categories when conduct add category then occur //Unhandled Runtime Error
+Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+2. when enter the page, on category list here, I think at least one category exist (Decoders)
+1. the url: https://share.igpsedu.com/Proprietary%20Products/Standardizers/Complete%20Study%20Packet list all the complete study packet,
+try to retrive the content and put title,content even related to a book that stored in our books library (if applicable), by the default user (4ef526fd-43a0-44fd-82e4-2ab404ef673c).
+we should correct a mistake, about the content , we should contain title, content, these are the primary, but we only have 
+description and title, now we should change the field description to content, that is the right name that we should use
+claude-code add-mcp-server gemini -s user --command npx --args "-y" --args "github:aliargun/mcp-server-gemini" --env
+  GEMINI_API_KEY=your_api_key_here
+
+when back to the content list page from detail, the sorting status changed, fix it. the status of the sorting      │
+│   should keep during visiting the page and sub page
+1. the url: https://share.igpsedu.com/Proprietary%20Products/Standardizers/Complete%20Study%20Packet list all the complete study packet,
+try to retrive the content and put title,content and save them into seperate txt file and then I will copy them manually
+1. actually, I am the owner of these pdf files. I have an idea, why we don't make a function that allow us to create a 
+certain content by using one or more pdfs?
+1. let us talk about the library and store, they are the similar page that express the list of the book (all the products we have are likely book content).
+2. the list should cover all the basic functions filer search bar, pagination and so on, if the book do not have a image cover, then display a card with author and title (book), other we can image.
+3. the details page include the basic information including the description and online buy button allow user to place order.
+4. we can design a unify listing page , the only difference is the type I think. make the page professional and simple. looks nice.
+
+the detail page looks awesome, but the course card looks no fancy, use extra thinking combine all the related
+  parameters to make the card effective and professional
+claude mcp add --transport http -s user context7 https://mcp.context7.com/mcp
+claude mcp add supabase -s local -e SUPABASE_ACCESS_TOKEN=sb_secret_MkacxdfgPSxX6O1g_8Z4Yw_K8j2vhu_ -- npx -y @supabase/mcp-server-supabase@latest
+claude mcp add supabase -s local -e SUPABASE_ACCESS_TOKEN=sbp_7f6f4c340a5cb8b0be3c30a3a755abd8e65c3022 -- npx -y @supabase/mcp-server-supabase@latest
+claude mcp add supabase -s local -e SUPABASE_ACCESS_TOKEN=sbp_adf4d9431d3f4928456770ebfa145b9c215370de -- npx -y @supabase/mcp-server-supabase@latest
+sbp_adf4d9431d3f4928456770ebfa145b9c215370de
+https://supabase.com/dashboard/account/tokens
+claude mcp add supabase -s local -e SUPABASE_ACCESS_TOKEN=your_new_token -- npx -y
+claude mcp add playwright  -s user npx @playwright/mcp@latest
+MCP Config locations (by scope):                                                                                     │
+│  • User config (available in all your projects):                                                                     │
+│    • /root/.claude.json                                                                                              │
+│  • Project config (shared via .mcp.json):                                                                            │
+│    • /mnt/d/dev/cursor/course builder/.mcp.json                                                                      │
+│  • Local config (private to you in this project):                                                                    │
+│    • /root/.claude.json [project: /mnt/d/dev/cursor/course builder]
+/mnt/d/dev/cursor/course builder
+
+
+

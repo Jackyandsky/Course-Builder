@@ -1,34 +1,40 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(npm run build:*)",
-      "Bash(grep:*)",
-      "Bash(npx tsc:*)",
-      "Bash(psql:*)",
-      "Bash(rg:*)",
       "Bash(find:*)",
-      "Bash(sed:*)",
-      "Bash(npm run dev:*)",
+      "Bash(claude doctor)",
+      "Bash(claude mcp:*)",
+      "Bash(cp:*)",
       "mcp__supabase__list_projects",
-      "mcp__supabase__execute_sql",
-      "Bash(npm run type-check:*)",
+      "Bash(ls:*)",
+      "WebFetch(domain:supabase.com)",
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "Bash(grep:*)",
+      "Bash(true)",
+      "mcp__memory__read_graph",
       "mcp__supabase__get_project",
       "mcp__supabase__list_tables",
-      "mcp__supabase__apply_migration",
-      "Bash(rm:*)",
-      "Bash(pkill:*)",
-      "Bash(ls:*)",
-      "Bash(mkdir:*)",
-      "Bash(npm run typecheck:*)",
-      "Bash(npm run lint)",
-      "Bash(timeout 10s npm run dev)",
-      "Bash(timeout 15s npm run dev)",
-      "WebFetch(domain:edx.quizmk.com)",
-      "Bash(npx next lint:*)",
+      "mcp__supabase__list_migrations",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__generate_typescript_types",
+      "mcp__supabase__get_advisors",
+      "Bash(npx tsc:*)",
       "Bash(timeout 30 npm run build)",
-      "Bash(timeout 30s npm run dev)",
-      "Bash(timeout 20s npm run dev)"
+      "Bash(npx next:*)"
     ],
     "deny": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "memory",
+    "brave-search",
+    "github",
+    "mcp-server-firecrawl",
+    "ClickUp",
+    "supabase",
+    "sequential-thinking",
+    "puppeteer"
+  ]
 }

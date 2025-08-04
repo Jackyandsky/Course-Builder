@@ -122,7 +122,7 @@ export function DecoderForm({ initialData }: DecoderFormProps) {
         await decoderService.createDecoder(decoderData as CreateDecoderData);
       }
       
-      router.push('/decoders');
+      router.push('/admin/decoders');
       router.refresh();
     } catch (error: any) {
       console.error('Failed to save decoder:', error);
@@ -334,7 +334,7 @@ export function DecoderForm({ initialData }: DecoderFormProps) {
         </Card>
 
         <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={() => router.push('/decoders')}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={() => router.push('/admin/decoders')}>Cancel</Button>
           <Button type="submit" loading={loading} leftIcon={<Save className="h-4 w-4" />}>
             {isEditing ? 'Update Decoder' : 'Create Decoder'}
           </Button>

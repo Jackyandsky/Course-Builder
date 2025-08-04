@@ -12,11 +12,12 @@ export interface SelectOption {
 export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'size'> {
   label?: string;
   error?: string;
-  options: SelectOption[];
+  options?: SelectOption[];
   placeholder?: string;
   size?: 'sm' | 'md' | 'lg';
   variant?: 'default' | 'filled' | 'ghost';
   fullWidth?: boolean;
+  children?: React.ReactNode;
 }
 
 const sizeClasses = {
@@ -43,6 +44,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
       fullWidth = false,
       className,
       disabled,
+      children,
       ...props
     },
     ref
@@ -82,15 +84,19 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               {placeholder}
             </option>
           )}
-          {options.map((option) => (
-            <option
-              key={option.value}
-              value={option.value}
-              disabled={option.disabled}
-            >
-              {option.label}
-            </option>
-          ))}
+          {children ? (
+            children
+          ) : (
+            options?.map((option) => (
+              <option
+                key={option.value}
+                value={option.value}
+                disabled={option.disabled}
+              >
+                {option.label}
+              </option>
+            ))
+          )}
         </select>
         {error && (
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>

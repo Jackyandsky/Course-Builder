@@ -96,7 +96,7 @@ export function CourseForm({ initialData }: CourseFormProps) {
         await courseService.createCourse(courseData as CreateCourseData);
       }
       
-      router.push('/courses');
+      router.push('/admin/courses');
     } catch (error) {
       console.error('Failed to save course:', error);
       setErrors({ submit: 'Failed to save course. Please try again.' });
@@ -185,7 +185,7 @@ export function CourseForm({ initialData }: CourseFormProps) {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => router.push('/courses')}
+          onClick={() => router.push('/admin/courses')}
           leftIcon={<ArrowLeft className="h-4 w-4" />}
           className="mb-4"
         >
@@ -387,7 +387,7 @@ export function CourseForm({ initialData }: CourseFormProps) {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push('/courses')}
+            onClick={() => router.push('/admin/courses')}
           >
             Cancel
           </Button>
