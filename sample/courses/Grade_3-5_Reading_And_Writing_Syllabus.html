@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammaticos Reading & Writing Foundational Course</title>
+    <style>
+        /* Apple-inspired styles with tablet optimization */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #1d1d1f;
+            background-color: #fbfbfd;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 28px;
+            font-weight: 500;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 21px;
+            font-weight: 500;
+            margin-top: 30px;
+        }
+        p {
+            font-size: 17px;
+            color: #333;
+        }
+        .tagline {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .book {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            touch-action: manipulation;
+        }
+        .book:hover, .book:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .book h3 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .book p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .approach {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .feature h3 {
+            font-size: 20px;
+            margin-top: 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        /* Tablet-specific optimizations */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                width: 94%;
+                padding: 15px;
+            }
+            
+            header {
+                padding: 30px 0;
+            }
+            
+            h1 {
+                font-size: 38px;
+            }
+            
+            h2 {
+                font-size: 26px;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature {
+                padding: 20px;
+            }
+        }
+        
+        /* For landscape orientation on tablets */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Improved touch target sizes for tablet */
+        @media (pointer: coarse) {
+            .book, .feature {
+                min-height: 100px;
+            }
+            
+            .book h3, .feature h3 {
+                margin-bottom: 15px;
+            }
+            
+            button, a {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Grades 3-5 Reading & Writing</h1>
+        </header>
+
+        <h2>Course Overview</h2>
+        <p>This comprehensive Reading & Writing course for students in Grades 3-5 is designed to build and enhance literacy skills across a range of engaging texts and writing forms. Students will develop deeper reading comprehension strategies, learn to analyze literary elements, and improve their writing proficiency in narrative, informational, and opinion pieces. The curriculum focuses on fostering critical thinking, expanding vocabulary, and mastering structured writing techniques such as the 3/5/5 essay method, with differentiated instruction to meet the needs of learners within this age band.</p>
+
+        <h2>Literary Explorations</h2>
+        <div class="grid">
+            <div class="book">
+                <h3>Tuck Everlasting</h3>
+                <p>Natalie Babbitt</p>
+            </div>
+            <div class="book">
+                <h3>Matilda</h3>
+                <p>Roald Dahl</p>
+            </div>
+            <div class="book">
+                <h3>Bud, Not Buddy</h3>
+                <p>Christopher Paul Curtis</p>
+            </div>
+            <div class="book">
+                <h3>Robinson Crusoe (Adapted)</h3>
+                <p>Daniel Defoe</p>
+            </div>
+            <div class="book">
+                <h3>The War of the Worlds (Adapted)</h3>
+                <p>H.G. Wells</p>
+            </div>
+            <div class="book">
+                <h3>Hatchet</h3>
+                <p>Gary Paulsen</p>
+            </div>
+            <div class="book">
+                <h3>Where the Mountain Meets the Moon</h3>
+                <p>Grace Lin</p>
+            </div>
+            <div class="book">
+                <h3>Where the Red Fern Grows (Adapted)</h3>
+                <p>Wilson Rawls</p>
+            </div>
+             <div class="book">
+                <h3>Watership Down (Adapted)</h3>
+                <p>Richard Adams</p>
+            </div>
+             <div class="book">
+                <h3>Selected Stories</h3>
+                <p>Ray Bradbury</p>
+            </div>
+        </div>
+
+        <h2>Educational Approach</h2>
+        <div class="approach">
+            <div class="feature">
+                <h3>Differentiated Comprehension Strategies</h3>
+                <p>Employing a range of comprehension strategies (e.g., making inferences, summarizing, identifying main idea and supporting details, understanding author's purpose) tailored to the varying reading levels within Grades 3-5.</p>
+            </div>
+            <div class="feature">
+                <h3>Structured Writing Development (3/5/5 Method)</h3>
+                <p>Systematic instruction in the writing process, including planning, drafting, and revising narrative, informational, and opinion pieces. Focus on paragraph development and the 3/5/5 essay structure appropriate for the grade levels.</p>
+            </div>
+            <div class="feature">
+                <h3>Vocabulary Enrichment & Literary Elements</h3>
+                <p>Targeted vocabulary building related to the texts and academic language. Introduction and analysis of literary elements such as character, setting, plot, theme, and figurative language.</p>
+            </div>
+        </div>
+
+        <h2>Curriculum Structure</h2>
+        <p>The 30-session Grades 3-5 Reading & Writing course utilizes a selection from the listed diverse literary works, with each text typically explored over 2-4 weeks. Weekly sessions integrate reading comprehension activities, vocabulary exercises (LEX Intermediate A-Z), grammar instruction, and writing workshops. Students will practice responding to literature through discussions, short answers, and multi-paragraph essays. The course is designed to build a strong foundation in literacy, encouraging students to become more analytical readers and more proficient, organized writers.</p>
+
+        <footer>
+            <p>I GRAMMATICOS PLATFORM SOLUTION © 2020</p>
+            <p>Confidential & Proprietary</p>
+        </footer>
+    </div>
+</body>
+</html>

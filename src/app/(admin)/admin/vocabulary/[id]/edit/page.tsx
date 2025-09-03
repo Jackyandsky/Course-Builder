@@ -8,12 +8,12 @@ import {
   Button, Card 
 } from '@/components/ui';
 import { VocabularyForm } from '@/components/vocabulary';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { getMiddlewareSupabaseClient } from '@/lib/supabase/middleware-helper';
 
 export default function EditVocabularyPage() {
   const params = useParams();
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = getMiddlewareSupabaseClient();
   const [vocabulary, setVocabulary] = useState<Vocabulary | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -95,7 +95,7 @@ export default function EditVocabularyPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => router.push(`/admin/vocabulary/${vocabularyId}`)}
             leftIcon={<ArrowLeft className="h-4 w-4" />}

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammaticos Reading & Writing Foundational Course</title>
+    <style>
+        /* Apple-inspired styles with tablet optimization */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #1d1d1f;
+            background-color: #fbfbfd;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 28px;
+            font-weight: 500;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 21px;
+            font-weight: 500;
+            margin-top: 30px;
+        }
+        p {
+            font-size: 17px;
+            color: #333;
+        }
+        .tagline {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .book { /* Re-using .book class for films */
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            touch-action: manipulation;
+        }
+        .book:hover, .book:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .book h3 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .book p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .approach {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .feature h3 {
+            font-size: 20px;
+            margin-top: 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        /* Tablet-specific optimizations */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                width: 94%;
+                padding: 15px;
+            }
+            
+            header {
+                padding: 30px 0;
+            }
+            
+            h1 {
+                font-size: 38px;
+            }
+            
+            h2 {
+                font-size: 26px;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature {
+                padding: 20px;
+            }
+        }
+        
+        /* For landscape orientation on tablets */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Improved touch target sizes for tablet */
+        @media (pointer: coarse) {
+            .book, .feature {
+                min-height: 100px;
+            }
+            
+            .book h3, .feature h3 {
+                margin-bottom: 15px;
+            }
+            
+            button, a {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Italian Cinema Course</h1>
+        </header>
+
+        <h2>Course Overview</h2>
+        <p>This course offers a captivating journey through the rich and diverse landscape of Italian cinema. Students will explore key cinematic movements such as Neorealism, analyze the works of master directors like Fellini, Antonioni, and Leone, and examine how Italian films have reflected and influenced Italy's culture, history, and society. The curriculum emphasizes developing critical film analysis skills, understanding cinematic language specific to Italian traditions, and articulating interpretations through analytical writing and discussion, supported by LEX vocabulary.</p>
+
+        <h2>Featured Films & Directors</h2>
+        <div class="grid">
+            <div class="book">
+                <h3>Rome, Open City (Roma città aperta)</h3>
+                <p>Roberto Rossellini</p>
+            </div>
+            <div class="book">
+                <h3>Bicycle Thieves (Ladri di biciclette)</h3>
+                <p>Vittorio De Sica</p>
+            </div>
+            <div class="book">
+                <h3>La Strada</h3>
+                <p>Federico Fellini</p>
+            </div>
+            <div class="book">
+                <h3>8 1/2 (Otto e mezzo)</h3>
+                <p>Federico Fellini</p>
+            </div>
+            <div class="book">
+                <h3>L'Avventura</h3>
+                <p>Michelangelo Antonioni</p>
+            </div>
+            <div class="book">
+                <h3>The Good, the Bad and the Ugly</h3>
+                <p>Sergio Leone</p>
+            </div>
+            <div class="book">
+                <h3>Suspiria (1977)</h3>
+                <p>Dario Argento</p>
+            </div>
+            <div class="book">
+                <h3>Cinema Paradiso (Nuovo Cinema Paradiso)</h3>
+                <p>Giuseppe Tornatore</p>
+            </div>
+            <div class="book">
+                <h3>Life is Beautiful (La vita è bella)</h3>
+                <p>Roberto Benigni</p>
+            </div>
+            <div class="book">
+                <h3>The Great Beauty (La grande bellezza)</h3>
+                <p>Paolo Sorrentino</p>
+            </div>
+        </div>
+
+        <h2>Educational Approach</h2>
+        <div class="approach">
+            <div class="feature">
+                <h3>Analysis of Italian Cinematic Styles & Movements</h3>
+                <p>Students will analyze films focusing on narrative structure, visual aesthetics, cinematography, and sound. Emphasis on key movements like Italian Neorealism and popular genres such as Spaghetti Westerns and Giallo horror.</p>
+            </div>
+            <div class="feature">
+                <h3>Auteur Study and Socio-Cultural Context</h3>
+                <p>Exploration of influential Italian directors and their distinct thematic concerns and stylistic signatures. Films are analyzed within their specific Italian historical, social, and political contexts (e.g., post-WWII reconstruction, economic boom, Years of Lead).</p>
+            </div>
+            <div class="feature">
+                <h3>Critical Film Essays & LEX Vocabulary</h3>
+                <p>Development of critical writing skills through analytical essays (e.g., 5/5/5 format) on film themes, directorial techniques, and cultural impact. LEX vocabulary tailored to film studies and Italian cultural concepts is integrated.</p>
+            </div>
+        </div>
+
+        <h2>Curriculum Structure</h2>
+        <p>The 30-session course is structured around the study of ten landmark Italian films, with approximately three weeks dedicated to each. Units include film viewing assignments, intensive class discussions on cinematic elements and thematic interpretations, and analysis of critical readings related to Italian cinema. LEX vocabulary quizzes (Letters A-Z) are incorporated. Students will write analytical essays focusing on genre, directorial vision, or a film's reflection of Italian identity and history. The course aims to cultivate a profound appreciation for the artistry and influence of Italian cinema.</p>
+
+        <footer>
+            <p>I GRAMMATICOS PLATFORM SOLUTION © 2020</p>
+            <p>Confidential & Proprietary</p>
+        </footer>
+    </div>
+</body>
+</html>

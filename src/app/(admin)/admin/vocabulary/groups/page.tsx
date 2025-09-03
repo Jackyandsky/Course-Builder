@@ -15,10 +15,9 @@ import {
 import { cn } from '@/lib/utils';
 
 const difficultyColors: Record<DifficultyLevel, string> = {
-  beginner: 'success',
-  intermediate: 'warning',
-  advanced: 'danger',
-  expert: 'primary',
+  basic: 'success',
+  standard: 'warning',
+  premium: 'danger',
 };
 
 export default function VocabularyGroupsPage() {
@@ -27,8 +26,8 @@ export default function VocabularyGroupsPage() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<VocabularyGroupFilters>({});
   const [stats, setStats] = useState({
-    vocabulary: { total: 0, beginner: 0, intermediate: 0, advanced: 0, expert: 0 },
-    groups: { total: 0, beginner: 0, intermediate: 0, advanced: 0, expert: 0 }
+    vocabulary: { total: 0, basic: 0, standard: 0, premium: 0 },
+    groups: { total: 0, basic: 0, standard: 0, premium: 0 }
   });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [languages, setLanguages] = useState<string[]>([]);

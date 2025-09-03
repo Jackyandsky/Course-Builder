@@ -9,7 +9,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- For text search
 -- Create custom types
 CREATE TYPE course_status AS ENUM ('draft', 'published', 'archived');
 CREATE TYPE lesson_status AS ENUM ('draft', 'scheduled', 'completed', 'cancelled');
-CREATE TYPE difficulty_level AS ENUM ('beginner', 'intermediate', 'advanced', 'expert');
+CREATE TYPE difficulty_level AS ENUM ('basic', 'standard', 'premium');
 CREATE TYPE content_type AS ENUM ('text', 'video', 'audio', 'pdf', 'image', 'interactive');
 CREATE TYPE recurrence_type_enum AS ENUM ('none', 'daily', 'weekly', 'biweekly', 'monthly');
 CREATE TYPE day_of_week_enum AS ENUM ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday');
@@ -37,7 +37,7 @@ CREATE TABLE courses (
     short_description VARCHAR(500),
     category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
     status course_status DEFAULT 'draft',
-    difficulty difficulty_level DEFAULT 'beginner',
+    difficulty difficulty_level DEFAULT 'basic',
     duration_hours INTEGER,
     objectives TEXT[], -- Array of learning objectives
     prerequisites TEXT[], -- Array of prerequisites
@@ -84,7 +84,7 @@ CREATE TABLE vocabulary_groups (
     category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
     language VARCHAR(10) DEFAULT 'en',
     target_language VARCHAR(10),
-    difficulty difficulty_level DEFAULT 'beginner',
+    difficulty difficulty_level DEFAULT 'basic',
     tags TEXT[],
     is_public BOOLEAN DEFAULT false,
     public_slug VARCHAR(255) UNIQUE,
@@ -105,7 +105,7 @@ CREATE TABLE vocabulary (
     example_sentence TEXT,
     example_translation TEXT,
     notes TEXT,
-    difficulty difficulty_level DEFAULT 'beginner',
+    difficulty difficulty_level DEFAULT 'basic',
     audio_url TEXT,
     image_url TEXT,
     tags TEXT[],
@@ -168,7 +168,7 @@ CREATE TABLE tasks (
     category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
     instructions TEXT,
     duration_minutes INTEGER,
-    difficulty difficulty_level DEFAULT 'beginner',
+    difficulty difficulty_level DEFAULT 'basic',
     materials_needed TEXT[],
     assessment_criteria TEXT,
     tags TEXT[],

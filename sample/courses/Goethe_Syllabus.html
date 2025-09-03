@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammaticos Reading & Writing Foundational Course</title>
+    <style>
+        /* Apple-inspired styles with tablet optimization */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #1d1d1f;
+            background-color: #fbfbfd;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 28px;
+            font-weight: 500;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 21px;
+            font-weight: 500;
+            margin-top: 30px;
+        }
+        p {
+            font-size: 17px;
+            color: #333;
+        }
+        .tagline {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .book {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            touch-action: manipulation;
+        }
+        .book:hover, .book:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .book h3 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .book p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .approach {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .feature h3 {
+            font-size: 20px;
+            margin-top: 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        /* Tablet-specific optimizations */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                width: 94%;
+                padding: 15px;
+            }
+            
+            header {
+                padding: 30px 0;
+            }
+            
+            h1 {
+                font-size: 38px;
+            }
+            
+            h2 {
+                font-size: 26px;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(3, 1fr); /* Adjusted based on reading list */
+            }
+            
+            .approach {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature {
+                padding: 20px;
+            }
+        }
+        
+        /* For landscape orientation on tablets */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .grid {
+                grid-template-columns: repeat(3, 1fr); /* Adjusted based on reading list */
+            }
+            
+            .approach {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Improved touch target sizes for tablet */
+        @media (pointer: coarse) {
+            .book, .feature {
+                min-height: 100px;
+            }
+            
+            .book h3, .feature h3 {
+                margin-bottom: 15px;
+            }
+            
+            button, a {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Goethe: An Overview</h1>
+        </header>
+
+        <h2>Course Overview</h2>
+        <p>This course offers an intensive study of Johann Wolfgang von Goethe, a seminal figure in German and world literature. Students will explore his major works across genres—novel, drama, and poetry—examining his pivotal role in movements like Sturm und Drang and Weimar Classicism. The curriculum focuses on analyzing themes of love, ambition, individualism, the demonic, human potential, and the relationship between art and life. Emphasis is placed on close reading, contextual understanding of the German Enlightenment and Romanticism, and the development of sophisticated analytical essays (5/5/5 method) supported by LEX Advanced vocabulary.</p>
+
+        <h2>Literary Explorations</h2>
+        <div class="grid">
+            <div class="book">
+                <h3>The Sorrows of Young Werther (Die Leiden des jungen Werthers)</h3>
+                <p>Johann Wolfgang von Goethe</p>
+            </div>
+            <div class="book">
+                <h3>Elective Affinities (Die Wahlverwandtschaften)</h3>
+                <p>Johann Wolfgang von Goethe</p>
+            </div>
+            <div class="book">
+                <h3>Wilhelm Meister’s Apprenticeship (Wilhelm Meisters Lehrjahre - Selections)</h3>
+                <p>Johann Wolfgang von Goethe</p>
+            </div>
+            <div class="book">
+                <h3>Faust, Part One (Faust. Eine Tragödie.)</h3>
+                <p>Johann Wolfgang von Goethe</p>
+            </div>
+            <div class="book">
+                <h3>Faust, Part Two (Faust. Der Tragödie zweiter Teil - Selections)</h3>
+                <p>Johann Wolfgang von Goethe</p>
+            </div>
+            <div class="book">
+                <h3>Selected Poetry</h3>
+                <p>Johann Wolfgang von Goethe (e.g., Erlkönig, Prometheus, Roman Elegies)</p>
+            </div>
+        </div>
+
+        <h2>Educational Approach</h2>
+        <div class="approach">
+            <div class="feature">
+                <h3>Analysis of Literary Movements & Philosophy</h3>
+                <p>Exploration of Goethe's engagement with Sturm und Drang, Romanticism, and Weimar Classicism, and his dialogue with Enlightenment ideals and emerging scientific thought. Focus on themes of nature, selfhood, and human striving.</p>
+            </div>
+            <div class="feature">
+                <h3>Thematic and Character Study in Goethe's Works</h3>
+                <p>In-depth analysis of complex characters like Werther, Faust, and Mephistopheles, and recurring themes such as forbidden love, societal constraints, the quest for knowledge, and the interplay between good and evil.</p>
+            </div>
+            <div class="feature">
+                <h3>5/5/5 Analytical Essays & LEX Advanced Vocabulary</h3>
+                <p>Development of advanced analytical writing skills through 5/5/5 essays on Goethe's works, focusing on literary techniques, thematic interpretation, and philosophical underpinnings. Comprehensive vocabulary building with LEX Advanced (Letters A-Z).</p>
+            </div>
+        </div>
+
+        <h2>Curriculum Structure</h2>
+        <p>The 30-session course is structured around five-week intensives for each major work or genre category (e.g., novels, *Faust*, poetry). Each unit involves focused reading (approximately 100-125 pages or equivalent per week), regular LEX Advanced vocabulary quizzes, and detailed discussions based on "Questions to Ponder" relating to Goethe's literary artistry and philosophical depth. Students will write multiple 5/5/5 analytical essays per work/unit. The course incorporates primers on German Romanticism, the Enlightenment period in Germany, and critical essays on Goethe's influence and literary significance to provide essential context for his multifaceted genius.</p>
+
+        <footer>
+            <p>I GRAMMATICOS PLATFORM SOLUTION © 2020</p>
+            <p>Confidential & Proprietary</p>
+        </footer>
+    </div>
+</body>
+</html>

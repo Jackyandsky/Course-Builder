@@ -8,9 +8,8 @@ import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
-import { objectiveService } from '@/lib/supabase/objectives';
-import { categoryService } from '@/lib/supabase/categories';
 import type { Objective, Category } from '@/types/database';
+import { objectiveService } from '@/lib/supabase/objectives';
 import { 
   Plus, 
   Search, 
@@ -39,12 +38,25 @@ export default function ObjectivesPage() {
 
   const loadData = async () => {
     try {
-      const [objectivesData, categoriesData] = await Promise.all([
-        objectiveService.getObjectivesWithBelongings({}),
-        categoryService.getCategories({ type: 'objective' })
-      ]);
-      setObjectives(objectivesData);
-      setCategories(categoriesData);
+      console.log('[AdminObjectivesPage] Loading objectives with optimized API');
+      
+      // Load objectives with optimized API
+      const filters = {
+        page: 1,
+        perPage: 100,
+        search: searchQuery,
+        categoryId: selectedCategory
+      };
+      
+      const result = await objectiveService.getAdminObjectivesList(filters);
+      setObjectives(result.data);
+      
+      // Load categories separately
+      const response = await fetch('/api/admin/objectives');
+      if (response.ok) {
+        const { data } = await response.json();
+        setCategories(data.categories || []);
+      }
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -295,7 +307,7 @@ export default function ObjectivesPage() {
                     </Button>
                   </div>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => handleDelete(objective.id)}
                     className="text-red-600 hover:text-red-700"

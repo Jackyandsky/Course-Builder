@@ -17,13 +17,15 @@ import {
 
 interface CourseScheduleListProps {
   courseId: string
+  preloadedData?: any // Pre-loaded course data
 }
 
-export function CourseScheduleList({ courseId }: CourseScheduleListProps) {
+export function CourseScheduleList({ courseId, preloadedData }: CourseScheduleListProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [schedules, setSchedules] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!preloadedData)
+  const [dataLoaded, setDataLoaded] = useState(false)
 
   // Build source URL for navigation back to this course
   const buildSourceParams = () => {
@@ -46,17 +48,30 @@ export function CourseScheduleList({ courseId }: CourseScheduleListProps) {
 
   useEffect(() => {
     loadSchedules()
-  }, [courseId])
+  }, [courseId, preloadedData])
 
   const loadSchedules = async () => {
-    setLoading(true)
-    try {
-      const courseSchedules = await scheduleService.getSchedules({ course_id: courseId })
-      setSchedules(courseSchedules)
-    } catch (error) {
-      console.error('Failed to load schedules:', error)
-    } finally {
-      setLoading(false)
+    if (preloadedData && !dataLoaded) {
+      console.log('[CourseSchedule] Using preloaded data - NO API calls needed');
+      
+      // Use preloaded course schedules immediately
+      setSchedules(preloadedData.schedules || []);
+      setDataLoaded(true);
+      setLoading(false);
+      
+    } else if (!preloadedData && !dataLoaded) {
+      // Fallback to original loading method if no preloaded data
+      console.log('[CourseSchedule] No preloaded data, using API calls');
+      setLoading(true)
+      try {
+        const courseSchedules = await scheduleService.getSchedules({ course_id: courseId })
+        setSchedules(courseSchedules)
+        setDataLoaded(true);
+      } catch (error) {
+        console.error('Failed to load schedules:', error)
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
@@ -112,7 +127,7 @@ export function CourseScheduleList({ courseId }: CourseScheduleListProps) {
         <Button 
           className="mt-4" 
           size="sm"
-          onClick={() => router.push(`/schedules/new?courseId=${courseId}`)}
+          onClick={() => router.push(`/admin/schedules/new?courseId=${courseId}`)}
         >
           <Plus className="h-4 w-4 mr-2" />
           Create Schedule
@@ -143,7 +158,7 @@ export function CourseScheduleList({ courseId }: CourseScheduleListProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push(`/schedules/new?courseId=${courseId}`)}
+            onClick={() => router.push(`/admin/schedules/new?courseId=${courseId}`)}
           >
             <Plus className="h-4 w-4 mr-2" />
             New Schedule

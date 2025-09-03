@@ -31,10 +31,14 @@ export function LessonBookManager({ lessonId, courseId, onUpdate }: LessonBookMa
   // Load lesson books
   const loadLessonBooks = useCallback(async () => {
     try {
+      console.log('Loading books for lesson ID:', lessonId);
       const lesson = await lessonService.getLesson(lessonId)
+      console.log('Loaded lesson:', lesson);
+      console.log('Lesson books:', lesson?.lesson_books);
       setLessonBooks(lesson?.lesson_books || [])
     } catch (error) {
       console.error('Failed to load lesson books:', error)
+      console.error('Error details:', error);
     }
   }, [lessonId])
 
@@ -177,7 +181,7 @@ export function LessonBookManager({ lessonId, courseId, onUpdate }: LessonBookMa
                   )}
                   <div className="flex items-center justify-end">
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => handleRemoveBook(lessonBook.book_id)}
                       className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-red-600 hover:text-red-700"

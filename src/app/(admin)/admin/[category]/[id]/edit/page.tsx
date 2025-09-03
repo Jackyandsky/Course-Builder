@@ -25,11 +25,69 @@ export default function EditContentPage() {
         const contentData = await contentService.getContentById(contentId);
         setContent(contentData);
         
-        // Then get all categories to find the matching one
-        const categories = await contentService.getProprietaryProductCategories();
-        const matchedCategory = categories.find(
-          cat => cat.name.toLowerCase().replace(/\s+/g, '-') === categorySlug
+        // Then get all categories to find the matching one (including subcategories)
+        const response = await fetch('/api/categories?type=content');
+        const rootCategories = await response.json();
+        
+        // Manually fetch subcategories for each root category
+        console.log('Debug - Fetching subcategories manually for', rootCategories.length, 'root categories');
+        const allCats = [...rootCategories];
+        for (const rootCat of rootCategories) {
+          try {
+            console.log('Debug - Fetching subcategories for', rootCat.name, 'ID:', rootCat.id);
+            const subResponse = await fetch(`/api/categories?parent_id=${rootCat.id}`);
+            if (subResponse.ok) {
+              const subCategories = await subResponse.json();
+              console.log('Debug - Found', subCategories.length, 'subcategories for', rootCat.name, ':', subCategories.map((s: any) => s.name));
+              allCats.push(...subCategories);
+            } else {
+              console.log('Debug - Failed to fetch subcategories for', rootCat.name, 'Status:', subResponse.status);
+            }
+          } catch (e) {
+            console.warn('Failed to fetch subcategories for', rootCat.name, e);
+          }
+        }
+        console.log('Debug - Total categories after fetching subcategories:', allCats.length);
+        const categories = allCats;
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch categories');
+        }
+        
+        console.log('Debug - categorySlug:', categorySlug);
+        console.log('Debug - categories found:', categories.length);
+        categories.forEach((cat: any) => {
+          const convertedSlug = cat.name.toLowerCase().replace(/\s+/g, '-');
+          console.log(`Debug - "${cat.name}" -> "${convertedSlug}" (match: ${convertedSlug === categorySlug})`);
+        });
+        
+        // First try exact slug matching
+        let matchedCategory = categories.find(
+          (cat: any) => cat.name.toLowerCase().replace(/\s+/g, '-') === categorySlug
         );
+        
+        console.log('Debug - exact match result:', matchedCategory?.name || 'NOT FOUND');
+        
+        // If no exact match, try flexible matching like the header does
+        if (!matchedCategory) {
+          // Map of common URL slugs to category name patterns
+          const slugToCategoryMap: { [key: string]: string } = {
+            'standardizers': 'Standardizers',
+            'complete-study-packages': 'Complete Study Packages',
+            'decoders': 'Decoders',
+            'lex': 'LEX'
+          };
+          
+          const expectedCategoryName = slugToCategoryMap[categorySlug];
+          console.log('Debug - expected category name:', expectedCategoryName);
+          
+          if (expectedCategoryName) {
+            matchedCategory = categories.find((cat: any) => 
+              cat.name.toLowerCase() === expectedCategoryName.toLowerCase()
+            );
+            console.log('Debug - flexible match result:', matchedCategory?.name || 'NOT FOUND');
+          }
+        }
         
         if (matchedCategory) {
           setCategoryName(matchedCategory.name);

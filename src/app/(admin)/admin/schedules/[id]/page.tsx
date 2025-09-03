@@ -26,10 +26,19 @@ export default function ScheduleDetailPage() {
   const loadSchedule = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('Loading schedule with ID:', scheduleId);
       const data = await scheduleService.getSchedule(scheduleId);
+      if (!data) {
+        console.error('No schedule found with ID:', scheduleId);
+        router.push('/admin/schedules');
+        return;
+      }
+      console.log('Schedule loaded:', data);
       setSchedule(data as Schedule);
     } catch (error) {
       console.error('Failed to load schedule:', error);
+      // Show error message before redirecting
+      alert(`Failed to load schedule: ${error instanceof Error ? error.message : 'Unknown error'}`);
       router.push('/admin/schedules');
     } finally {
       setLoading(false);
@@ -107,7 +116,7 @@ export default function ScheduleDetailPage() {
         {/* Header and Details Card... (code remains the same) */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-                <Button variant="ghost" size="sm" onClick={handleBack} className="mb-4">
+                <Button variant="outline" size="sm" onClick={handleBack} className="mb-4">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     {searchParams.get('source') === 'course' && searchParams.get('courseId') 
                       ? `Back to ${schedule.course?.title || 'Course'}` 

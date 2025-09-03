@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammaticos Reading & Writing Foundational Course</title>
+    <style>
+        /* Apple-inspired styles with tablet optimization */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #1d1d1f;
+            background-color: #fbfbfd;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 28px;
+            font-weight: 500;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 21px;
+            font-weight: 500;
+            margin-top: 30px;
+        }
+        p {
+            font-size: 17px;
+            color: #333;
+        }
+        .tagline {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .book {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            touch-action: manipulation;
+        }
+        .book:hover, .book:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .book h3 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .book p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .approach {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .feature h3 {
+            font-size: 20px;
+            margin-top: 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        /* Tablet-specific optimizations */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                width: 94%;
+                padding: 15px;
+            }
+            
+            header {
+                padding: 30px 0;
+            }
+            
+            h1 {
+                font-size: 38px;
+            }
+            
+            h2 {
+                font-size: 26px;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature {
+                padding: 20px;
+            }
+        }
+        
+        /* For landscape orientation on tablets */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Improved touch target sizes for tablet */
+        @media (pointer: coarse) {
+            .book, .feature {
+                min-height: 100px;
+            }
+            
+            .book h3, .feature h3 {
+                margin-bottom: 15px;
+            }
+            
+            button, a {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Grade 3 Reading</h1>
+        </header>
+
+        <h2>Course Overview</h2>
+        <p>This Grade 3 Reading course is designed to transition students towards more independent reading and deeper comprehension of a variety of texts. Through engaging with a diverse selection of chapter books and stories, students will enhance their reading fluency, expand their vocabulary, and develop critical thinking skills. The curriculum focuses on analyzing character development, understanding plot structures, identifying themes, and making connections between literature and their own experiences, fostering a lasting appreciation for reading.</p>
+
+        <h2>Literary Explorations: Chapter Books & Stories</h2>
+        <div class="grid">
+            <div class="book">
+                <h3>Freckle Juice</h3>
+                <p>Judy Blume</p>
+            </div>
+            <div class="book">
+                <h3>Matilda</h3>
+                <p>Roald Dahl</p>
+            </div>
+            <div class="book">
+                <h3>Bud, Not Buddy</h3>
+                <p>Christopher Paul Curtis</p>
+            </div>
+            <div class="book">
+                <h3>Robinson Crusoe (Adapted)</h3>
+                <p>Daniel Defoe</p>
+            </div>
+            <div class="book">
+                <h3>Because of Winn-Dixie</h3>
+                <p>Kate DiCamillo</p>
+            </div>
+            <div class="book">
+                <h3>Sideways Stories from Wayside School</h3>
+                <p>Louis Sachar</p>
+            </div>
+            <div class="book">
+                <h3>Where the Mountain Meets the Moon</h3>
+                <p>Grace Lin</p>
+            </div>
+            <div class="book">
+                <h3>Where the Red Fern Grows (Adapted/Excerpts)</h3>
+                <p>Wilson Rawls</p>
+            </div>
+             <div class="book">
+                <h3>Watership Down (Adapted/Excerpts)</h3>
+                <p>Richard Adams</p>
+            </div>
+             <div class="book">
+                <h3>Selected Stories</h3>
+                <p>Ray Bradbury</p>
+            </div>
+        </div>
+
+        <h2>Educational Approach</h2>
+        <div class="approach">
+            <div class="feature">
+                <h3>Developing Deeper Comprehension</h3>
+                <p>Focus on strategies such as summarizing main ideas, predicting outcomes, asking clarifying questions, visualizing story elements, and identifying cause and effect relationships within texts.</p>
+            </div>
+            <div class="feature">
+                <h3>Character and Theme Analysis</h3>
+                <p>Guiding students to analyze character traits, motivations, and changes throughout a story. Introduction to identifying and discussing underlying themes and author's purpose.</p>
+            </div>
+            <div class="feature">
+                <h3>Vocabulary in Context & Fluency Practice</h3>
+                <p>Expanding vocabulary through contextual clues in reading and direct instruction. Continued practice in reading with appropriate speed, accuracy, and expression to enhance fluency and comprehension.</p>
+            </div>
+        </div>
+
+        <h2>Curriculum Structure</h2>
+        <p>The 30-session Grade 3 Reading course is structured around the exploration of ten diverse literary works, with approximately three weeks dedicated to each book or collection of stories. Each unit includes guided reading sessions, interactive discussions focusing on comprehension strategies and literary elements, and activities to build vocabulary and fluency. Students will learn to respond to literature by identifying key details, making connections, and expressing their interpretations. The course aims to build confident, engaged, and thoughtful readers prepared for the challenges of more complex texts.</p>
+
+        <footer>
+            <p>I GRAMMATICOS PLATFORM SOLUTION © 2020</p>
+            <p>Confidential & Proprietary</p>
+        </footer>
+    </div>
+</body>
+</html>

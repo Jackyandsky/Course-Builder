@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammaticos Reading & Writing Foundational Course</title>
+    <style>
+        /* Apple-inspired styles with tablet optimization */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #1d1d1f;
+            background-color: #fbfbfd;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 28px;
+            font-weight: 500;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 21px;
+            font-weight: 500;
+            margin-top: 30px;
+        }
+        p {
+            font-size: 17px;
+            color: #333;
+        }
+        .tagline {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .book {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            touch-action: manipulation;
+        }
+        .book:hover, .book:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .book h3 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .book p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .approach {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .feature h3 {
+            font-size: 20px;
+            margin-top: 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        /* Tablet-specific optimizations */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                width: 94%;
+                padding: 15px;
+            }
+            
+            header {
+                padding: 30px 0;
+            }
+            
+            h1 {
+                font-size: 38px;
+            }
+            
+            h2 {
+                font-size: 26px;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature {
+                padding: 20px;
+            }
+        }
+        
+        /* For landscape orientation on tablets */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Improved touch target sizes for tablet */
+        @media (pointer: coarse) {
+            .book, .feature {
+                min-height: 100px;
+            }
+            
+            .book h3, .feature h3 {
+                margin-bottom: 15px;
+            }
+            
+            button, a {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Level 10-12 Advanced Reading: Campus Novel Rundown</h1>
+        </header>
+
+        <h2>Course Overview</h2>
+        <p>This advanced course for levels 10-12 explores the theme of the campus novel, examining its relevance, the problems it seeks to solve, and its evolution in the modern era. Students will engage with various campus novels, analyze academic culture as depicted in literature, and develop their critical thinking and essay writing skills through discussions, article reviews, and structured writing assignments.</p>
+
+        <h2>Literary Explorations</h2>
+        <div class="grid">
+            <div class="book">
+                <h3>The Groves of Academe</h3>
+                <p>Mary McCarthy</p>
+            </div>
+            <div class="book">
+                <h3>The Human Stain</h3>
+                <p>Philip Roth</p>
+            </div>
+            <div class="book">
+                <h3>Rebel Angels</h3>
+                <p>Robertson Davies</p>
+            </div>
+            <div class="book">
+                <h3>Disgrace</h3>
+                <p>JM Coetzee</p>
+            </div>
+            <div class="book">
+                <h3>Wonder Boys</h3>
+                <p>Michael Chabon</p>
+            </div>
+            <div class="book">
+                <h3>Dear Committee Members</h3>
+                <p>Julie Schumacher</p>
+            </div>
+            <div class="book">
+                <h3>On Beauty</h3>
+                <p>Zadie Smith</p>
+            </div>
+            <div class="book">
+                <h3>Chemistry</h3>
+                <p>Weike Wang</p>
+            </div>
+            <div class="book">
+                <h3>Straight Man</h3>
+                <p>Richard Russo</p>
+            </div>
+            <div class="book">
+                <h3>The Secret History</h3>
+                <p>Donna Tartt</p>
+            </div>
+        </div>
+
+        <h2>Educational Approach</h2>
+        <div class="approach">
+            <div class="feature">
+                <h3>Thematic Analysis of Academia</h3>
+                <p>Critical examination of how campus novels lampoon, critique, and reflect academic life, education, and societal issues through literary analysis and discussion of related articles.</p>
+            </div>
+            <div class="feature">
+                <h3>5/5/5 Essay Writing</h3>
+                <p>Development of structured analytical writing using the 5/5/5 essay format, focusing on argumentation, evidence from texts, and adherence to format, with peer and teacher feedback.</p>
+            </div>
+            <div class="feature">
+                <h3>Vocabulary Enrichment & Quizzes</h3>
+                <p>Systematic vocabulary building using LEX curriculum (e.g., 20 words from LEX Letter A weekly) and words from texts, reinforced by regular quizzes and application.</p>
+            </div>
+        </div>
+
+        <h2>Curriculum Structure</h2>
+        <p>This 30-session course explores ten key campus novels, from Mary McCarthy's "The Groves of Academe" to Donna Tartt's "The Secret History". Each week includes reading assignments (approx. 70-100 pages), vocabulary quizzes, novel review and topic discussions (e.g., 'comedy of manners', necessity of the campus novel), and essay response assignments (opinion/argumentative or 5/5/5 essays). Students also engage with supplementary articles from sources like The New Yorker and University Affairs Magazine. The course culminates in a final essay tying together themes from two novels read.</p>
+        <footer>
+            <p>I GRAMMATICOS PLATFORM SOLUTION © 2020</p>
+            <p>Confidential & Proprietary</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -5,6 +5,7 @@ import { Menu, Transition } from '@headlessui/react';
 import { UserCircleIcon, ArrowRightOnRectangleIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 export function UserProfile() {
   const { user, signOut } = useAuth();
@@ -60,21 +61,8 @@ export function UserProfile() {
           <div className="py-1">
             <Menu.Item>
               {({ active }) => (
-                <button
-                  className={cn(
-                    'flex w-full items-center px-4 py-2 text-sm text-gray-700',
-                    active && 'bg-gray-100'
-                  )}
-                >
-                  <UserCircleIcon className="h-5 w-5 mr-3 text-gray-400" />
-                  Profile Settings
-                </button>
-              )}
-            </Menu.Item>
-
-            <Menu.Item>
-              {({ active }) => (
-                <button
+                <Link
+                  href="/account/settings"
                   className={cn(
                     'flex w-full items-center px-4 py-2 text-sm text-gray-700',
                     active && 'bg-gray-100'
@@ -82,7 +70,7 @@ export function UserProfile() {
                 >
                   <Cog6ToothIcon className="h-5 w-5 mr-3 text-gray-400" />
                   Account Settings
-                </button>
+                </Link>
               )}
             </Menu.Item>
 

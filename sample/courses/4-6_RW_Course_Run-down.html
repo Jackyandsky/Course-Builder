@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammaticos Reading & Writing Foundational Course</title>
+    <style>
+        /* Apple-inspired styles with tablet optimization */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #1d1d1f;
+            background-color: #fbfbfd;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 28px;
+            font-weight: 500;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 21px;
+            font-weight: 500;
+            margin-top: 30px;
+        }
+        p {
+            font-size: 17px;
+            color: #333;
+        }
+        .tagline {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .book {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            touch-action: manipulation;
+        }
+        .book:hover, .book:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .book h3 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .book p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .approach {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .feature h3 {
+            font-size: 20px;
+            margin-top: 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        /* Tablet-specific optimizations */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                width: 94%;
+                padding: 15px;
+            }
+            
+            header {
+                padding: 30px 0;
+            }
+            
+            h1 {
+                font-size: 38px;
+            }
+            
+            h2 {
+                font-size: 26px;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature {
+                padding: 20px;
+            }
+        }
+        
+        /* For landscape orientation on tablets */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Improved touch target sizes for tablet */
+        @media (pointer: coarse) {
+            .book, .feature {
+                min-height: 100px;
+            }
+            
+            .book h3, .feature h3 {
+                margin-bottom: 15px;
+            }
+            
+            button, a {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Level 4-6 Reading & Writing Foundational Course</h1>
+        </header>
+
+        <h2>Course Overview</h2>
+        <p>This foundational course for students in levels 4-6 aims to develop essential reading comprehension, analytical thinking, and writing proficiency. Through a diverse selection of novels and short stories, students will explore various literary genres, learn to identify key literary elements such as perspective, allegory, and characterization, and practice expressing their understanding through structured writing assignments, including the 3/5/5 essay format. Vocabulary enrichment and regular craft discussions are integral components of the curriculum.</p>
+
+        <h2>Literary Explorations</h2>
+        <div class="grid">
+            <div class="book">
+                <h3>Tuck Everlasting</h3>
+                <p>Natalie Babbitt</p>
+            </div>
+            <div class="book">
+                <h3>Wonder</h3>
+                <p>R.J. Palacio</p>
+            </div>
+            <div class="book">
+                <h3>Bud, Not Buddy</h3>
+                <p>Christopher Paul Curtis</p>
+            </div>
+            <div class="book">
+                <h3>Esperanza Rising</h3>
+                <p>Pam Muñoz Ryan</p>
+            </div>
+            <div class="book">
+                <h3>The War of the Worlds</h3>
+                <p>H.G. Wells</p>
+            </div>
+            <div class="book">
+                <h3>Hatchet</h3>
+                <p>Gary Paulsen</p>
+            </div>
+            <div class="book">
+                <h3>Where the Mountain Meets the Moon</h3>
+                <p>Grace Lin</p>
+            </div>
+            <div class="book">
+                <h3>Selected Stories</h3>
+                <p>Edgar Allan Poe</p>
+            </div>
+            <div class="book">
+                <h3>Watership Down</h3>
+                <p>Richard Adams</p>
+            </div>
+            <div class="book">
+                <h3>Selected Stories</h3>
+                <p>Ray Bradbury</p>
+            </div>
+        </div>
+
+        <h2>Educational Approach</h2>
+        <div class="approach">
+            <div class="feature">
+                <h3>Foundational Writing Skills (3/5/5 Essay)</h3>
+                <p>Introduction to structured essay writing using the 3/5/5 method (3 paragraphs, 5 sentences per paragraph, 5 vocabulary words), focusing on clear expression of ideas, paragraph construction, and vocabulary application.</p>
+            </div>
+            <div class="feature">
+                <h3>Reading Comprehension & Literary Analysis</h3>
+                <p>Development of reading comprehension through guided questions and discussions. Students learn to identify and analyze literary elements such as plot, character, setting, theme, perspective, and allegory.</p>
+            </div>
+            <div class="feature">
+                <h3>Vocabulary Building and Craft Discussions</h3>
+                <p>Weekly vocabulary quizzes (Letters A-Z) and craft discussions on topics like finding proof, creative writing, characterization, literary devices, and understanding different genres to enhance both reading and writing abilities.</p>
+            </div>
+        </div>
+
+        <h2>Curriculum Structure</h2>
+        <p>This 30-week program guides students through a curated selection of ten diverse literary works. Each unit, typically spanning three weeks, includes weekly vocabulary quizzes, reading reviews, and practice with the 3/5/5 essay format. Craft discussions focus on specific literary concepts relevant to the texts being studied, such as understanding perspective in "Tuck Everlasting," identifying allegory in "Watership Down," or analyzing characterization in "Wonder." The course includes a midterm quiz and essay, as well as a final review quiz and creative writing/essay assignment to assess overall progress.</p>
+
+        <footer>
+            <p>I GRAMMATICOS PLATFORM SOLUTION © 2020</p>
+            <p>Confidential & Proprietary</p>
+        </footer>
+    </div>
+</body>
+</html>

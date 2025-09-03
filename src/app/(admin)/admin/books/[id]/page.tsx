@@ -2,16 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Edit, Trash2, Globe, Lock, BookOpen, Users } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Globe, Lock, BookOpen, Users, Download, DollarSign, Calendar, FileText, Hash } from 'lucide-react';
 import { Book, VocabularyGroup } from '@/types/database';
 import { bookService } from '@/lib/supabase/books';
 import { Button, Card, Badge, Modal, Spinner } from '@/components/ui';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useAuth } from '@/contexts/AuthContext';
+import { getSingletonSupabaseClient } from '@/lib/supabase-singleton';
+import GoogleBooksSync from '@/components/books/GoogleBooksSync';
 
 export default function BookDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const supabase = createClientComponentClient();
+  const supabase = getSingletonSupabaseClient();
   const bookId = params.id as string;
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,6 +77,8 @@ export default function BookDetailPage() {
     setDeleting(true);
     try {
       await bookService.deleteBook(bookId);
+      // Clear any saved state since the book is deleted
+      sessionStorage.removeItem('books-list-state');
       router.push('/admin/books');
       router.refresh();
     } catch (error) {
@@ -83,6 +87,30 @@ export default function BookDetailPage() {
       setDeleting(false);
       setShowDeleteModal(false);
     }
+  };
+  
+  const handleBackToBooks = () => {
+    // Try to restore previous state from sessionStorage
+    const savedState = sessionStorage.getItem('books-list-state');
+    if (savedState) {
+      try {
+        const state = JSON.parse(savedState);
+        const params = new URLSearchParams();
+        if (state.filters.page > 1) params.set('page', state.filters.page.toString());
+        if (state.filters.search) params.set('search', state.filters.search);
+        if (state.filters.author) params.set('author', state.filters.author);
+        if (state.filters.categoryId) params.set('categoryId', state.filters.categoryId);
+        if (state.filters.contentType) params.set('contentType', state.filters.contentType);
+        if (state.filters.language) params.set('language', state.filters.language);
+        
+        const url = params.toString() ? `/admin/books?${params.toString()}` : '/admin/books';
+        router.push(url);
+        return;
+      } catch (e) {
+        console.error('Failed to restore state:', e);
+      }
+    }
+    router.push('/admin/books');
   };
 
   if (loading) {
@@ -96,47 +124,28 @@ export default function BookDetailPage() {
   if (!book) return null;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push('/admin/books')}
-          leftIcon={<ArrowLeft className="h-4 w-4" />}
-          className="mb-4"
-        >
-          Back to Books
-        </Button>
-        
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-          <div className="flex items-start gap-6">
-            {book.cover_image_url ? (
-              <img src={book.cover_image_url} alt={book.title} className="w-40 h-56 rounded-lg object-cover shadow-lg" />
-            ) : (
-              <div className="w-40 h-56 rounded-lg bg-gray-200 flex items-center justify-center">
-                <BookOpen className="w-16 h-16 text-gray-400" />
-              </div>
-            )}
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{book.title}</h1>
-              {book.author && <p className="text-lg text-gray-600 mt-1">by {book.author}</p>}
-              <div className="flex items-center gap-3 mt-4">
-                <Badge variant={book.is_public ? 'success' : 'secondary'}>
-                  {book.is_public ? <Globe className="h-4 w-4 mr-1.5" /> : <Lock className="h-4 w-4 mr-1.5" />}
-                  {book.is_public ? 'Public' : 'Private'}
-                </Badge>
-                {book.category && (
-                  <Badge style={{ backgroundColor: `${book.category.color}20`, color: book.category.color }}>
-                    {book.category.name}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2 flex-shrink-0">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBackToBooks}
+            leftIcon={<ArrowLeft className="h-4 w-4" />}
+          >
+            Back to Books
+          </Button>
+          <div className="flex items-center gap-2">
+            <GoogleBooksSync
+              bookId={bookId}
+              bookTitle={book.title}
+              bookAuthor={book.author}
+              hasDescription={!!book.description}
+              onSyncComplete={loadBook}
+            />
             <Button
               variant="outline"
+              size="sm"
               onClick={() => router.push(`/admin/books/${bookId}/edit`)}
               leftIcon={<Edit className="h-4 w-4" />}
             >
@@ -144,113 +153,214 @@ export default function BookDetailPage() {
             </Button>
             <Button
               variant="danger"
+              size="sm"
               onClick={() => setShowDeleteModal(true)}
               leftIcon={<Trash2 className="h-4 w-4" />}
-              className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
             >
               Delete
             </Button>
           </div>
         </div>
+        
+        <div className="flex items-start gap-4">
+          {book.cover_image_url ? (
+            <img src={book.cover_image_url} alt={book.title} className="w-24 h-36 rounded-lg object-cover shadow-md" />
+          ) : (
+            <div className="w-24 h-36 rounded-lg bg-gray-200 flex items-center justify-center">
+              <BookOpen className="w-10 h-10 text-gray-400" />
+            </div>
+          )}
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{book.title}</h1>
+            {book.author && <p className="text-gray-600">by {book.author}</p>}
+            <div className="flex items-center gap-2 mt-2">
+              <Badge variant={book.is_public ? 'success' : 'secondary'} size="sm">
+                {book.is_public ? 'Public' : 'Private'}
+              </Badge>
+              {book.category && (
+                <Badge size="sm" style={{ backgroundColor: `${book.category.color}20`, color: book.category.color }}>
+                  {book.category.name}
+                </Badge>
+              )}
+              {book.is_free ? (
+                <Badge variant="success">FREE</Badge>
+              ) : book.discount_percentage && book.discount_percentage > 0 ? (
+                <Badge variant="warning">
+                  {book.discount_percentage}% OFF - {book.currency === 'CAD' ? 'CA$' : '$'}{book.sale_price?.toFixed(2)}
+                </Badge>
+              ) : (
+                <Badge variant="outline" size="sm">
+                  {book.currency === 'CAD' ? 'CA$' : '$'}{book.price?.toFixed(2)}
+                </Badge>
+              )}
+            </div>
+            
+            {/* Simplified Book Details */}
+            <div className="mt-3 text-sm text-gray-600 dark:text-gray-400 space-y-1">
+              {(book as any).isbn && (
+                <div>ISBN: {(book as any).isbn}</div>
+              )}
+              {(book as any).publisher && book.publication_year && (
+                <div>{(book as any).publisher} • {book.publication_year}</div>
+              )}
+              {(book.language || book.content_type) && (
+                <div>
+                  {book.language && book.language.toUpperCase()}
+                  {book.language && book.content_type && ' • '}
+                  {book.content_type}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-6">
-        <Card>
-          <Card.Header><h2 className="text-lg font-semibold">Description</h2></Card.Header>
-          <Card.Content>
-            <div className="prose prose-sm max-w-none dark:prose-invert">
-              {book.description || <p className="text-gray-500 italic">No description provided.</p>}
-            </div>
-          </Card.Content>
-        </Card>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 space-y-4">
+          {book.description && (
             <Card>
-              <Card.Header><h2 className="text-lg font-semibold">Details</h2></Card.Header>
+              <Card.Header><h3 className="text-base font-semibold">Description</h3></Card.Header>
               <Card.Content>
-                <dl className="space-y-3 text-sm">
-                    {book.publisher && <div><dt className="font-medium text-gray-500">Publisher</dt><dd>{book.publisher}</dd></div>}
-                    {book.publication_year && <div><dt className="font-medium text-gray-500">Year</dt><dd>{book.publication_year}</dd></div>}
-                    {book.language && <div><dt className="font-medium text-gray-500">Language</dt><dd className="uppercase">{book.language}</dd></div>}
-                    {book.content_type && <div><dt className="font-medium text-gray-500">Content Type</dt><dd className="capitalize">{book.content_type}</dd></div>}
-                </dl>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{book.description}</p>
               </Card.Content>
             </Card>
-            {book.tags && book.tags.length > 0 && (
-                 <Card>
-                   <Card.Header><h2 className="text-lg font-semibold">Tags</h2></Card.Header>
-                   <Card.Content>
-                     <div className="flex flex-wrap gap-2">
-                       {book.tags.map((tag) => <Badge key={tag}>{tag}</Badge>)}
-                     </div>
-                   </Card.Content>
-                 </Card>
-            )}
-        </div>
+          )}
+          
+          {/* Book Resources Section - PDF viewer, content preview, etc. */}
+          {(book as any).file_url && (
+            <Card className="overflow-hidden">
+              <Card.Header>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-semibold">Book Resources</h3>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => window.open((book as any).file_url, '_blank')}
+                      leftIcon={<Download className="h-4 w-4" />}
+                      size="sm"
+                    >
+                      Open in New Tab
+                    </Button>
+                  </div>
+                </div>
+              </Card.Header>
+              <Card.Content className="p-0">
+                <div className="relative bg-gray-50 dark:bg-gray-900">
+                  {(book as any).file_url.toLowerCase().includes('.pdf') ? (
+                    // Embedded PDF viewer for PDF files
+                    <div className="w-full" style={{ height: '600px' }}>
+                      <iframe
+                        src={`${(book as any).file_url}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
+                        className="w-full h-full border-0"
+                        title={`PDF Viewer - ${book.title}`}
+                        loading="lazy"
+                      >
+                        <div className="flex flex-col items-center justify-center h-full p-8">
+                          <FileText className="h-16 w-16 text-gray-400 mb-4" />
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                            Your browser cannot display this PDF.
+                          </p>
+                          <Button
+                            variant="primary"
+                            onClick={() => window.open((book as any).file_url, '_blank')}
+                            leftIcon={<Download className="h-4 w-4" />}
+                          >
+                            Download PDF
+                          </Button>
+                        </div>
+                      </iframe>
+                    </div>
+                  ) : (
+                    // Fallback for non-PDF files
+                    <div className="flex flex-col items-center justify-center py-16">
+                      <FileText className="h-16 w-16 text-gray-400 mb-4" />
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        Book resource available
+                      </p>
+                      <p className="text-xs text-gray-500 mb-4">
+                        {(book as any).file_url.split('.').pop()?.toUpperCase() || 'Book'} File
+                      </p>
+                      <Button
+                        variant="primary"
+                        onClick={() => window.open((book as any).file_url, '_blank')}
+                        leftIcon={<Download className="h-4 w-4" />}
+                      >
+                        Download Book
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </Card.Content>
+            </Card>
+          )}
+          
 
-        <Card>
-          <Card.Header>
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              <h2 className="text-lg font-semibold">Related Vocabulary Groups</h2>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Vocabulary groups that contain words from this book
-            </p>
-          </Card.Header>
-          <Card.Content>
-            {vocabGroupsLoading ? (
-              <div className="flex justify-center py-8">
-                <Spinner size="md" />
-              </div>
-            ) : vocabGroups.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No vocabulary groups are associated with this book.</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => router.push(`/admin/books/${bookId}/edit`)}
-                  className="mt-3"
-                >
-                  Add Vocabulary Groups
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                {vocabGroups.map((group) => (
-                  <div
-                    key={group.id}
-                    className="border rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => router.push(`/admin/vocabulary/groups/${group.id}`)}
+        </div>
+        
+        {/* Sidebar */}
+        <div className="space-y-4">
+          {/* Vocabulary Groups */}
+          <Card>
+            <Card.Header>
+              <h3 className="text-base font-semibold">Vocabulary Groups</h3>
+            </Card.Header>
+            <Card.Content>
+              {vocabGroupsLoading ? (
+                <div className="flex justify-center py-4">
+                  <Spinner size="sm" />
+                </div>
+              ) : vocabGroups.length === 0 ? (
+                <div className="text-center py-3">
+                  <p className="text-gray-500 text-sm">No groups associated</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/admin/books/${bookId}/edit`)}
+                    className="mt-2"
                   >
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between">
-                        <h4 className="font-medium text-sm line-clamp-2 flex-1" title={group.name}>
-                          {group.name}
-                        </h4>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="secondary" className="text-xs">
+                    Add Groups
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {vocabGroups.map((group) => (
+                    <div
+                      key={group.id}
+                      className="border rounded p-2 hover:shadow-sm transition-shadow cursor-pointer"
+                      onClick={() => router.push(`/admin/vocabulary/groups/${group.id}`)}
+                    >
+                      <h4 className="font-medium text-sm line-clamp-1" title={group.name}>
+                        {group.name}
+                      </h4>
+                      <div className="flex gap-1 mt-1">
+                        <Badge variant="secondary">
                           {group.difficulty}
                         </Badge>
                         {group.language && group.target_language && (
-                          <Badge variant="outline" className="text-xs">
-                            {group.language} → {group.target_language}
+                          <Badge variant="outline">
+                            {group.language}→{group.target_language}
                           </Badge>
                         )}
                       </div>
-                      {group.description && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2" title={group.description}>
-                          {group.description}
-                        </p>
-                      )}
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card.Content>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </Card.Content>
+          </Card>
+          
+          {/* Tags */}
+          {book.tags && book.tags.length > 0 && (
+            <Card>
+              <Card.Header><h3 className="text-base font-semibold">Tags</h3></Card.Header>
+              <Card.Content>
+                <div className="flex flex-wrap gap-1">
+                  {book.tags.map((tag) => <Badge key={tag} size="sm">{tag}</Badge>)}
+                </div>
+              </Card.Content>
+            </Card>
+          )}
+        </div>
       </div>
       
       <Modal

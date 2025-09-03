@@ -4,12 +4,20 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { width: string; height: string } }
 ) {
+  try {
   const width = parseInt(params.width) || 400;
   const height = parseInt(params.height) || 300;
   
   // Create a simple SVG placeholder
   const svg = `
-    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    <svg width="${width
+  } catch (error) {
+    console.error('Error in GET:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />

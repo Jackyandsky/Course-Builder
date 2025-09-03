@@ -243,7 +243,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
               {showResetButton && (
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={onReset}
                   disabled={!hasActiveFilters}

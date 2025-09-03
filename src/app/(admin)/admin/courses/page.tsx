@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import { Plus, Search, Filter, BookOpen, Clock, BarChart3 } from 'lucide-react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { Plus, Search, Filter, BookOpen, Book, Clock, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Course, CourseStatus, DifficultyLevel } from '@/types/database';
-import { courseService, CourseFilters } from '@/lib/supabase/courses';
-import { Button, Card, Badge, SearchBox, FilterPanel, Spinner } from '@/components/ui';
+import { courseService, CourseFilters, PaginatedResponse } from '@/lib/supabase/courses';
+import { Button, Card, Badge, SearchBox, FilterPanel, Spinner, Select } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 const statusColors: Record<CourseStatus, string> = {
@@ -15,25 +15,48 @@ const statusColors: Record<CourseStatus, string> = {
 };
 
 const difficultyColors: Record<DifficultyLevel, string> = {
-  beginner: 'info',
-  intermediate: 'warning',
-  advanced: 'danger',
-  expert: 'primary',
+  basic: 'info',
+  standard: 'warning',
+  premium: 'primary',
 };
 
 const difficultyLabels = {
-  beginner: 'Level 1',
-  intermediate: 'Level 2',
-  advanced: 'Level 3',
-  expert: 'Level 4',
+  basic: 'Basic',
+  standard: 'Standard',
+  premium: 'Premium',
 } as const;
 
 export default function CoursesPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [filters, setFilters] = useState<CourseFilters>({});
+  
+  // Parse filters from URL
+  const page = searchParams.get('page');
+  const perPage = searchParams.get('perPage');
+  const search = searchParams.get('search');
+  const status = searchParams.get('status');
+  const difficulty = searchParams.get('difficulty');
+  
+  // Create filters object from URL params
+  const urlFilters: CourseFilters = {
+    page: page ? parseInt(page) : 1,
+    perPage: perPage ? parseInt(perPage) : 12,
+    search: search || undefined,
+    status: status as CourseStatus || undefined,
+    difficulty: difficulty as DifficultyLevel || undefined,
+  };
+  
+  const [pagination, setPagination] = useState({
+    page: urlFilters.page || 1,
+    perPage: urlFilters.perPage || 12,
+    total: 0,
+    totalPages: 0
+  });
   const [stats, setStats] = useState({
     total: 0,
     draft: 0,
@@ -43,44 +66,88 @@ export default function CoursesPage() {
   // State to control the visibility of the filter panel
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
-  const loadCourses = useCallback(async () => {
+  // Update URL helper
+  const updateURL = useCallback((newFilters: CourseFilters) => {
+    const params = new URLSearchParams();
+    
+    if (newFilters.page && newFilters.page > 1) params.set('page', newFilters.page.toString());
+    if (newFilters.perPage && newFilters.perPage !== 12) params.set('perPage', newFilters.perPage.toString());
+    if (newFilters.search) params.set('search', newFilters.search);
+    if (newFilters.status) params.set('status', newFilters.status);
+    if (newFilters.difficulty) params.set('difficulty', newFilters.difficulty);
+    
+    const queryString = params.toString();
+    const url = queryString ? `${pathname}?${queryString}` : pathname;
+    
+    router.replace(url, { scroll: false });
+  }, [pathname, router]);
+
+  const loadCourses = useCallback(async (filters: CourseFilters) => {
     try {
+      console.log('[AdminCoursesPage] Loading courses with optimized API');
       if (filters.search !== undefined) {
         setSearchLoading(true);
       } else {
         setLoading(true);
       }
-      const data = await courseService.getCourses(filters);
-      setCourses(data);
+      // Use optimized admin courses list endpoint
+      const result = await courseService.getAdminCoursesList(filters);
+      setCourses(result.data);
+      setPagination(result.pagination);
+      // Update stats if available from the response
+      if (result.stats) {
+        setStats(result.stats);
+      }
     } catch (error) {
       console.error('Failed to load courses:', error);
     } finally {
       setLoading(false);
       setSearchLoading(false);
     }
-  }, [filters]);
-
-  useEffect(() => {
-    loadCourses();
-    loadStats();
-  }, [loadCourses]);
-
-  const loadStats = async () => {
-    try {
-      const data = await courseService.getCourseStats();
-      setStats(data);
-    } catch (error) {
-      console.error('Failed to load stats:', error);
-    }
-  };
-
-  const handleSearch = useCallback((search: string) => {
-    setFilters(prev => ({ ...prev, search }));
   }, []);
+
+  // Load courses with current URL filters on mount and when URL changes
+  useEffect(() => {
+    loadCourses(urlFilters);
+  }, [page, perPage, search, status, difficulty]);
+
+  // Note: Stats are now loaded together with courses for better performance
+
+  const handleSearch = useCallback((searchTerm: string) => {
+    const newFilters = {
+      ...urlFilters,
+      search: searchTerm || undefined,
+      page: 1 // Reset to page 1 on new search
+    };
+    updateURL(newFilters);
+  }, [urlFilters, updateURL]);
 
   const handleFilterChange = useCallback((filterId: string, value: any) => {
-    setFilters(prev => ({ ...prev, [filterId]: value }));
-  }, []);
+    const newFilters = {
+      ...urlFilters,
+      [filterId]: value,
+      page: 1 // Reset to page 1 on filter change
+    };
+    updateURL(newFilters);
+  }, [urlFilters, updateURL]);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    const newFilters = {
+      ...urlFilters,
+      page: newPage
+    };
+    updateURL(newFilters);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [urlFilters, updateURL]);
+
+  const handlePerPageChange = useCallback((newPerPage: number) => {
+    const newFilters = {
+      ...urlFilters,
+      perPage: newPerPage,
+      page: 1
+    };
+    updateURL(newFilters);
+  }, [urlFilters, updateURL]);
 
   const filterGroups = useMemo(() => [
     {
@@ -98,10 +165,9 @@ export default function CoursesPage() {
       label: 'Difficulty',
       type: 'radio' as const,
       options: [
-        { value: 'beginner', label: 'Level 1' },
-        { value: 'intermediate', label: 'Level 2' },
-        { value: 'advanced', label: 'Level 3' },
-        { value: 'expert', label: 'Level 4' },
+        { value: 'basic', label: 'Basic' },
+        { value: 'standard', label: 'Standard' },
+        { value: 'premium', label: 'Premium' },
       ],
     },
   ], [stats]);
@@ -179,6 +245,7 @@ export default function CoursesPage() {
                 <SearchBox
                     placeholder="Search courses..."
                     onSearch={handleSearch}
+                    initialValue={urlFilters.search}
                     fullWidth
                 />
                 {searchLoading && (
@@ -199,9 +266,9 @@ export default function CoursesPage() {
             <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                 <FilterPanel
                     filters={filterGroups}
-                    values={filters}
+                    values={urlFilters}
                     onChange={handleFilterChange}
-                    onReset={() => setFilters({})}
+                    onReset={() => updateURL({ page: 1, perPage: 12 })}
                     collapsible={false}
                 />
             </div>
@@ -259,8 +326,15 @@ export default function CoursesPage() {
                       {difficultyLabels[course.difficulty]}
                     </Badge>
                     {course.duration_hours && (
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-gray-500 flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
                         {course.duration_hours}h
+                      </span>
+                    )}
+                    {course.course_books && course.course_books.length > 0 && (
+                      <span className="text-sm text-gray-500 flex items-center gap-1">
+                        <Book className="h-3 w-3" />
+                        {course.course_books.length}
                       </span>
                     )}
                   </div>
@@ -359,8 +433,15 @@ export default function CoursesPage() {
                       {difficultyLabels[course.difficulty]}
                     </Badge>
                     {course.duration_hours && (
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-gray-500 flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
                         {course.duration_hours}h
+                      </span>
+                    )}
+                    {course.course_books && course.course_books.length > 0 && (
+                      <span className="text-sm text-gray-500 flex items-center gap-1">
+                        <Book className="h-3 w-3" />
+                        {course.course_books.length}
                       </span>
                     )}
                   </div>
@@ -398,6 +479,82 @@ export default function CoursesPage() {
               </Card.Content>
             </Card>
           ))}
+        </div>
+      )}
+      
+      {/* Pagination Controls */}
+      {!loading && pagination.totalPages > 1 && (
+        <div className="mt-8 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-6">
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              Showing {((pagination.page - 1) * pagination.perPage) + 1} to {Math.min(pagination.page * pagination.perPage, pagination.total)} of {pagination.total} courses
+            </span>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600 dark:text-gray-400">Per page:</label>
+              <Select
+                value={pagination.perPage.toString()}
+                onChange={(e) => handlePerPageChange(parseInt(e.target.value))}
+                className="w-20"
+              >
+                <option value="6">6</option>
+                <option value="12">12</option>
+                <option value="24">24</option>
+                <option value="48">48</option>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(pagination.page - 1)}
+              disabled={pagination.page === 1}
+              leftIcon={<ChevronLeft className="h-4 w-4" />}
+            >
+              Previous
+            </Button>
+            
+            <div className="flex items-center gap-1">
+              {[...Array(pagination.totalPages)].map((_, index) => {
+                const page = index + 1;
+                // Show first page, last page, current page, and pages around current
+                if (
+                  page === 1 ||
+                  page === pagination.totalPages ||
+                  (page >= pagination.page - 1 && page <= pagination.page + 1)
+                ) {
+                  return (
+                    <Button
+                      key={page}
+                      variant={page === pagination.page ? 'primary' : 'outline'}
+                      size="sm"
+                      onClick={() => handlePageChange(page)}
+                      className="min-w-[40px]"
+                    >
+                      {page}
+                    </Button>
+                  );
+                } else if (
+                  page === pagination.page - 2 ||
+                  page === pagination.page + 2
+                ) {
+                  return <span key={page} className="px-2 text-gray-400">...</span>;
+                }
+                return null;
+              })}
+            </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(pagination.page + 1)}
+              disabled={pagination.page === pagination.totalPages}
+              rightIcon={<ChevronRight className="h-4 w-4" />}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       )}
     </div>

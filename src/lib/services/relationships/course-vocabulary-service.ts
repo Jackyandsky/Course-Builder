@@ -1,173 +1,150 @@
-import { createSupabaseClient } from '@/lib/supabase'
 import type { Database } from '@/types/database'
 
 type CourseVocabularyGroup = Database['public']['Tables']['course_vocabulary_groups']['Insert']
 
 export class CourseVocabularyService {
-  private supabase = createSupabaseClient()
-
-  // Add a vocabulary group to a course
+  // Add a vocabulary group to a course - uses API route
   async addVocabularyGroupToCourse(courseId: string, vocabularyGroupId: string, position?: number) {
-    const { data, error } = await this.supabase
-      .from('course_vocabulary_groups')
-      .insert({
-        course_id: courseId,
-        vocabulary_group_id: vocabularyGroupId,
-        position: position ?? 0
-      })
-      .select()
-      .single()
+    try {
+      const response = await fetch(`/api/courses/${courseId}/vocabulary`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          vocabularyGroupId,
+          position: position ?? 0
+        }),
+      });
 
-    if (error) throw error
-    return data
-  }
-
-  // Remove a vocabulary group from a course
-  async removeVocabularyGroupFromCourse(courseId: string, vocabularyGroupId: string) {
-    const { error } = await this.supabase
-      .from('course_vocabulary_groups')
-      .delete()
-      .match({ course_id: courseId, vocabulary_group_id: vocabularyGroupId })
-
-    if (error) throw error
-  }
-
-  // Get all vocabulary groups for a course
-  async getCourseVocabularyGroups(courseId: string) {
-    const { data, error } = await this.supabase
-      .from('course_vocabulary_groups')
-      .select(`
-        *,
-        vocabulary_group:vocabulary_groups (
-          id,
-          name,
-          description,
-          language,
-          target_language,
-          difficulty,
-          tags,
-          vocabulary_group_items (
-            vocabulary:vocabulary (
-              id,
-              word,
-              translation,
-              part_of_speech,
-              difficulty
-            )
-          )
-        )
-      `)
-      .eq('course_id', courseId)
-      .order('position', { ascending: true })
-
-    if (error) throw error
-    return data
-  }
-
-  // Get all vocabulary items for a course (flattened)
-  async getCourseVocabularyItems(courseId: string) {
-    const { data, error } = await this.supabase
-      .from('course_vocabulary_groups')
-      .select(`
-        vocabulary_group:vocabulary_groups (
-          id,
-          name,
-          vocabulary_group_items (
-            vocabulary:vocabulary (*)
-          )
-        )
-      `)
-      .eq('course_id', courseId)
-
-    if (error) throw error
-
-    // Flatten the vocabulary items with proper typing
-    const vocabularyItems = data?.flatMap(group => {
-      const vocabGroup = group.vocabulary_group as any
-      return vocabGroup?.vocabulary_group_items?.map((item: any) => item.vocabulary) ?? []
-    }).filter(Boolean)
-
-    return vocabularyItems
-  }
-
-  // Get courses using a vocabulary group
-  async getCoursesUsingVocabularyGroup(vocabularyGroupId: string) {
-    const { data, error } = await this.supabase
-      .from('course_vocabulary_groups')
-      .select(`
-        *,
-        course:courses (
-          id,
-          title,
-          description,
-          status,
-          difficulty
-        )
-      `)
-      .eq('vocabulary_group_id', vocabularyGroupId)
-
-    if (error) throw error
-    return data
-  }
-
-  // Reorder vocabulary groups in a course
-  async reorderCourseVocabularyGroups(courseId: string, groupOrders: { groupId: string; position: number }[]) {
-    const updates = groupOrders.map(({ groupId, position }) => 
-      this.supabase
-        .from('course_vocabulary_groups')
-        .update({ position })
-        .match({ course_id: courseId, vocabulary_group_id: groupId })
-    )
-
-    const results = await Promise.all(updates)
-    const errors = results.filter(r => r.error)
-    
-    if (errors.length > 0) {
-      throw new Error(`Failed to reorder vocabulary groups: ${errors.map(e => e.error?.message).join(', ')}`)
-    }
-  }
-
-  // Bulk add vocabulary groups to course
-  async bulkAddVocabularyGroupsToCourse(courseId: string, groupIds: string[]) {
-    const inserts: CourseVocabularyGroup[] = groupIds.map((groupId, index) => ({
-      course_id: courseId,
-      vocabulary_group_id: groupId,
-      position: index
-    }))
-
-    const { data, error } = await this.supabase
-      .from('course_vocabulary_groups')
-      .insert(inserts)
-      .select()
-
-    if (error) throw error
-    return data
-  }
-
-  // Get vocabulary statistics for a course
-  async getCourseVocabularyStats(courseId: string) {
-    const vocabularyItems = await this.getCourseVocabularyItems(courseId)
-    
-    const stats = {
-      totalWords: vocabularyItems.length,
-      byDifficulty: {} as Record<string, number>,
-      byPartOfSpeech: {} as Record<string, number>,
-      languages: new Set<string>()
-    }
-
-    vocabularyItems.forEach(item => {
-      if (item) {
-        // Count by difficulty
-        const difficulty = item.difficulty || 'unknown'
-        stats.byDifficulty[difficulty] = (stats.byDifficulty[difficulty] || 0) + 1
-        
-        // Count by part of speech
-        const partOfSpeech = item.part_of_speech || 'unknown'
-        stats.byPartOfSpeech[partOfSpeech] = (stats.byPartOfSpeech[partOfSpeech] || 0) + 1
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add vocabulary to course');
       }
-    })
 
-    return stats
+      return await response.json();
+    } catch (error) {
+      console.error('Error adding vocabulary to course:', error);
+      throw error;
+    }
+  }
+
+  // Remove a vocabulary group from a course - uses API route
+  async removeVocabularyGroupFromCourse(courseId: string, vocabularyGroupId: string) {
+    try {
+      const response = await fetch(`/api/courses/${courseId}/vocabulary?vocabularyGroupId=${vocabularyGroupId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to remove vocabulary from course');
+      }
+    } catch (error) {
+      console.error('Error removing vocabulary from course:', error);
+      throw error;
+    }
+  }
+
+  // Get all vocabulary groups for a course - uses API route
+  async getCourseVocabularyGroups(courseId: string) {
+    try {
+      const response = await fetch(`/api/courses/${courseId}/vocabulary`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch course vocabulary');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching course vocabulary:', error);
+      throw error;
+    }
+  }
+
+  // Get all vocabulary items for a course (flattened) - TODO: needs API route
+  async getCourseVocabularyItems(courseId: string) {
+    // This needs a dedicated API route for fetching vocabulary items
+    console.warn('getCourseVocabularyItems needs API route implementation');
+    return [];
+  }
+
+  // Get courses using a vocabulary group - TODO: needs API route
+  async getCoursesUsingVocabularyGroup(vocabularyGroupId: string) {
+    // This needs a dedicated API route
+    console.warn('getCoursesUsingVocabularyGroup needs API route implementation');
+    return [];
+  }
+
+  // Reorder vocabulary groups in a course - uses API route
+  async reorderCourseVocabularyGroups(courseId: string, groupOrders: { groupId: string; position: number }[]) {
+    try {
+      // Update positions one by one using the API
+      const promises = groupOrders.map(({ groupId, position }) =>
+        fetch(`/api/courses/${courseId}/vocabulary`, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            vocabularyGroupId: groupId,
+            position
+          }),
+        })
+      );
+
+      const results = await Promise.all(promises);
+      
+      // Check if any request failed
+      const errors = results.filter(r => !r.ok);
+      if (errors.length > 0) {
+        throw new Error('Failed to reorder vocabulary groups');
+      }
+    } catch (error) {
+      console.error('Error reordering vocabulary groups:', error);
+      throw error;
+    }
+  }
+
+  // Bulk add vocabulary groups to course - uses API route
+  async bulkAddVocabularyGroupsToCourse(courseId: string, groupIds: string[]) {
+    try {
+      // Add groups one by one using the API
+      const promises = groupIds.map((groupId, index) =>
+        this.addVocabularyGroupToCourse(courseId, groupId, index)
+      );
+
+      const results = await Promise.all(promises);
+      return results;
+    } catch (error) {
+      console.error('Error bulk adding vocabulary groups:', error);
+      throw error;
+    }
+  }
+
+  // Get vocabulary statistics for a course - TODO: needs implementation
+  async getCourseVocabularyStats(courseId: string) {
+    // This would need vocabulary items to be fetched first
+    console.warn('getCourseVocabularyStats needs API route implementation');
+    return {
+      totalWords: 0,
+      byDifficulty: {},
+      byPartOfSpeech: {},
+      languages: new Set<string>()
+    };
   }
 }
 

@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useCallback, useMemo, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Clock, Search, Calendar, Users, BookOpen, CheckSquare, Edit, BarChart3, Plus } from 'lucide-react';
 import { Lesson, LessonStatus } from '@/types/database';
 import { lessonService, LessonFilters } from '@/lib/supabase/lessons';
 import { scheduleService } from '@/lib/supabase/schedules';
 import { courseService } from '@/lib/supabase/courses';
-import { Button, Card, Badge, SearchBox, Select, Spinner, Tabs, TabsList, TabsTrigger, TabsContent, RichTextTruncate } from '@/components/ui';
+import { Button, Card, Badge, SearchBox, Select, SearchableSelect, Spinner, Tabs, TabsList, TabsTrigger, TabsContent, RichTextTruncate } from '@/components/ui';
+import type { SearchableSelectOption } from '@/components/ui';
 import { LessonDetailModal } from '@/components/schedules/LessonDetailModal';
 import { cn } from '@/lib/utils';
 
@@ -29,20 +30,28 @@ const statusColors: Record<LessonStatus, 'default' | 'warning' | 'success' | 'da
   cancelled: 'danger',
 };
 
-export default function LessonsPage() {
+function LessonsPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [allSchedules, setAllSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [coursesLoading, setCoursesLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [filtering, setFiltering] = useState(false);
+  
+  // Initialize filters from session storage or defaults
   const [searchQuery, setSearchQuery] = useState('');
+  const [internalSearchQuery, setInternalSearchQuery] = useState(''); // Internal state for immediate UI updates
   const [selectedCourse, setSelectedCourse] = useState('');
-  const [selectedSchedule, setSelectedSchedule] = useState('');
+  const [selectedSchedule, setSelectedSchedule] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
+  const [searchDebounceTimer, setSearchDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+  
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [totalStats, setTotalStats] = useState({
@@ -52,14 +61,61 @@ export default function LessonsPage() {
     draft: 0
   });
 
+  // Save filters to session storage whenever they change
   useEffect(() => {
+    // Skip saving on initial mount when everything is default
+    const isInitialState = searchQuery === '' && 
+                          selectedCourse === '' && 
+                          selectedSchedule === '' && 
+                          selectedStatus === '' && 
+                          activeTab === 'overview';
+    
+    // Always save filters to preserve state, even if they're all empty
+    const filters = {
+      searchQuery,
+      selectedCourse,
+      selectedSchedule,
+      selectedStatus,
+      activeTab
+    };
+    sessionStorage.setItem('adminLessonsFilters', JSON.stringify(filters));
+  }, [searchQuery, selectedCourse, selectedSchedule, selectedStatus, activeTab]);
+
+  useEffect(() => {
+    // Load filters from session storage on mount
+    const savedFilters = sessionStorage.getItem('adminLessonsFilters');
+    let initialSearch = '';
+    let initialSchedule = '';
+    
+    if (savedFilters) {
+      try {
+        const filters = JSON.parse(savedFilters);
+        initialSearch = filters.searchQuery || '';
+        initialSchedule = filters.selectedSchedule || '';
+        
+        setSearchQuery(filters.searchQuery || '');
+        setInternalSearchQuery(filters.searchQuery || '');
+        setSelectedCourse(filters.selectedCourse || '');
+        setSelectedSchedule(filters.selectedSchedule || '');
+        setSelectedStatus(filters.selectedStatus || '');
+        setActiveTab(filters.activeTab || 'overview');
+      } catch (e) {
+        console.error('Failed to load saved filters:', e);
+      }
+    }
+    
     loadInitialData();
-  }, []);
+    // Use the loaded filter values for initial load
+    loadLessons(initialSearch, false, initialSchedule);
+  }, []); // Empty dependency array for initial load only
 
   // Memoize the load function to prevent unnecessary recreations
-  const loadLessons = useCallback(async (search?: string, isFilterChange = false) => {
+  const loadLessons = useCallback(async (search?: string, isFilterChange = false, overrideSchedule?: string | null) => {
     try {
       const isInitialLoad = !search && !searchQuery && !isFilterChange;
+      
+      // Use override schedule if provided (for immediate updates), otherwise use state
+      const scheduleToUse = overrideSchedule !== undefined ? overrideSchedule : selectedSchedule;
       
       if (isInitialLoad) {
         setLoading(true);
@@ -70,24 +126,29 @@ export default function LessonsPage() {
       }
       
       // Build filters
-      const filters: LessonFilters = {};
+      const filters: LessonFilters & { page?: number; perPage?: number } = {
+        page: 1,
+        perPage: 500  // Increased to load all lessons (currently 255 total)
+      };
       
       if (search) {
         filters.search = search;
       }
-      if (selectedSchedule) {
-        filters.schedule_id = selectedSchedule;
+      // Only add schedule_id if it's not an empty string or null
+      if (scheduleToUse && scheduleToUse !== '' && scheduleToUse !== null) {
+        filters.schedule_id = scheduleToUse;
       }
       if (selectedStatus) {
         filters.status = selectedStatus as LessonStatus;
       }
 
-      const data = await lessonService.getLessons(filters);
       
-      // Filter by course (if no schedule selected) - now done client-side only for course filtering
-      let filteredLessons = data;
+      // Use optimized admin lessons list endpoint
+      const result = await lessonService.getAdminLessonsList(filters);
+      let filteredLessons = result.data;
       
-      if (selectedCourse && !selectedSchedule) {
+      // Filter by course - apply when course is selected (with or without schedule)
+      if (selectedCourse) {
         filteredLessons = filteredLessons.filter(lesson => 
           lesson.schedule?.course?.id === selectedCourse
         );
@@ -103,47 +164,62 @@ export default function LessonsPage() {
     }
   }, [selectedCourse, selectedSchedule, selectedStatus, searchQuery]);
 
-  // Handle search with debouncing
+  // Handle search with proper debouncing
   const handleSearch = useCallback((search: string) => {
-    setSearchQuery(search);
-    loadLessons(search);
-  }, [loadLessons]);
+    setInternalSearchQuery(search); // Update UI immediately
+    
+    // Clear existing timer
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+    }
+    
+    // Set new timer for actual search
+    const timer = setTimeout(() => {
+      setSearchQuery(search);
+      loadLessons(search);
+    }, 500); // 500ms delay
+    
+    setSearchDebounceTimer(timer);
+  }, [loadLessons, searchDebounceTimer]);
 
   // Handle course selection
   const handleCourseChange = useCallback((courseId: string) => {
     setSelectedCourse(courseId);
-    // Don't trigger immediate reload, let useEffect handle it
-  }, []);
+    setSelectedSchedule(''); // Reset schedule immediately
+    // Trigger reload with new filters - explicitly pass empty schedule
+    loadLessons(searchQuery, true, ''); // Pass empty string explicitly
+  }, [searchQuery, loadLessons]);
 
   // Handle schedule selection
   const handleScheduleChange = useCallback((scheduleId: string) => {
     setSelectedSchedule(scheduleId);
-    // Don't trigger immediate reload, let useEffect handle it
-  }, []);
+    // Trigger reload with new filters - pass the value explicitly
+    loadLessons(searchQuery, true, scheduleId);
+  }, [searchQuery, loadLessons]);
 
   // Handle status selection
   const handleStatusChange = useCallback((status: string) => {
     setSelectedStatus(status);
-    // Don't trigger immediate reload, let useEffect handle it
-  }, []);
+    // Trigger reload with new filters
+    loadLessons(searchQuery, true);
+  }, [searchQuery, loadLessons]);
 
-  // Reload when filters change (with debounced effect)
+  // Clean up debounce timer on unmount
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      loadLessons(undefined, true);
-    }, 100); // Small delay to prevent rapid successive calls
-
-    return () => clearTimeout(timeoutId);
-  }, [selectedCourse, selectedSchedule, selectedStatus, loadLessons]);
+    return () => {
+      if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+      }
+    };
+  }, [searchDebounceTimer]);
 
   useEffect(() => {
     // Filter schedules based on selected course
     if (selectedCourse) {
-      setSchedules(allSchedules.filter(s => s.course_id === selectedCourse));
-      setSelectedSchedule(''); // Reset schedule selection when course changes
+      const filteredSchedules = allSchedules.filter(s => s.course_id === selectedCourse);
+      setSchedules(filteredSchedules);
     } else {
       setSchedules(allSchedules);
-      setSelectedSchedule('');
     }
   }, [selectedCourse, allSchedules]);
 
@@ -154,36 +230,83 @@ export default function LessonsPage() {
 
   const loadInitialData = async () => {
     try {
-      // Load courses, schedules, and lesson statistics
-      const [coursesData, schedulesData] = await Promise.all([
-        courseService.getCourses(),
-        scheduleService.getSchedules(),
+      setCoursesLoading(true);
+      // Load courses and schedules using API routes, and lesson statistics
+      const [coursesResponse, schedulesResponse] = await Promise.all([
+        fetch('/api/courses?isAdmin=true&simple=true', {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(5000)
+        }),
+        fetch('/api/schedules', {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(5000)
+        }),
         loadTotalStats()
       ]);
       
-      setCourses(coursesData);
-      setAllSchedules(schedulesData);
-      setSchedules(schedulesData);
+      if (!coursesResponse.ok) {
+        throw new Error(`Failed to fetch courses: ${coursesResponse.status}`);
+      }
+      if (!schedulesResponse.ok) {
+        throw new Error(`Failed to fetch schedules: ${schedulesResponse.status}`);
+      }
+      
+      const coursesData = await coursesResponse.json();
+      const schedulesData = await schedulesResponse.json();
+      
+      // Extract courses from paginated response
+      const courses = Array.isArray(coursesData) ? coursesData : coursesData.courses || [];
+      // Extract schedules from response 
+      const schedules = Array.isArray(schedulesData) ? schedulesData : schedulesData.schedules || [];
+      
+      console.log('Loaded courses:', courses.length, 'courses (simple mode)');
+      console.log('Loaded schedules:', schedules.length, 'schedules');
+      
+      setCourses(courses);
+      setAllSchedules(schedules);
+      setSchedules(schedules);
     } catch (error) {
       console.error('Failed to load initial data:', error);
+      // Set empty arrays on error to prevent infinite loading
+      setCourses([]);
+      setAllSchedules([]);
+      setSchedules([]);
+    } finally {
+      setCoursesLoading(false);
     }
   };
 
   const loadTotalStats = async () => {
     try {
-      // Get all lessons without filters to calculate total statistics
-      const allLessons = await lessonService.getLessons({});
+      // Use API endpoint to get statistics
+      const response = await fetch('/api/lessons/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(5000)
+      });
       
-      const stats = {
-        total: allLessons.length,
-        scheduled: allLessons.filter(lesson => lesson.status === 'scheduled').length,
-        completed: allLessons.filter(lesson => lesson.status === 'completed').length,
-        draft: allLessons.filter(lesson => lesson.status === 'draft').length
-      };
+      if (!response.ok) {
+        throw new Error('Failed to fetch lesson statistics');
+      }
       
+      const stats = await response.json();
       setTotalStats(stats);
     } catch (error) {
       console.error('Failed to load lesson statistics:', error);
+      // Set default values on error
+      setTotalStats({
+        total: 0,
+        scheduled: 0,
+        completed: 0,
+        draft: 0
+      });
     }
   };
 
@@ -584,49 +707,54 @@ export default function LessonsPage() {
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="flex flex-wrap items-center gap-3">
         <SearchBox
           placeholder={searching ? "Searching..." : "Search lessons..."}
-          value={searchQuery}
+          value={internalSearchQuery}
           onChange={(e) => handleSearch(e.target.value)}
-          className="md:col-span-1"
-          disabled={searching}
+          className="flex-1 min-w-[200px]"
+          disabled={false}
         />
         
-        <Select
+        <SearchableSelect
           value={selectedCourse}
-          onChange={(e) => handleCourseChange(e.target.value)}
-          className="md:col-span-1"
+          onChange={handleCourseChange}
           placeholder="All Courses"
+          searchPlaceholder="Type to search courses..."
+          className="w-full sm:w-auto sm:min-w-[250px] sm:max-w-[400px] lg:max-w-[500px]"
           options={[
             { value: '', label: 'All Courses' },
             ...courses.map((course) => ({
               value: course.id,
-              label: course.title
+              label: course.title || 'Untitled Course'
             }))
           ]}
+          maxDisplayItems={15}
+          showClearButton={true}
+          emptyMessage="No courses found"
+          disabled={coursesLoading}
         />
         
         <Select
-          value={selectedSchedule}
-          onChange={(e) => handleScheduleChange(e.target.value)}
-          className="md:col-span-1"
-          disabled={!selectedCourse && schedules.length === allSchedules.length}
-          placeholder="All Schedules"
-          options={[
-            { value: '', label: 'All Schedules' },
-            ...schedules.map((schedule) => ({
-              value: schedule.id,
-              label: schedule.name
-            }))
-          ]}
+          key={`schedule-select-${selectedCourse}-${schedules.length}`}
+          value={selectedSchedule || ''}
+          onChange={(e) => {
+            const val = e.target.value;
+            handleScheduleChange(val);
+          }}
+          className="w-auto min-w-[150px] max-w-[250px]"
+          placeholder="Select Schedule"
+          disabled={!selectedCourse || schedules.length === 0}
+          options={schedules.map((schedule) => ({
+            value: schedule.id,
+            label: schedule.name
+          }))}
         />
         
         <Select
           value={selectedStatus}
           onChange={(e) => handleStatusChange(e.target.value)}
-          className="md:col-span-1"
-          placeholder="All Statuses"
+          className="w-auto min-w-[140px] max-w-[200px]"
           options={[
             { value: '', label: 'All Statuses' },
             { value: 'draft', label: 'Draft' },
@@ -637,7 +765,9 @@ export default function LessonsPage() {
         />
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(value) => {
+        setActiveTab(value);
+      }}>
         <TabsList className="grid w-full grid-cols-3">
           {tabs.map((tab) => (
             <TabsTrigger key={tab.id} value={tab.id}>
@@ -672,5 +802,17 @@ export default function LessonsPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function LessonsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <Spinner size="lg" />
+      </div>
+    }>
+      <LessonsPageContent />
+    </Suspense>
   );
 }

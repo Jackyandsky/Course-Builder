@@ -38,6 +38,9 @@ export interface Lesson {
   course_id: string;
   title: string;
   description?: string;
+  content?: string;
+  pdf_url?: string;
+  pdf_page?: number;
   lesson_number?: number;
   date: string;
   start_time: string;

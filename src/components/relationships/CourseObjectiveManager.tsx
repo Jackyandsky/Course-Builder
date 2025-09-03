@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { objectiveService } from '@/lib/supabase/objectives';
 import { Button } from '@/components/ui/Button';
@@ -22,37 +22,77 @@ import {
 
 interface CourseObjectiveManagerProps {
   courseId: string;
+  preloadedData?: any; // Pre-loaded course data
   onUpdate?: () => void;
 }
 
-export function CourseObjectiveManager({ courseId, onUpdate }: CourseObjectiveManagerProps) {
+export function CourseObjectiveManager({ courseId, preloadedData, onUpdate }: CourseObjectiveManagerProps) {
   const router = useRouter();
   const [objectives, setObjectives] = useState<any[]>([]);
   const [courseObjectives, setCourseObjectives] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!preloadedData);
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [adding, setAdding] = useState(false);
   const [selectedObjectives, setSelectedObjectives] = useState<string[]>([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  
+  // Cache objectives to avoid repeated fetching
+  const objectivesCache = useRef<{ data: any[], timestamp: number } | null>(null);
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
   useEffect(() => {
     loadData();
-  }, [courseId]);
+  }, [courseId, preloadedData]);
 
   const loadData = async () => {
-    setLoading(true);
+    if (preloadedData && !dataLoaded) {
+      console.log('[CourseObjective] Using preloaded data - NO API calls needed');
+      
+      // Use preloaded course objectives immediately
+      setCourseObjectives(preloadedData.objectives || []);
+      setDataLoaded(true);
+      setLoading(false);
+      
+      // Load all objectives for modal only when modal is opened (lazy load)
+      
+    } else if (!preloadedData && !dataLoaded) {
+      // Fallback to original loading method if no preloaded data
+      console.log('[CourseObjective] No preloaded data, using API calls');
+      setLoading(true);
+      try {
+        const courseObjectiveRelations = await objectiveService.getCourseObjectives(courseId);
+        setCourseObjectives(courseObjectiveRelations);
+        setDataLoaded(true);
+      } catch (error) {
+        console.error('Failed to load objectives:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  // Lazy load all objectives only when needed for modal
+  const loadAllObjectivesForModal = async () => {
+    if (objectives.length > 0) return; // Already loaded
+    
     try {
-      const [allObjectives, courseObjectiveRelations] = await Promise.all([
-        objectiveService.getObjectives({}),
-        objectiveService.getCourseObjectives(courseId)
-      ]);
+      let allObjectives;
+      const now = Date.now();
+      const cached = objectivesCache.current;
+      
+      if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+        console.log('[CourseObjective] Using cached all objectives for modal');
+        allObjectives = cached.data;
+      } else {
+        console.log('[CourseObjective] Fetching fresh all objectives for modal');
+        allObjectives = await objectiveService.getObjectives({});
+        objectivesCache.current = { data: allObjectives, timestamp: now };
+      }
       
       setObjectives(allObjectives);
-      setCourseObjectives(courseObjectiveRelations);
     } catch (error) {
-      console.error('Failed to load objectives:', error);
-    } finally {
-      setLoading(false);
+      console.error('Failed to load all objectives for modal:', error);
     }
   };
 
@@ -77,6 +117,7 @@ export function CourseObjectiveManager({ courseId, onUpdate }: CourseObjectiveMa
       setShowAddModal(false);
       setSelectedObjectives([]);
       setSearchTerm('');
+      setDataLoaded(false); // Allow reload
       await loadData();
       onUpdate?.();
     } catch (error) {
@@ -89,6 +130,7 @@ export function CourseObjectiveManager({ courseId, onUpdate }: CourseObjectiveMa
   const handleRemoveObjective = async (relationId: string) => {
     try {
       await objectiveService.removeObjectiveFromCourse(relationId);
+      setDataLoaded(false); // Allow reload
       await loadData();
       onUpdate?.();
     } catch (error) {
@@ -129,7 +171,10 @@ export function CourseObjectiveManager({ courseId, onUpdate }: CourseObjectiveMa
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              loadAllObjectivesForModal();
+              setShowAddModal(true);
+            }}
             leftIcon={<Plus className="h-4 w-4" />}
           >
             Add Objectives
@@ -158,7 +203,10 @@ export function CourseObjectiveManager({ courseId, onUpdate }: CourseObjectiveMa
           <Button 
             className="mt-4" 
             size="sm"
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              loadAllObjectivesForModal();
+              setShowAddModal(true);
+            }}
             leftIcon={<Plus className="h-4 w-4" />}
           >
             Add Objectives
@@ -209,7 +257,7 @@ export function CourseObjectiveManager({ courseId, onUpdate }: CourseObjectiveMa
                     
                     <div className="flex items-center gap-2 ml-4">
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => router.push(`/objectives/${courseObjective.objective.id}/edit`)}
                         leftIcon={<ExternalLink className="h-4 w-4" />}
@@ -217,7 +265,7 @@ export function CourseObjectiveManager({ courseId, onUpdate }: CourseObjectiveMa
                         Edit
                       </Button>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => handleRemoveObjective(courseObjective.id)}
                         leftIcon={<Trash2 className="h-4 w-4" />}

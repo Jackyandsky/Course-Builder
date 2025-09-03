@@ -2,8 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { taskService } from '@/lib/supabase/tasks';
-import { lessonService } from '@/lib/supabase/lessons';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -41,15 +39,40 @@ export function LessonTaskManager({ lessonId, courseId, onUpdate }: LessonTaskMa
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [allTasks, lesson] = await Promise.all([
-        taskService.getTasks({}),
-        lessonService.getLesson(lessonId)
+      console.log('Loading data for lesson ID:', lessonId);
+      
+      const [allTasksResponse, lessonResponse] = await Promise.all([
+        fetch('/api/tasks', {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(5000)
+        }),
+        fetch(`/api/lessons/${lessonId}`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(5000)
+        })
       ]);
+      
+      if (!allTasksResponse.ok || !lessonResponse.ok) {
+        throw new Error('Failed to fetch data');
+      }
+      
+      const [allTasks, lesson] = await Promise.all([
+        allTasksResponse.json(),
+        lessonResponse.json()
+      ]);
+      
+      console.log('Loaded lesson:', lesson);
+      console.log('Lesson tasks:', lesson?.lesson_tasks);
       
       setTasks(allTasks);
       setLessonTasks(lesson?.lesson_tasks || []);
     } catch (error) {
       console.error('Failed to load data:', error);
+      console.error('Error details:', error);
     } finally {
       setLoading(false);
     }
@@ -72,7 +95,18 @@ export function LessonTaskManager({ lessonId, courseId, onUpdate }: LessonTaskMa
       for (let i = 0; i < selectedTasks.length; i++) {
         const taskId = selectedTasks[i];
         const position = lessonTasks.length + i; // Add to end
-        await taskService.addTaskToLesson(lessonId, taskId, { position });
+        
+        const response = await fetch(`/api/lessons/${lessonId}/tasks`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ taskId, position }),
+          signal: AbortSignal.timeout(5000)
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to add task');
+        }
       }
       
       await loadData();
@@ -91,7 +125,17 @@ export function LessonTaskManager({ lessonId, courseId, onUpdate }: LessonTaskMa
     if (!confirm('Remove this task from the lesson?')) return;
 
     try {
-      await taskService.removeTaskFromLesson(relationId);
+      const response = await fetch(`/api/lessons/${lessonId}/tasks?relationId=${relationId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to remove task');
+      }
+      
       await loadData();
       onUpdate?.();
     } catch (error) {
@@ -136,7 +180,10 @@ export function LessonTaskManager({ lessonId, courseId, onUpdate }: LessonTaskMa
               Add Tasks
             </Button>
             <Button 
-              onClick={() => router.push('/tasks/new')} 
+              onClick={() => {
+                const returnUrl = encodeURIComponent(window.location.pathname);
+                router.push(`/admin/tasks/new?return=${returnUrl}`);
+              }} 
               variant="outline" 
               size="sm"
             >
@@ -162,7 +209,7 @@ export function LessonTaskManager({ lessonId, courseId, onUpdate }: LessonTaskMa
                       )}
                     </div>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => handleRemoveTask(lessonTask.id)}
                       className="text-red-600 hover:text-red-700 p-1"
@@ -201,9 +248,12 @@ export function LessonTaskManager({ lessonId, courseId, onUpdate }: LessonTaskMa
                       )}
                     </div>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={() => router.push(`/tasks/${lessonTask.task_id}`)}
+                      onClick={() => {
+                        const returnUrl = encodeURIComponent(window.location.pathname);
+                        router.push(`/admin/tasks/${lessonTask.task_id}/edit?return=${returnUrl}`);
+                      }}
                       className="p-1"
                     >
                       <ExternalLink className="h-3 w-3" />

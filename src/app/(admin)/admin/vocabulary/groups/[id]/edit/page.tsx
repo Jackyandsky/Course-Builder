@@ -2,18 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { getSingletonSupabaseClient } from '@/lib/supabase-singleton';
 import { ArrowLeft, Save } from 'lucide-react';
 import { VocabularyGroup } from '@/types/database';
 import { 
   Button, Card 
 } from '@/components/ui';
 import { VocabularyGroupForm } from '@/components/vocabulary';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export default function EditVocabularyGroupPage() {
   const params = useParams();
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = getSingletonSupabaseClient();
   const [group, setGroup] = useState<VocabularyGroup | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -95,7 +96,7 @@ export default function EditVocabularyGroupPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => router.push(`/admin/vocabulary/groups/${groupId}`)}
             leftIcon={<ArrowLeft className="h-4 w-4" />}

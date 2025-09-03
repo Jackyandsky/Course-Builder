@@ -1,6 +1,7 @@
-// src/lib/supabase/lessons.ts
+// src/lib/getSupabase()/lessons.ts
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseClient } from '@/lib/supabase';
+import type { Database } from '@/types/database';
 import type {
   Lesson,
   Attendance,
@@ -9,7 +10,7 @@ import type {
 import type { LessonStatus } from '@/types/database';
 import { SHARED_USER_ID } from '@/lib/constants/shared';
 
-const supabase = createClientComponentClient();
+const getSupabase = () => createSupabaseClient();
 
 export interface LessonFilters {
   schedule_id?: string;
@@ -30,12 +31,28 @@ export interface UpdateLessonData extends Partial<CreateLessonData> {
 export interface CreateAttendanceData
   extends Omit<Attendance, 'id' | 'marked_at'> {}
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    perPage: number;
+    total: number;
+    totalPages: number;
+  };
+  stats?: {
+    total: number;
+    scheduled: number;
+    completed: number;
+    draft: number;
+  };
+}
+
 export const lessonService = {
   /**
    * Get all lessons with optional filters.
    */
   async getLessons(filters: LessonFilters = {}) {
-    let query = supabase
+    let query = getSupabase()
       .from('lessons')
       .select(
         `
@@ -77,7 +94,7 @@ export const lessonService = {
 
     // Fetch lesson_books and lesson_tasks separately
     const [lessonBooksResult, lessonTasksResult] = await Promise.all([
-      supabase
+      getSupabase()
         .from('lesson_books')
         .select(`
           id,
@@ -89,7 +106,7 @@ export const lessonService = {
           book:books(id, title, author, cover_image_url)
         `)
         .in('lesson_id', lessonIds),
-      supabase
+      getSupabase()
         .from('lesson_tasks')
         .select(`
           id,
@@ -136,71 +153,61 @@ export const lessonService = {
   },
 
   /**
-   * Get all lessons for a specific schedule.
+   * Get all lessons for a specific schedule - uses direct Supabase for performance.
+   * Note: This method kept as direct access for better performance in sessions display.
    */
   async getScheduleLessons(scheduleId: string) {
-    const { data, error } = await supabase
-      .from('lessons')
-      .select('*')
-      .eq('schedule_id', scheduleId)
-      .order('date', { ascending: true })
-      .order('start_time', { ascending: true });
+    try {
+      const { data, error } = await getSupabase()
+        .from('lessons')
+        .select(`
+          *,
+          schedule:schedules(id, name, course_id)
+        `)
+        .eq('schedule_id', scheduleId)
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true });
 
-    if (error) throw error;
-    return data as Lesson[];
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching schedule lessons:', error);
+      throw error;
+    }
   },
 
   /**
    * Get a single lesson by its ID, including all related content.
    */
   async getLesson(id: string) {
-    const { data: lesson, error } = await supabase
-      .from('lessons')
-      .select(
-        `
-        *,
-        schedule:schedules(*, course:courses(*))
-      `
-      )
-      .eq('id', id)
-      .single();
+    try {
+      // Use API route for proper authentication
+      const response = await fetch(`/api/lessons/${id}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-    if (error) throw error;
-    if (!lesson) return null;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to fetch lesson: ${response.status}`);
+      }
 
-    // Fetch lesson_books and lesson_tasks separately
-    const [lessonBooksResult, lessonTasksResult] = await Promise.all([
-      supabase
-        .from('lesson_books')
-        .select(`
-          *,
-          book:books(*)
-        `)
-        .eq('lesson_id', id),
-      supabase
-        .from('lesson_tasks')
-        .select(`
-          *,
-          task:tasks(*)
-        `)
-        .eq('lesson_id', id)
-    ]);
-
-    if (lessonBooksResult.error) throw lessonBooksResult.error;
-    if (lessonTasksResult.error) throw lessonTasksResult.error;
-
-    return {
-      ...lesson,
-      lesson_books: lessonBooksResult.data || [],
-      lesson_tasks: lessonTasksResult.data || []
-    };
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching lesson:', error);
+      throw error;
+    }
   },
 
   /**
    * Create a new lesson.
    */
   async createLesson(lessonData: CreateLessonData) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('lessons')
       .insert({ ...lessonData, user_id: SHARED_USER_ID })
       .select()
@@ -214,7 +221,7 @@ export const lessonService = {
    * Update an existing lesson.
    */
   async updateLesson(id: string, lessonData: Partial<UpdateLessonData>) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('lessons')
       .update({ ...lessonData, updated_at: new Date().toISOString() })
       .eq('id', id)
@@ -229,7 +236,7 @@ export const lessonService = {
    * Delete a lesson.
    */
   async deleteLesson(id: string) {
-    const { error } = await supabase.from('lessons').delete().eq('id', id);
+    const { error } = await getSupabase().from('lessons').delete().eq('id', id);
     if (error) throw error;
   },
 
@@ -239,7 +246,7 @@ export const lessonService = {
    * Get all attendance records for a specific lesson.
    */
   async getAttendance(lesson_id: string) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('attendance')
       .select('*')
       .eq('lesson_id', lesson_id)
@@ -253,7 +260,7 @@ export const lessonService = {
    * Mark (create or update) a single attendance record.
    */
   async markAttendance(attendanceData: CreateAttendanceData) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('attendance')
       .upsert({
         ...attendanceData,
@@ -281,7 +288,7 @@ export const lessonService = {
       marked_by: SHARED_USER_ID,
     }));
 
-    const { data, error } = await supabase.from('attendance').upsert(records).select();
+    const { data, error } = await getSupabase().from('attendance').upsert(records).select();
 
     if (error) throw error;
     return data;
@@ -298,7 +305,7 @@ export const lessonService = {
     reading_pages?: string;
     notes?: string;
   } = {}) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('lesson_books')
       .insert({
         lesson_id,
@@ -319,7 +326,7 @@ export const lessonService = {
    * Remove a book from a lesson
    */
   async removeBookFromLesson(lesson_id: string, book_id: string) {
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('lesson_books')
       .delete()
       .eq('lesson_id', lesson_id)
@@ -336,7 +343,7 @@ export const lessonService = {
     focus_words?: string[];
     notes?: string;
   } = {}) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('lesson_vocabulary_groups')
       .insert({
         lesson_id,
@@ -356,7 +363,7 @@ export const lessonService = {
    * Remove a vocabulary group from a lesson
    */
   async removeVocabularyGroupFromLesson(lesson_id: string, vocabulary_group_id: string) {
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('lesson_vocabulary_groups')
       .delete()
       .eq('lesson_id', lesson_id)
@@ -373,7 +380,7 @@ export const lessonService = {
     date_from?: string;
     date_to?: string;
   } = {}) {
-    let query = supabase
+    let query = getSupabase()
       .from('lessons')
       .select(`
         *,
@@ -407,7 +414,7 @@ export const lessonService = {
 
     // Fetch lesson_books and lesson_tasks separately
     const [lessonBooksResult, lessonTasksResult] = await Promise.all([
-      supabase
+      getSupabase()
         .from('lesson_books')
         .select(`
           id,
@@ -419,7 +426,7 @@ export const lessonService = {
           book:books(id, title, author, cover_image_url)
         `)
         .in('lesson_id', lessonIds),
-      supabase
+      getSupabase()
         .from('lesson_tasks')
         .select(`
           id,
@@ -463,5 +470,46 @@ export const lessonService = {
     }));
 
     return enrichedLessons as Lesson[];
+  },
+
+  // Get optimized admin lessons list - lightweight for performance
+  async getAdminLessonsList(filters: LessonFilters & { page?: number; perPage?: number } = {}): Promise<PaginatedResponse<Lesson>> {
+    try {
+      console.log('[LessonService] Getting admin lessons list with filters:', filters);
+      const startTime = Date.now();
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (filters.search) params.append('search', filters.search);
+      if (filters.schedule_id) params.append('schedule_id', filters.schedule_id);
+      if (filters.status) params.append('status', filters.status);
+      params.append('page', String(filters.page || 1));
+      params.append('perPage', String(filters.perPage || 20));
+      
+      // Use optimized admin-list endpoint
+      const response = await fetch(`/api/lessons/admin-list?${params.toString()}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Admin lessons list API error:', error);
+        throw new Error(error.error || 'Failed to fetch admin lessons list');
+      }
+      
+      const result = await response.json();
+      const endTime = Date.now();
+      
+      console.log(`[LessonService] Admin lessons list loaded in ${endTime - startTime}ms (API: ${result.loadTime}ms)`);
+      
+      return result;
+    } catch (error) {
+      console.error('Error fetching admin lessons list:', error);
+      throw error;
+    }
   },
 };

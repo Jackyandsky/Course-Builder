@@ -11,10 +11,11 @@ import { BookOpen, Languages, Loader2, X } from 'lucide-react'
 
 interface CourseVocabularyManagerProps {
   courseId: string
+  preloadedData?: any // Pre-loaded course data
   onUpdate?: () => void
 }
 
-export function CourseVocabularyManager({ courseId, onUpdate }: CourseVocabularyManagerProps) {
+export function CourseVocabularyManager({ courseId, preloadedData, onUpdate }: CourseVocabularyManagerProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedGroups, setSelectedGroups] = useState<string[]>([])
@@ -23,18 +24,41 @@ export function CourseVocabularyManager({ courseId, onUpdate }: CourseVocabulary
   const [loading, setLoading] = useState(false)
   const [loadingGroups, setLoadingGroups] = useState(false)
   const [stats, setStats] = useState<any>(null)
+  const [dataLoaded, setDataLoaded] = useState(false)
 
   // Load course vocabulary groups
   const loadCourseGroups = async () => {
-    try {
-      const groups = await courseVocabularyService.getCourseVocabularyGroups(courseId)
-      setCourseGroups(groups || [])
+    if (preloadedData && !dataLoaded) {
+      console.log('[CourseVocabulary] Using preloaded data - NO API calls needed');
       
-      // Load stats
-      const vocabStats = await courseVocabularyService.getCourseVocabularyStats(courseId)
-      setStats(vocabStats)
-    } catch (error) {
-      console.error('Failed to load course vocabulary groups:', error)
+      // Use preloaded course vocabulary groups immediately
+      setCourseGroups(preloadedData.vocabulary || []);
+      setDataLoaded(true);
+      
+      // Load stats only if needed
+      if (preloadedData.vocabulary && preloadedData.vocabulary.length > 0) {
+        try {
+          const vocabStats = await courseVocabularyService.getCourseVocabularyStats(courseId);
+          setStats(vocabStats);
+        } catch (error) {
+          console.error('Failed to load vocabulary stats:', error);
+        }
+      }
+      
+    } else if (!preloadedData && !dataLoaded) {
+      // Fallback to original loading method if no preloaded data
+      console.log('[CourseVocabulary] No preloaded data, using API calls');
+      try {
+        const groups = await courseVocabularyService.getCourseVocabularyGroups(courseId)
+        setCourseGroups(groups || [])
+        setDataLoaded(true);
+        
+        // Load stats
+        const vocabStats = await courseVocabularyService.getCourseVocabularyStats(courseId)
+        setStats(vocabStats)
+      } catch (error) {
+        console.error('Failed to load course vocabulary groups:', error)
+      }
     }
   }
 
@@ -56,7 +80,7 @@ export function CourseVocabularyManager({ courseId, onUpdate }: CourseVocabulary
 
   useEffect(() => {
     loadCourseGroups()
-  }, [courseId])
+  }, [courseId, preloadedData])
 
   // Open modal and load data
   const openModal = async () => {
@@ -74,6 +98,7 @@ export function CourseVocabularyManager({ courseId, onUpdate }: CourseVocabulary
     try {
       await courseVocabularyService.bulkAddVocabularyGroupsToCourse(courseId, selectedGroups)
       setSelectedGroups([])
+      setDataLoaded(false); // Allow reload
       await loadCourseGroups()
       onUpdate?.()
       setIsModalOpen(false)
@@ -90,6 +115,7 @@ export function CourseVocabularyManager({ courseId, onUpdate }: CourseVocabulary
 
     try {
       await courseVocabularyService.removeVocabularyGroupFromCourse(courseId, groupId)
+      setDataLoaded(false); // Allow reload
       await loadCourseGroups()
       onUpdate?.()
     } catch (error) {
@@ -159,7 +185,7 @@ export function CourseVocabularyManager({ courseId, onUpdate }: CourseVocabulary
                         {group?.name}
                       </h4>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => handleRemoveGroup(courseGroup.vocabulary_group_id)}
                         className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-red-600 hover:text-red-700"

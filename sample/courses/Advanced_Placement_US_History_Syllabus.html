@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammaticos Reading & Writing Foundational Course</title>
+    <style>
+        /* Apple-inspired styles with tablet optimization */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #1d1d1f;
+            background-color: #fbfbfd;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 28px;
+            font-weight: 500;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 21px;
+            font-weight: 500;
+            margin-top: 30px;
+        }
+        p {
+            font-size: 17px;
+            color: #333;
+        }
+        .tagline {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Adjusted for themes */
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .book { /* Re-using .book class for themes */
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            touch-action: manipulation;
+        }
+        .book:hover, .book:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .book h3 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .book p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .approach {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .feature h3 {
+            font-size: 20px;
+            margin-top: 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        /* Tablet-specific optimizations */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                width: 94%;
+                padding: 15px;
+            }
+            
+            header {
+                padding: 30px 0;
+            }
+            
+            h1 {
+                font-size: 38px;
+            }
+            
+            h2 {
+                font-size: 26px;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Adjusted */
+            }
+            
+            .approach {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature {
+                padding: 20px;
+            }
+        }
+        
+        /* For landscape orientation on tablets */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .grid {
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Adjusted */
+            }
+            
+            .approach {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Improved touch target sizes for tablet */
+        @media (pointer: coarse) {
+            .book, .feature {
+                min-height: 100px;
+            }
+            
+            .book h3, .feature h3 {
+                margin-bottom: 15px;
+            }
+            
+            button, a {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Advanced Placement U.S. History</h1>
+        </header>
+
+        <h2>Course Overview</h2>
+        <p>This Advanced Placement U.S. History course offers a college-level exploration of American history from pre-Columbian societies to the present. Students will analyze the development of American identity, political systems, economic structures, social dynamics, and culture. The course emphasizes critical thinking, the interpretation of historical evidence from primary and secondary sources, and the ability to construct well-supported historical arguments. The curriculum is designed to prepare students thoroughly for all components of the AP U.S. History exam.</p>
+
+        <h2>Key Historical Periods & Thematic Focus</h2>
+        <div class="grid">
+            <div class="book">
+                <h3>Period 1-3 (1491-1800)</h3>
+                <p>Pre-Columbian societies, European colonization, development of colonial America, the American Revolution, and the establishment of the early republic. Focus on interactions, governance, and identity.</p>
+            </div>
+            <div class="book">
+                <h3>Period 4-5 (1800-1877)</h3>
+                <p>The Antebellum Era, westward expansion, growing sectionalism, the Civil War, and Reconstruction. Focus on democracy, slavery, reform movements, and national unity.</p>
+            </div>
+            <div class="book">
+                <h3>Period 6-7 (1865-1945)</h3>
+                <p>The Gilded Age, industrialization, immigration, Progressivism, American imperialism, World War I, the Great Depression, and World War II. Focus on economic change, social reform, and America's role in the world.</p>
+            </div>
+            <div class="book">
+                <h3>Period 8-9 (1945-Present)</h3>
+                <p>The Cold War, the Civil Rights Movement, social and political transformations of the late 20th century, and contemporary American society. Focus on foreign policy, domestic issues, and globalization.</p>
+            </div>
+             <div class="book">
+                <h3>American and National Identity (NAT)</h3>
+                <p>Exploring how ideas about American identity and values have developed and changed over time, and how these ideas have been contested.</p>
+            </div>
+             <div class="book">
+                <h3>Politics and Power (POL)</h3>
+                <p>Analyzing the development of political institutions, beliefs, and practices, and their impact on American society and government.</p>
+            </div>
+        </div>
+
+        <h2>Educational Approach</h2>
+        <div class="approach">
+            <div class="feature">
+                <h3>Historical Thinking Skills Development</h3>
+                <p>Focus on mastering skills such as analyzing historical causation, patterns of continuity and change over time (CCOT), comparison, contextualization, and crafting historical arguments using evidence.</p>
+            </div>
+            <div class="feature">
+                <h3>Interpretation of Diverse Sources</h3>
+                <p>Regular practice in analyzing a wide range of primary sources (letters, diaries, speeches, government documents, political cartoons) and secondary sources (historians' interpretations) to understand multiple perspectives.</p>
+            </div>
+            <div class="feature">
+                <h3>AP Exam Essay Preparation (DBQ, LEQ, SAQ)</h3>
+                <p>Intensive instruction and practice in writing Document-Based Questions (DBQs), Long Essay Questions (LEQs), and Short Answer Questions (SAQs), including thesis development, evidence integration, and understanding scoring rubrics.</p>
+            </div>
+        </div>
+
+        <h2>Curriculum Structure</h2>
+        <p>The 30-session course is structured chronologically across nine historical periods, as defined by the AP U.S. History curriculum framework. Each unit involves lectures, class discussions, rigorous analysis of assigned readings (e.g., from Kennedy's "The American Pageant" or Foner's "Give Me Liberty!"), and engagement with a variety of primary and secondary sources. Students will complete numerous practice essays (DBQs, LEQs, SAQs) and multiple-choice question sets to prepare for the AP exam. The course aims to provide a thorough understanding of American history and develop the analytical skills necessary for success in college-level history courses.</p>
+
+        <footer>
+            <p>I GRAMMATICOS PLATFORM SOLUTION © 2020</p>
+            <p>Confidential & Proprietary</p>
+        </footer>
+    </div>
+</body>
+</html>

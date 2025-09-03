@@ -1,8 +1,5 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Objective } from '@/types/database';
 import { SHARED_USER_ID } from '@/lib/constants/shared';
-
-const supabase = createClientComponentClient();
 
 export interface ObjectiveFilters {
   categoryId?: string;
@@ -21,90 +18,147 @@ export interface UpdateObjectiveData extends Partial<CreateObjectiveData> {
   id: string;
 }
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    perPage: number;
+    total: number;
+    totalPages: number;
+  };
+  stats?: {
+    total: number;
+    templates: number;
+    non_templates: number;
+  };
+}
+
 export const objectiveService = {
-  // Get all objectives with optional filters
+  // Get all objectives with optional filters - uses API route
   async getObjectives(filters: ObjectiveFilters = {}) {
-    let query = supabase
-      .from('objectives')
-      .select(`
-        *,
-        category:categories(id, name, color, icon)
-      `)
-      .order('created_at', { ascending: false });
+    try {
+      const params = new URLSearchParams();
+      
+      if (filters.categoryId) {
+        params.append('categoryId', filters.categoryId);
+      }
+      if (filters.search) {
+        params.append('search', filters.search);
+      }
+      if (filters.tags && filters.tags.length > 0) {
+        filters.tags.forEach(tag => params.append('tags', tag));
+      }
 
-    // Apply filters
-    if (filters.categoryId) {
-      query = query.eq('category_id', filters.categoryId);
-    }
-    
-    if (filters.search) {
-      query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-    }
-    
-    if (filters.tags && filters.tags.length > 0) {
-      query = query.contains('tags', filters.tags);
-    }
+      const response = await fetch(`/api/objectives?${params.toString()}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    return data as Objective[];
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch objectives');
+      }
+
+      return await response.json() as Objective[];
+    } catch (error) {
+      console.error('Error fetching objectives:', error);
+      throw error;
+    }
   },
 
-  // Get single objective by ID
+  // Get single objective by ID - uses API route
   async getObjective(id: string) {
-    const { data, error } = await supabase
-      .from('objectives')
-      .select(`
-        *,
-        category:categories(id, name, color, icon)
-      `)
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
-    return data as Objective;
+    try {
+      const response = await fetch(`/api/objectives/${id}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch objective');
+      }
+
+      return await response.json() as Objective;
+    } catch (error) {
+      console.error('Error fetching objective:', error);
+      throw error;
+    }
   },
 
-  // Create new objective
+  // Create new objective - uses API route
   async createObjective(objectiveData: CreateObjectiveData) {
-    const { data, error } = await supabase
-      .from('objectives')
-      .insert({
-        ...objectiveData,
-        user_id: SHARED_USER_ID,
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as Objective;
+    try {
+      const response = await fetch('/api/objectives', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(objectiveData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create objective');
+      }
+
+      return await response.json() as Objective;
+    } catch (error) {
+      console.error('Error creating objective:', error);
+      throw error;
+    }
   },
 
-  // Update objective
+  // Update objective - uses API route
   async updateObjective({ id, ...objectiveData }: UpdateObjectiveData) {
-    const { data, error } = await supabase
-      .from('objectives')
-      .update({
-        ...objectiveData,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as Objective;
+    try {
+      const response = await fetch(`/api/objectives/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(objectiveData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update objective');
+      }
+
+      return await response.json() as Objective;
+    } catch (error) {
+      console.error('Error updating objective:', error);
+      throw error;
+    }
   },
 
-  // Delete objective
+  // Delete objective - uses API route
   async deleteObjective(id: string) {
-    const { error } = await supabase
-      .from('objectives')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
+    try {
+      const response = await fetch(`/api/objectives/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete objective');
+      }
+    } catch (error) {
+      console.error('Error deleting objective:', error);
+      throw error;
+    }
   },
 
   // Get objectives by category
@@ -161,50 +215,73 @@ export const objectiveService = {
     return stats;
   },
 
-  // Course relationship methods
+  // Course relationship methods - use API routes
   async getCourseObjectives(courseId: string) {
-    const { data, error } = await supabase
-      .from('course_objectives')
-      .select(`
-        id,
-        position,
-        objective:objectives(
-          id,
-          title,
-          description,
-          tags,
-          category:categories(id, name, color, icon)
-        )
-      `)
-      .eq('course_id', courseId)
-      .order('position', { ascending: true });
-    
-    if (error) throw error;
-    return data;
+    try {
+      const response = await fetch(`/api/courses/${courseId}/objectives`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch course objectives');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching course objectives:', error);
+      throw error;
+    }
   },
 
   async addObjectiveToCourse(courseId: string, objectiveId: string, options: { position: number }) {
-    const { data, error } = await supabase
-      .from('course_objectives')
-      .insert({
-        course_id: courseId,
-        objective_id: objectiveId,
-        position: options.position
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+    try {
+      const response = await fetch(`/api/courses/${courseId}/objectives`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          objectiveIds: [objectiveId]
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add objective to course');
+      }
+
+      const data = await response.json();
+      return data[0]; // Return first item since we only added one
+    } catch (error) {
+      console.error('Error adding objective to course:', error);
+      throw error;
+    }
   },
 
   async removeObjectiveFromCourse(relationId: string) {
-    const { error } = await supabase
-      .from('course_objectives')
-      .delete()
-      .eq('id', relationId);
-    
-    if (error) throw error;
+    try {
+      const response = await fetch(`/api/course-objectives/${relationId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to remove objective from course');
+      }
+    } catch (error) {
+      console.error('Error removing objective from course:', error);
+      throw error;
+    }
   },
 
   // Lesson relationship methods
@@ -318,5 +395,45 @@ export const objectiveService = {
       .eq('objective_id', objectiveId);
     
     if (error) throw error;
+  },
+
+  // Get optimized admin objectives list - lightweight for performance
+  async getAdminObjectivesList(filters: ObjectiveFilters & { page?: number; perPage?: number } = {}): Promise<PaginatedResponse<Objective>> {
+    try {
+      console.log('[ObjectiveService] Getting admin objectives list with filters:', filters);
+      const startTime = Date.now();
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (filters.search) params.append('search', filters.search);
+      if (filters.categoryId) params.append('category_id', filters.categoryId);
+      params.append('page', String(filters.page || 1));
+      params.append('perPage', String(filters.perPage || 20));
+      
+      // Use optimized admin-list endpoint
+      const response = await fetch(`/api/objectives/admin-list?${params.toString()}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Admin objectives list API error:', error);
+        throw new Error(error.error || 'Failed to fetch admin objectives list');
+      }
+      
+      const result = await response.json();
+      const endTime = Date.now();
+      
+      console.log(`[ObjectiveService] Admin objectives list loaded in ${endTime - startTime}ms (API: ${result.loadTime}ms)`);
+      
+      return result;
+    } catch (error) {
+      console.error('Error fetching admin objectives list:', error);
+      throw error;
+    }
   },
 };

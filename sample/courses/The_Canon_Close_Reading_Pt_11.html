@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammaticos Reading & Writing Foundational Course</title>
+    <style>
+        /* Apple-inspired styles with tablet optimization */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #1d1d1f;
+            background-color: #fbfbfd;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 28px;
+            font-weight: 500;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 21px;
+            font-weight: 500;
+            margin-top: 30px;
+        }
+        p {
+            font-size: 17px;
+            color: #333;
+        }
+        .tagline {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .book {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            touch-action: manipulation;
+        }
+        .book:hover, .book:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .book h3 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .book p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .approach {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .feature h3 {
+            font-size: 20px;
+            margin-top: 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        /* Tablet-specific optimizations */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                width: 94%;
+                padding: 15px;
+            }
+            
+            header {
+                padding: 30px 0;
+            }
+            
+            h1 {
+                font-size: 38px;
+            }
+            
+            h2 {
+                font-size: 26px;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature {
+                padding: 20px;
+            }
+        }
+        
+        /* For landscape orientation on tablets */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Improved touch target sizes for tablet */
+        @media (pointer: coarse) {
+            .book, .feature {
+                min-height: 100px;
+            }
+            
+            .book h3, .feature h3 {
+                margin-bottom: 15px;
+            }
+            
+            button, a {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The Canon: Close Reading Part XI - Contemporary Global Narratives</h1>
+        </header>
+
+        <h2>Course Overview</h2>
+        <p>This eleventh course in "The Canon: Close Reading" series delves into significant works of contemporary global literature, primarily from the late 20th and early 21st centuries. Students will engage in intensive textual analysis of influential authors from diverse cultural backgrounds, exploring themes of postcolonialism, globalization, cultural identity, historical memory, and social justice. The course aims to expand students' understanding of the evolving literary canon, refine their advanced interpretive skills, introduce relevant critical theories, and cultivate sophisticated analytical writing (5/5/5 method) supported by LEX Advanced vocabulary.</p>
+
+        <h2>Literary Explorations: Voices from Around the World</h2>
+        <div class="grid">
+            <div class="book">
+                <h3>Beloved (Excerpts)</h3>
+                <p>Toni Morrison</p>
+            </div>
+            <div class="book">
+                <h3>Midnight's Children (Excerpts)</h3>
+                <p>Salman Rushdie</p>
+            </div>
+            <div class="book">
+                <h3>Disgrace</h3>
+                <p>J.M. Coetzee</p>
+            </div>
+            <div class="book">
+                <h3>The Remains of the Day</h3>
+                <p>Kazuo Ishiguro</p>
+            </div>
+            <div class="book">
+                <h3>The Handmaid's Tale (Excerpts)</h3>
+                <p>Margaret Atwood</p>
+            </div>
+            <div class="book">
+                <h3>My Name is Red (Excerpts)</h3>
+                <p>Orhan Pamuk</p>
+            </div>
+        </div>
+
+        <h2>Educational Approach</h2>
+        <div class="approach">
+            <div class="feature">
+                <h3>Sophisticated Close Reading & Narrative Analysis</h3>
+                <p>Mastering techniques for analyzing complex contemporary narrative strategies, including fragmented narratives, multiple perspectives, intertextuality, and magical realism, to understand how authors construct meaning and engage with challenging themes.</p>
+            </div>
+            <div class="feature">
+                <h3>Engagement with Postcolonial & Contemporary Theory</h3>
+                <p>Introduction to critical lenses relevant to contemporary global literature, such as postcolonial theory, cultural studies, trauma theory, and contemporary feminist perspectives, to enrich textual interpretation.</p>
+            </div>
+            <div class="feature">
+                <h3>Advanced Critical Essays (5/5/5 Method)</h3>
+                <p>Crafting insightful and well-argued analytical essays that engage with the complex ethical, social, and political dimensions of the selected texts. Continued emphasis on precision and sophistication through LEX Advanced vocabulary (A-Z).</p>
+            </div>
+        </div>
+
+        <h2>Curriculum Structure</h2>
+        <p>The 30-session course is organized into five-week intensives for each of the six selected significant contemporary works or authors. Each unit involves rigorous close reading of assigned texts or substantial excerpts, regular LEX Advanced vocabulary quizzes, and in-depth seminar-style discussions exploring complex literary questions and diverse critical viewpoints. Students will write multiple 5/5/5 analytical essays per work, focusing on advanced literary analysis and critical engagement with contemporary global issues. The course aims to empower students to navigate the evolving literary landscape and articulate their interpretations with clarity and depth.</p>
+
+        <footer>
+            <p>I GRAMMATICOS PLATFORM SOLUTION © 2020</p>
+            <p>Confidential & Proprietary</p>
+        </footer>
+    </div>
+</body>
+</html>

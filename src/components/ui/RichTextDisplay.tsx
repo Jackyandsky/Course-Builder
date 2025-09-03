@@ -15,8 +15,61 @@ export function RichTextDisplay({
 }: RichTextDisplayProps) {
   if (!content) return null;
 
+  // Process content to hide remove buttons and add toolbar hiding parameters
+  let processedContent = content;
+  
+  // Remove the entire remove button element from display (they're only for editing)
+  processedContent = processedContent.replace(
+    /<button[^>]*?onclick="this\.parentElement\.remove\(\)"[^>]*?>[\s\S]*?<\/button>/gi,
+    ''
+  );
+  
+  // Remove hover event handlers from the wrapper div in view mode
+  processedContent = processedContent.replace(
+    /onmouseover="[^"]*"/gi,
+    ''
+  ).replace(
+    /onmouseout="[^"]*"/gi,
+    ''
+  );
+  
+  // Add toolbar=0 parameters to PDF iframe URLs in view mode
+  // This hides download/print buttons while preserving any user-specified parameters like page numbers
+  processedContent = processedContent.replace(
+    /<iframe([^>]*?)src="([^"]+)"([^>]*?)>/gi,
+    (match, before, url, after) => {
+      // Process all PDF URLs (but not Google Drive)
+      if (!url.includes('drive.google.com') && (url.includes('.pdf') || url.includes('pdf'))) {
+        // Preserve existing parameters (like #page=18) and add toolbar hiding parameters
+        if (!url.includes('toolbar=0')) {
+          // Check if URL has existing hash parameters
+          if (url.includes('#')) {
+            // URL has hash parameters (like #page=18)
+            // Check if it's just a page parameter or has other parameters
+            const hashIndex = url.indexOf('#');
+            const baseUrl = url.substring(0, hashIndex);
+            const hashPart = url.substring(hashIndex + 1);
+            
+            // If hash part contains = it's likely parameters, otherwise might be an anchor
+            if (hashPart.includes('=')) {
+              // Append toolbar parameters to existing parameters
+              url = baseUrl + '#' + hashPart + '&toolbar=0&navpanes=0&scrollbar=0';
+            } else {
+              // Replace simple anchor with parameters
+              url = baseUrl + '#toolbar=0&navpanes=0&scrollbar=0';
+            }
+          } else {
+            // Add as new hash parameters
+            url = url + '#toolbar=0&navpanes=0&scrollbar=0';
+          }
+        }
+      }
+      return `<iframe${before}src="${url}"${after}>`;
+    }
+  );
+
   // Check if content is likely HTML (contains HTML tags)
-  const isHtml = /<[a-z][\s\S]*>/i.test(content);
+  const isHtml = /<[a-z][\s\S]*>/i.test(processedContent);
   
   const sizeClasses = {
     sm: 'text-sm',
@@ -76,9 +129,20 @@ export function RichTextDisplay({
           'prose-img:rounded-lg prose-img:shadow-sm',
           // HR
           'prose-hr:border-gray-300 dark:prose-hr:border-gray-600',
+          // PDF embeds and iframes
+          '[&_.pdf-embed]:my-6',
+          '[&_.pdf-embed_iframe]:w-full [&_.pdf-embed_iframe]:min-h-[600px]',
+          '[&_.pdf-embed_iframe]:rounded-lg [&_.pdf-embed_iframe]:border',
+          '[&_.pdf-embed_iframe]:border-gray-300 dark:[&_.pdf-embed_iframe]:border-gray-600',
+          '[&_.pdf-embed_p]:text-center [&_.pdf-embed_p]:text-sm',
+          '[&_.pdf-embed_p]:text-gray-600 dark:[&_.pdf-embed_p]:text-gray-400',
+          '[&_.pdf-embed_a]:text-blue-600 dark:[&_.pdf-embed_a]:text-blue-400',
+          '[&_.pdf-embed_a]:underline [&_.pdf-embed_a]:hover:text-blue-800',
+          // Hide any remove buttons in display mode
+          '[&_.pdf-embed-wrapper_button]:hidden',
           className
         )}
-        dangerouslySetInnerHTML={{ __html: content }}
+        dangerouslySetInnerHTML={{ __html: processedContent }}
       />
     );
   }
@@ -91,7 +155,7 @@ export function RichTextDisplay({
       'leading-relaxed whitespace-pre-wrap',
       className
     )}>
-      {content}
+      {processedContent}
     </div>
   );
 }

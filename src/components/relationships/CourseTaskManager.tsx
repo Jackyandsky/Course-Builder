@@ -20,37 +20,62 @@ import {
 
 interface CourseTaskManagerProps {
   courseId: string;
+  preloadedData?: any; // Pre-loaded course data
   onUpdate?: () => void;
 }
 
-export function CourseTaskManager({ courseId, onUpdate }: CourseTaskManagerProps) {
+export function CourseTaskManager({ courseId, preloadedData, onUpdate }: CourseTaskManagerProps) {
   const router = useRouter();
   const [tasks, setTasks] = useState<any[]>([]);
   const [courseTasks, setCourseTasks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!preloadedData);
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [adding, setAdding] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
     loadData();
-  }, [courseId]);
+  }, [courseId, preloadedData]);
 
   const loadData = async () => {
-    setLoading(true);
-    try {
-      const [allTasks, courseTaskRelations] = await Promise.all([
-        taskService.getTasks({}),
-        taskService.getCourseTasks(courseId)
-      ]);
+    if (preloadedData && !dataLoaded) {
+      console.log('[CourseTask] Using preloaded data - NO API calls needed');
       
-      setTasks(allTasks);
-      setCourseTasks(courseTaskRelations);
-    } catch (error) {
-      console.error('Failed to load tasks:', error);
-    } finally {
+      // Use preloaded course tasks immediately
+      setCourseTasks(preloadedData.tasks || []);
+      setDataLoaded(true);
       setLoading(false);
+      
+      // Load all tasks for modal only when modal is opened (lazy load)
+      
+    } else if (!preloadedData && !dataLoaded) {
+      // Fallback to original loading method if no preloaded data
+      console.log('[CourseTask] No preloaded data, using API calls');
+      setLoading(true);
+      try {
+        const courseTaskRelations = await taskService.getCourseTasks(courseId);
+        setCourseTasks(courseTaskRelations);
+        setDataLoaded(true);
+      } catch (error) {
+        console.error('Failed to load tasks:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  // Lazy load all tasks only when needed for modal
+  const loadAllTasksForModal = async () => {
+    if (tasks.length > 0) return; // Already loaded
+    
+    try {
+      console.log('[CourseTask] Fetching all tasks for modal');
+      const allTasks = await taskService.getTasks({});
+      setTasks(allTasks);
+    } catch (error) {
+      console.error('Failed to load all tasks for modal:', error);
     }
   };
 
@@ -74,6 +99,7 @@ export function CourseTaskManager({ courseId, onUpdate }: CourseTaskManagerProps
       setShowAddModal(false);
       setSelectedTasks([]);
       setSearchTerm('');
+      setDataLoaded(false); // Allow reload
       await loadData();
       onUpdate?.();
     } catch (error) {
@@ -86,6 +112,7 @@ export function CourseTaskManager({ courseId, onUpdate }: CourseTaskManagerProps
   const handleRemoveTask = async (relationId: string) => {
     try {
       await taskService.removeTaskFromCourse(relationId);
+      setDataLoaded(false); // Allow reload
       await loadData();
       onUpdate?.();
     } catch (error) {
@@ -136,7 +163,10 @@ export function CourseTaskManager({ courseId, onUpdate }: CourseTaskManagerProps
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              loadAllTasksForModal();
+              setShowAddModal(true);
+            }}
             leftIcon={<Plus className="h-4 w-4" />}
           >
             Add Tasks
@@ -144,7 +174,10 @@ export function CourseTaskManager({ courseId, onUpdate }: CourseTaskManagerProps
           <Button
             variant="outline"
             size="sm"
-            onClick={() => router.push('/tasks/new')}
+            onClick={() => {
+              const returnUrl = encodeURIComponent(window.location.pathname);
+              router.push(`/admin/tasks/new?return=${returnUrl}`);
+            }}
             leftIcon={<Plus className="h-4 w-4" />}
           >
             Create New
@@ -165,7 +198,10 @@ export function CourseTaskManager({ courseId, onUpdate }: CourseTaskManagerProps
           <Button 
             className="mt-4" 
             size="sm"
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              loadAllTasksForModal();
+              setShowAddModal(true);
+            }}
             leftIcon={<Plus className="h-4 w-4" />}
           >
             Add Tasks
@@ -219,15 +255,18 @@ export function CourseTaskManager({ courseId, onUpdate }: CourseTaskManagerProps
                     
                     <div className="flex items-center gap-2 ml-4">
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        onClick={() => router.push(`/tasks/${courseTask.task.id}/edit`)}
+                        onClick={() => {
+                          const returnUrl = encodeURIComponent(window.location.pathname);
+                          router.push(`/admin/tasks/${courseTask.task.id}/edit?return=${returnUrl}`);
+                        }}
                         leftIcon={<ExternalLink className="h-4 w-4" />}
                       >
                         View
                       </Button>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => handleRemoveTask(courseTask.id)}
                         leftIcon={<Trash2 className="h-4 w-4" />}

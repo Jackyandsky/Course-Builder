@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammaticos Reading & Writing Foundational Course</title>
+    <style>
+        /* Apple-inspired styles with tablet optimization */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #1d1d1f;
+            background-color: #fbfbfd;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 28px;
+            font-weight: 500;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 21px;
+            font-weight: 500;
+            margin-top: 30px;
+        }
+        p {
+            font-size: 17px;
+            color: #333;
+        }
+        .tagline {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .book {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            touch-action: manipulation;
+        }
+        .book:hover, .book:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .book h3 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .book p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .approach {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .feature h3 {
+            font-size: 20px;
+            margin-top: 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        /* Tablet-specific optimizations */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                width: 94%;
+                padding: 15px;
+            }
+            
+            header {
+                padding: 30px 0;
+            }
+            
+            h1 {
+                font-size: 38px;
+            }
+            
+            h2 {
+                font-size: 26px;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature {
+                padding: 20px;
+            }
+        }
+        
+        /* For landscape orientation on tablets */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Improved touch target sizes for tablet */
+        @media (pointer: coarse) {
+            .book, .feature {
+                min-height: 100px;
+            }
+            
+            .book h3, .feature h3 {
+                margin-bottom: 15px;
+            }
+            
+            button, a {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The Brontë Sisters: An Overview</h1>
+        </header>
+
+        <h2>Course Overview</h2>
+        <p>This course offers an intensive study of the major novels of the Brontë sisters—Charlotte, Emily, and Anne—three groundbreaking figures of 19th-century English literature. Students will explore their powerful and passionate works, examining their unique literary styles, their depictions of Victorian society and its constraints, and their exploration of themes such as love, loss, social class, gender roles, individualism, and rebellion. The curriculum emphasizes close reading, contextual understanding of the Romantic and Gothic influences, character analysis, and the development of sophisticated analytical essays (5/5/5 method) supported by LEX Advanced vocabulary.</p>
+
+        <h2>Literary Explorations: The Novels of the Brontës</h2>
+        <div class="grid">
+            <div class="book">
+                <h3>Jane Eyre</h3>
+                <p>Charlotte Brontë</p>
+            </div>
+            <div class="book">
+                <h3>Wuthering Heights</h3>
+                <p>Emily Brontë</p>
+            </div>
+            <div class="book">
+                <h3>Agnes Grey</h3>
+                <p>Anne Brontë</p>
+            </div>
+            <div class="book">
+                <h3>Shirley (Excerpts/Focus)</h3>
+                <p>Charlotte Brontë</p>
+            </div>
+            <div class="book">
+                <h3>Villette (Excerpts/Focus)</h3>
+                <p>Charlotte Brontë</p>
+            </div>
+            <div class="book">
+                <h3>The Tenant of Wildfell Hall</h3>
+                <p>Anne Brontë</p>
+            </div>
+        </div>
+
+        <h2>Educational Approach</h2>
+        <div class="approach">
+            <div class="feature">
+                <h3>Romantic, Gothic, and Realist Influences</h3>
+                <p>Analysis of how the Brontës blended elements of Romanticism (intense emotion, nature), Gothicism (mystery, passion, the supernatural), and emerging Realism (social critique, psychological depth) in their novels.</p>
+            </div>
+            <div class="feature">
+                <h3>Feminist Perspectives and Social Critique</h3>
+                <p>Exploration of the Brontës' portrayal of women's lives, education, and limited opportunities in Victorian society. Analyzing their critiques of social class, religious hypocrisy, and patriarchal structures.</p>
+            </div>
+            <div class="feature">
+                <h3>5/5/5 Analytical Essays & LEX Advanced Vocabulary</h3>
+                <p>Development of advanced analytical writing skills through 5/5/5 essays focusing on character psychology (e.g., Byronic heroes, strong heroines), narrative voice, symbolism, and thematic complexity. Comprehensive vocabulary building with LEX Advanced (Letters A-Z).</p>
+            </div>
+        </div>
+
+        <h2>Curriculum Structure</h2>
+        <p>The 30-session course is structured around five-week intensives for each of the core novels (*Jane Eyre*, *Wuthering Heights*, *Agnes Grey*, *The Tenant of Wildfell Hall*), with focused study of excerpts from *Shirley* and *Villette*. Each unit involves close reading (approximately 100-125 pages per week), regular LEX Advanced vocabulary quizzes, and in-depth class discussions based on "Questions to Ponder" related to plot, character, themes, and literary style. Students will write multiple 5/5/5 analytical essays per work, comparing and contrasting the distinctive voices and concerns of each sister. The course includes primers on the Victorian era, the lives of the Brontës, and critical perspectives on their groundbreaking contributions to literature.</p>
+
+        <footer>
+            <p>I GRAMMATICOS PLATFORM SOLUTION © 2020</p>
+            <p>Confidential & Proprietary</p>
+        </footer>
+    </div>
+</body>
+</html>

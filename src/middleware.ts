@@ -6,6 +6,8 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req, res });
 
+  // Get the current session without forcing a refresh
+  // The Supabase client will automatically refresh if needed
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -22,39 +24,74 @@ export async function middleware(req: NextRequest) {
                        pathname.startsWith('/store') || pathname.startsWith('/booking') ||
                        pathname.startsWith('/about');
 
-  // If user is not authenticated and trying to access protected routes
+  // For admin and account routes, allow the request through
+  // Let the client-side handle auth more gracefully
+  // This enables async non-blocking auth pattern
   if (!session && (isAdminRoute || isAccountRoute)) {
-    const redirectUrl = req.nextUrl.clone();
-    redirectUrl.pathname = '/login';
-    redirectUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(redirectUrl);
+    // Don't redirect at middleware level for admin/account routes
+    // Client will handle auth check and redirect if needed
+    console.log(`${isAdminRoute ? 'Admin' : 'Account'} route accessed without session, allowing through for client-side handling`);
+    return res;
   }
 
   // If user is authenticated and trying to access auth routes, redirect to appropriate dashboard
+  // BUT respect any redirect parameter in the URL
   if (session && isAuthRoute) {
     const redirectUrl = req.nextUrl.clone();
     
-    // Check user role from metadata or database
-    // For now, we'll assume all authenticated users can access admin
-    // You'll need to implement proper role checking later
-    const userRole = session.user.user_metadata?.role || 'student';
-    
-    if (userRole === 'admin' || userRole === 'tutor') {
-      redirectUrl.pathname = '/admin';
+    // Check if there's already a redirect parameter
+    const existingRedirect = req.nextUrl.searchParams.get('redirect');
+    if (existingRedirect) {
+      // Respect the redirect parameter
+      redirectUrl.pathname = existingRedirect;
+      redirectUrl.searchParams.delete('redirect');
     } else {
-      redirectUrl.pathname = '/account';
+      // Fetch user profile to get role for default redirect
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('role, verified_at')
+        .eq('id', session.user.id)
+        .single();
+      
+      const userRole = userProfile?.role || session.user.user_metadata?.role || 'student';
+      // For existing users without verified_at field, assume they are verified
+      const isVerified = userProfile?.verified_at !== undefined ? userProfile.verified_at !== null : true;
+      
+      if ((userRole === 'admin' || userRole === 'teacher') && isVerified) {
+        redirectUrl.pathname = '/admin';
+      } else {
+        redirectUrl.pathname = '/account';
+      }
     }
     
     return NextResponse.redirect(redirectUrl);
   }
 
-  // For admin routes, check if user has admin/tutor role
+  // For admin routes, check if user has admin/teacher role and is verified
+  // Note: This only blocks non-admin users from /admin routes
+  // Admins can still access /account routes (no restriction there)
   if (isAdminRoute && session) {
-    const userRole = session.user.user_metadata?.role || 'student';
+    // Fetch user profile to get role
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('role, verified_at')
+      .eq('id', session.user.id)
+      .single();
     
-    if (userRole !== 'admin' && userRole !== 'tutor') {
+    const userRole = userProfile?.role || session.user.user_metadata?.role || 'student';
+    // For existing users without verified_at field, assume they are verified
+    const isVerified = userProfile?.verified_at !== undefined ? userProfile.verified_at !== null : true;
+    
+    if (userRole !== 'admin' && userRole !== 'teacher') {
       const redirectUrl = req.nextUrl.clone();
       redirectUrl.pathname = '/account';
+      return NextResponse.redirect(redirectUrl);
+    }
+    
+    // If not verified, redirect to a verification pending page
+    if (!isVerified) {
+      const redirectUrl = req.nextUrl.clone();
+      redirectUrl.pathname = '/verification-pending';
       return NextResponse.redirect(redirectUrl);
     }
   }
@@ -71,7 +108,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
+     * - .well-known (for various validations)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|public|\.well-known).*)',
   ],
 };

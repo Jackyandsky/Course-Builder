@@ -64,7 +64,7 @@ export default function EditSchedulePage() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <Button
-        variant="ghost"
+        variant="outline"
         size="sm"
         onClick={handleBack}
         className="mb-4"

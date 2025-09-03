@@ -1,12 +1,17 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   label?: string;
+  onChange?: (checked: boolean) => void;
 }
 
 export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ className, label, ...props }, ref) => {
+  ({ className, label, onChange, ...props }, ref) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      onChange?.(e.target.checked);
+    };
+
     return (
       <label className={cn("flex items-center", className)}>
         <input
@@ -18,6 +23,7 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
             "disabled:cursor-not-allowed disabled:opacity-50",
             className
           )}
+          onChange={handleChange}
           {...props}
         />
         {label && <span className="ml-2 text-sm">{label}</span>}

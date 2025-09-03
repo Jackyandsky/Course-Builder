@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useAuth } from '@/contexts/AuthContext';
+import { getSingletonSupabaseClient } from '@/lib/supabase-singleton';
 import ProductDetail from '@/components/products/ProductDetail';
 
 export default function LibraryBookDetailPage() {
   const params = useParams();
   const [book, setBook] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClientComponentClient();
+  const supabase = getSingletonSupabaseClient();
 
   useEffect(() => {
     if (params.id) {

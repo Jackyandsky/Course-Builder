@@ -36,3 +36,8 @@ package-lock.json
 
 #MCP
 .mcp.json
+mcp-backup.json
+
+# Uploaded files
+/public/uploads/tasks/
+!/public/uploads/.gitkeep

@@ -28,6 +28,13 @@ export interface Content {
   book_id?: string;
   is_public: boolean;
   public_slug?: string;
+  price: number;
+  currency: string;
+  discount_percentage?: number;
+  sale_price?: number;
+  is_free: boolean;
+  stripe_product_id?: string;
+  stripe_price_id?: string;
   user_id: string;
   created_at: string;
   updated_at: string;
@@ -35,6 +42,10 @@ export interface Content {
   status?: 'active' | 'archived' | 'draft';
   sort_order?: number;
   featured?: boolean;
+  show_on_menu?: boolean;
+  show_on_homepage?: boolean;
+  menu_order?: number;
+  homepage_order?: number;
   
   // Relations
   category?: {
@@ -112,9 +123,18 @@ export interface CreateContentData {
   book_ids?: string[]; // New: Support multiple books
   is_public?: boolean;
   public_slug?: string;
+  price?: number;
+  currency?: string;
+  discount_percentage?: number;
+  sale_price?: number;
+  is_free?: boolean;
   status?: 'active' | 'archived' | 'draft';
   sort_order?: number;
   featured?: boolean;
+  show_on_menu?: boolean;
+  show_on_homepage?: boolean;
+  menu_order?: number;
+  homepage_order?: number;
   metadata?: Record<string, any>;
 }
 

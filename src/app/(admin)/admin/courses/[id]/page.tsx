@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { 
-  ArrowLeft, Edit, Trash2, Archive, Globe, Lock, 
+  ArrowLeft, Edit, Trash2, Globe, Lock, 
   Book, Bookmark, Calendar, Clock, Target, AlertCircle,
   MoreVertical, Share2, Copy, CheckCircle, Settings, FileText, ExternalLink, LayoutList, Rows
 } from 'lucide-react';
@@ -29,17 +29,15 @@ const statusColors = {
 } as const;
 
 const difficultyColors = {
-  beginner: 'info',
-  intermediate: 'warning',
-  advanced: 'danger',
-  expert: 'primary',
+  basic: 'info',
+  standard: 'warning',
+  premium: 'primary',
 } as const;
 
 const difficultyLabels = {
-  beginner: 'Level 1',
-  intermediate: 'Level 2',
-  advanced: 'Level 3',
-  expert: 'Level 4',
+  basic: 'Basic',
+  standard: 'Standard',
+  premium: 'Premium',
 } as const;
 
 export default function CourseDetailPage() {
@@ -49,15 +47,35 @@ export default function CourseDetailPage() {
   const courseId = params.id as string;
   
   const [course, setCourse] = useState<Course | null>(null);
+  const [courseData, setCourseData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
-  const [viewMode, setViewMode] = useState<'tabs' | 'accordion'>(
-    searchParams.get('view') === 'tabs' ? 'tabs' : 'accordion'
-  );
+  
+  // Initialize activeTab from sessionStorage or URL param
+  const [activeTab, setActiveTab] = useState(() => {
+    const savedTab = sessionStorage.getItem(`course-tab-${courseId}`);
+    return savedTab || searchParams.get('tab') || 'overview';
+  });
+  
+  // Initialize viewMode from sessionStorage or URL param
+  const [viewMode, setViewMode] = useState<'tabs' | 'accordion'>(() => {
+    const savedView = sessionStorage.getItem(`course-view-${courseId}`);
+    return (savedView as 'tabs' | 'accordion') || 
+           (searchParams.get('view') === 'tabs' ? 'tabs' : 'accordion');
+  });
+  
   const [copied, setCopied] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  // Save state changes to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem(`course-tab-${courseId}`, activeTab);
+  }, [activeTab, courseId]);
+
+  useEffect(() => {
+    sessionStorage.setItem(`course-view-${courseId}`, viewMode);
+  }, [viewMode, courseId]);
 
   useEffect(() => {
     if (courseId) {
@@ -76,8 +94,38 @@ export default function CourseDetailPage() {
   const loadCourse = async () => {
     try {
       setLoading(true);
-      const data = await courseService.getCourse(courseId);
-      setCourse(data);
+      console.log(`[CourseDetail] Loading complete course data for ${courseId}`);
+      const startTime = Date.now();
+      
+      // Load ALL course data in one request
+      const response = await fetch(`/api/courses/${courseId}/complete`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to load course data');
+      }
+      
+      const completeData = await response.json();
+      const endTime = Date.now();
+      
+      console.log(`[CourseDetail] Loaded all data in ${endTime - startTime}ms`);
+      console.log('[CourseDetail] Complete data:', {
+        objectives: completeData.objectives?.length || 0,
+        methods: completeData.methods?.length || 0,
+        books: completeData.books?.length || 0,
+        vocabulary: completeData.vocabulary?.length || 0,
+        tasks: completeData.tasks?.length || 0,
+        schedules: completeData.schedules?.length || 0,
+        lessons: completeData.lessons?.length || 0
+      });
+      
+      setCourse(completeData.course);
+      setCourseData(completeData);
     } catch (error) {
       console.error('Failed to load course:', error);
       router.push('/admin/courses');
@@ -99,14 +147,6 @@ export default function CourseDetailPage() {
     }
   };
 
-  const handleArchive = async () => {
-    try {
-      await courseService.archiveCourse(courseId);
-      await loadCourse();
-    } catch (error) {
-      console.error('Failed to archive course:', error);
-    }
-  };
 
   const handlePublish = async () => {
     try {
@@ -158,7 +198,7 @@ export default function CourseDetailPage() {
     { id: 'overview', label: 'Overview', icon: <Book className="h-4 w-4" /> },
     { id: 'materials', label: 'Materials', icon: <Bookmark className="h-4 w-4" /> },
     { id: 'schedule', label: 'Schedule', icon: <Calendar className="h-4 w-4" /> },
-    { id: 'lessons', label: 'Lessons', icon: <Clock className="h-4 w-4" /> },
+    { id: 'lessons', label: 'Sessions', icon: <Clock className="h-4 w-4" /> },
     { id: 'objectives', label: 'Objectives', icon: <Target className="h-4 w-4" /> },
     { id: 'methods', label: 'Methods', icon: <Settings className="h-4 w-4" /> },
     { id: 'tasks', label: 'Tasks', icon: <FileText className="h-4 w-4" /> },
@@ -169,7 +209,7 @@ export default function CourseDetailPage() {
       {/* Header */}
       <div className="mb-8">
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => router.push('/admin/courses')}
           leftIcon={<ArrowLeft className="h-4 w-4" />}
@@ -220,6 +260,24 @@ export default function CourseDetailPage() {
                       <span>{course.duration_hours} hours</span>
                     </div>
                   )}
+                  
+                  {/* Books Count */}
+                  {course.course_books && course.course_books.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      <Book className="h-4 w-4" />
+                      <span>{course.course_books.length} book{course.course_books.length !== 1 ? 's' : ''}</span>
+                    </div>
+                  )}
+                  
+                  {/* Price Display */}
+                  <div className="flex items-center gap-1">
+                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                      ${course.price?.toLocaleString() || '7,000'} {course.currency || 'CAD'}
+                    </span>
+                    {course.is_free && (
+                      <Badge variant="success" size="sm">Free</Badge>
+                    )}
+                  </div>
                   
                   {course.category && (
                     <span
@@ -295,16 +353,6 @@ export default function CourseDetailPage() {
               Edit
             </Button>
             
-            {course.status !== 'archived' && (
-              <Button
-                variant="outline"
-                onClick={handleArchive}
-                leftIcon={<Archive className="h-4 w-4" />}
-              >
-                Archive
-              </Button>
-            )}
-            
             <Button
               variant="outline"
               onClick={() => setShowDeleteModal(true)}
@@ -334,6 +382,7 @@ export default function CourseDetailPage() {
         <AccordionCourseView 
           course={course}
           courseId={courseId}
+          courseData={courseData}
           onUpdate={loadCourse}
           onShare={handleShareCourse}
         />
@@ -426,7 +475,7 @@ export default function CourseDetailPage() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold">Course Information</h3>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={handleShareCourse}
                     className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
@@ -498,9 +547,9 @@ export default function CourseDetailPage() {
       {activeTab === 'lessons' && (
         <Card>
           <Card.Header>
-            <h2 className="text-lg font-semibold">Course Lessons</h2>
+            <h2 className="text-lg font-semibold">Course Sessions</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Select a schedule to view and manage its lessons. Lessons are automatically created from course schedules.
+              Select a schedule to view and manage its sessions. Sessions are automatically created from course schedules.
             </p>
           </Card.Header>
           <Card.Content>

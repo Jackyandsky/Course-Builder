@@ -1,8 +1,9 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseClient } from '@/lib/supabase';
 import { Vocabulary, VocabularyGroup, VocabularyGroupItem, DifficultyLevel } from '@/types/database';
 import { SHARED_USER_ID } from '@/lib/constants/shared';
 
-const supabase = createClientComponentClient();
+const getSupabase = () => createSupabaseClient();
+const supabase = getSupabase();
 
 export interface VocabularyFilters {
   search?: string;
@@ -61,32 +62,31 @@ export const vocabularyService = {
   
   // Get all vocabulary items with optional filters
   async getVocabulary(filters: VocabularyFilters = {}) {
-    let query = supabase
-      .from('vocabulary')
-      .select('*')
-      .order('word', { ascending: true });
-
-    // Apply filters
-    if (filters.search) {
-      query = query.or(`word.ilike.%${filters.search}%,translation.ilike.%${filters.search}%,definition.ilike.%${filters.search}%`);
+    try {
+      const params = new URLSearchParams();
+      params.append('viewType', 'individual');
+      
+      if (filters.search) params.append('search', filters.search);
+      if (filters.difficulty) params.append('difficulty', filters.difficulty);
+      if (filters.partOfSpeech) params.append('partOfSpeech', filters.partOfSpeech);
+      if (filters.groupId) params.append('groupId', filters.groupId);
+      
+      const response = await fetch(`/api/admin/vocabulary?${params.toString()}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch vocabulary');
+      }
+      
+      const { data } = await response.json();
+      return data.vocabulary || [];
+    } catch (error) {
+      console.error('Failed to fetch vocabulary:', error);
+      return [];
     }
-    
-    if (filters.difficulty) {
-      query = query.eq('difficulty', filters.difficulty);
-    }
-    
-    if (filters.partOfSpeech) {
-      query = query.eq('part_of_speech', filters.partOfSpeech);
-    }
-    
-    if (filters.tags && filters.tags.length > 0) {
-      query = query.contains('tags', filters.tags);
-    }
-
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    return data as Vocabulary[];
   },
 
   // Get vocabulary items in a specific group
@@ -164,63 +164,33 @@ export const vocabularyService = {
   
   // Get all vocabulary groups with optional filters
   async getVocabularyGroups(filters: VocabularyGroupFilters = {}) {
-    let query = supabase
-      .from('vocabulary_groups')
-      .select(`
-        *,
-        category:categories(id, name, color, icon),
-        vocabulary_group_items(count),
-        vocabulary_group_books(
-          book:books(
-            id,
-            title,
-            author,
-            cover_image_url
-          )
-        )
-      `)
-      .order('created_at', { ascending: false });
-
-    // Apply filters
-    if (filters.search) {
-      query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+    try {
+      const params = new URLSearchParams();
+      params.append('viewType', 'groups');
+      
+      if (filters.search) params.append('search', filters.search);
+      if (filters.difficulty) params.append('difficulty', filters.difficulty);
+      if (filters.language) params.append('language', filters.language);
+      if (filters.targetLanguage) params.append('targetLanguage', filters.targetLanguage);
+      if (filters.categoryId) params.append('categoryId', filters.categoryId);
+      if (filters.isPublic !== undefined) params.append('isPublic', filters.isPublic.toString());
+      
+      const response = await fetch(`/api/admin/vocabulary?${params.toString()}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch vocabulary groups');
+      }
+      
+      const { data } = await response.json();
+      return data.vocabularyGroups || [];
+    } catch (error) {
+      console.error('Failed to fetch vocabulary groups:', error);
+      return [];
     }
-    
-    if (filters.difficulty) {
-      query = query.eq('difficulty', filters.difficulty);
-    }
-    
-    if (filters.language) {
-      query = query.eq('language', filters.language);
-    }
-    
-    if (filters.targetLanguage) {
-      query = query.eq('target_language', filters.targetLanguage);
-    }
-    
-    if (filters.categoryId) {
-      query = query.eq('category_id', filters.categoryId);
-    }
-    
-    if (filters.isPublic !== undefined) {
-      query = query.eq('is_public', filters.isPublic);
-    }
-    
-    if (filters.tags && filters.tags.length > 0) {
-      query = query.contains('tags', filters.tags);
-    }
-
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    
-    // Add vocabulary count to each group
-    const groupsWithCount = data?.map(group => ({
-      ...group,
-      vocabulary_count: group.vocabulary_group_items?.[0]?.count || 0
-    })) || [];
-    
-    return groupsWithCount as (VocabularyGroup & { vocabulary_count: number })[];
   },
 
   // Get single vocabulary group by ID
@@ -347,53 +317,47 @@ export const vocabularyService = {
   
   // Get vocabulary statistics
   async getVocabularyStats() {
-    const [vocabularyData, groupsData] = await Promise.all([
-      supabase
-        .from('vocabulary')
-        .select('difficulty', { count: 'exact' })
-        .eq('user_id', SHARED_USER_ID),
-      supabase
-        .from('vocabulary_groups')
-        .select('difficulty', { count: 'exact' })
-        .eq('user_id', SHARED_USER_ID),
-    ]);
-    
-    if (vocabularyData.error) throw vocabularyData.error;
-    if (groupsData.error) throw groupsData.error;
-
-    const vocabularyStats = {
-      total: vocabularyData.data?.length || 0,
-      beginner: vocabularyData.data?.filter(v => v.difficulty === 'beginner').length || 0,
-      intermediate: vocabularyData.data?.filter(v => v.difficulty === 'intermediate').length || 0,
-      advanced: vocabularyData.data?.filter(v => v.difficulty === 'advanced').length || 0,
-      expert: vocabularyData.data?.filter(v => v.difficulty === 'expert').length || 0,
-    };
-
-    const groupStats = {
-      total: groupsData.data?.length || 0,
-      beginner: groupsData.data?.filter(g => g.difficulty === 'beginner').length || 0,
-      intermediate: groupsData.data?.filter(g => g.difficulty === 'intermediate').length || 0,
-      advanced: groupsData.data?.filter(g => g.difficulty === 'advanced').length || 0,
-      expert: groupsData.data?.filter(g => g.difficulty === 'expert').length || 0,
-    };
-
-    return { vocabulary: vocabularyStats, groups: groupStats };
+    try {
+      const response = await fetch('/api/admin/vocabulary?operation=stats', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch vocabulary stats');
+      }
+      
+      const stats = await response.json();
+      return stats;
+    } catch (error) {
+      console.error('Failed to fetch vocabulary stats:', error);
+      return {
+        vocabulary: { total: 0, basic: 0, standard: 0, premium: 0 },
+        groups: { total: 0, basic: 0, standard: 0, premium: 0 }
+      };
+    }
   },
 
   // Get unique part of speech values
   async getPartsOfSpeech() {
-    const { data, error } = await supabase
-      .from('vocabulary')
-      .select('part_of_speech')
-      .eq('user_id', SHARED_USER_ID)
-      .not('part_of_speech', 'is', null);
-    
-    if (error) throw error;
-
-    // Extract unique parts of speech
-    const partsOfSpeechSet = new Set(data?.map(vocab => vocab.part_of_speech).filter(Boolean));
-    const partsOfSpeech = Array.from(partsOfSpeechSet).sort();
-    return partsOfSpeech;
+    try {
+      const response = await fetch('/api/admin/vocabulary?viewType=individual', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch parts of speech');
+      }
+      
+      const { data } = await response.json();
+      return data.partsOfSpeech || [];
+    } catch (error) {
+      console.error('Failed to fetch parts of speech:', error);
+      return [];
+    }
   },
 
   // Get unique languages used in vocabulary groups
@@ -418,10 +382,9 @@ export const vocabularyService = {
   // Get difficulty level options
   getDifficultyLevels(): { value: DifficultyLevel; label: string; color: string }[] {
     return [
-      { value: 'beginner', label: 'Beginner', color: 'green' },
-      { value: 'intermediate', label: 'Intermediate', color: 'yellow' },
-      { value: 'advanced', label: 'Advanced', color: 'orange' },
-      { value: 'expert', label: 'Expert', color: 'red' },
+      { value: 'basic', label: 'Basic', color: 'green' },
+      { value: 'standard', label: 'Standard', color: 'yellow' },
+      { value: 'premium', label: 'Premium', color: 'purple' },
     ];
   },
 

@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useAuth } from '@/contexts/AuthContext';
+import { getSingletonSupabaseClient } from '@/lib/supabase-singleton';
 import ProductDetail from '@/components/products/ProductDetail';
 
 export default function StoreProductDetailPage() {
   const params = useParams();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClientComponentClient();
+  const supabase = getSingletonSupabaseClient();
 
   useEffect(() => {
     if (params.id) {
@@ -103,10 +104,10 @@ export default function StoreProductDetailPage() {
     <ProductDetail
       id={product.id}
       title={product.name}
-      author={product.metadata?.author || 'IGPS Education'}
+      author={product.metadata?.author || 'IGPS'}
       description={product.content?.substring(0, 300) + '...' || ''}
       longDescription={product.content}
-      price={product.metadata?.price || 29.99}
+      price={product.price}
       imageUrl={product.metadata?.image_url}
       category={categoryName}
       type="store"

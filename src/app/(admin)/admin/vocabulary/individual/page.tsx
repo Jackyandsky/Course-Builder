@@ -14,10 +14,9 @@ import {
 import { cn } from '@/lib/utils';
 
 const difficultyColors: Record<DifficultyLevel, string> = {
-  beginner: 'success',
-  intermediate: 'warning',
-  advanced: 'danger',
-  expert: 'primary',
+  basic: 'success',
+  standard: 'warning',
+  premium: 'danger',
 };
 
 export default function IndividualVocabularyPage() {
@@ -27,8 +26,8 @@ export default function IndividualVocabularyPage() {
   const [statsLoading, setStatsLoading] = useState(true);
   const [filters, setFilters] = useState<VocabularyFilters>({});
   const [stats, setStats] = useState({
-    vocabulary: { total: 0, beginner: 0, intermediate: 0, advanced: 0, expert: 0 },
-    groups: { total: 0, beginner: 0, intermediate: 0, advanced: 0, expert: 0 }
+    vocabulary: { total: 0, basic: 0, standard: 0, premium: 0 },
+    groups: { total: 0, basic: 0, standard: 0, premium: 0 }
   });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [partsOfSpeech, setPartsOfSpeech] = useState<string[]>([]);
@@ -61,8 +60,8 @@ export default function IndividualVocabularyPage() {
       console.error('Failed to load initial data:', error);
       // Set default empty stats if there's an error
       setStats({
-        vocabulary: { total: 0, beginner: 0, intermediate: 0, advanced: 0, expert: 0 },
-        groups: { total: 0, beginner: 0, intermediate: 0, advanced: 0, expert: 0 }
+        vocabulary: { total: 0, basic: 0, standard: 0, premium: 0 },
+        groups: { total: 0, basic: 0, standard: 0, premium: 0 }
       });
       setPartsOfSpeech([]);
     } finally {

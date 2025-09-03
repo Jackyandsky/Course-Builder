@@ -11,7 +11,7 @@ import { Spinner } from './Spinner';
 import { courseService } from '@/lib/supabase/courses';
 import { lessonService } from '@/lib/supabase/lessons';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseClient } from '@/lib/supabase';
 
 export interface BelongingItem {
   id: string;
@@ -26,6 +26,10 @@ interface BelongingSelectorProps {
   onCoursesChange: (courseIds: string[]) => void;
   onLessonsChange: (lessonIds: string[]) => void;
   disabled?: boolean;
+  buttonLabel?: string;
+  mode?: 'courses-only' | 'both' | 'sessions-only';
+  filterCourses?: string[]; // Courses to filter sessions by (for sessions-only mode)
+  showAllSessionsIfNoMatch?: boolean; // Show all sessions if no courses match (for sessions-only mode)
 }
 
 export function BelongingSelector({
@@ -33,7 +37,11 @@ export function BelongingSelector({
   selectedLessons,
   onCoursesChange,
   onLessonsChange,
-  disabled = false
+  disabled = false,
+  buttonLabel = 'Select Courses & Sessions',
+  mode = 'both',
+  filterCourses = [],
+  showAllSessionsIfNoMatch = true
 }: BelongingSelectorProps) {
   const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
@@ -41,20 +49,40 @@ export function BelongingSelector({
   const [loading, setLoading] = useState(false);
   const [courses, setCourses] = useState<any[]>([]);
   const [lessons, setLessons] = useState<any[]>([]);
+  const [schedules, setSchedules] = useState<any[]>([]);
   const [tempSelectedCourses, setTempSelectedCourses] = useState<string[]>([]);
   const [tempSelectedLessons, setTempSelectedLessons] = useState<string[]>([]);
+  const [hasLoadedData, setHasLoadedData] = useState(false);
 
   useEffect(() => {
     // Load data immediately when component mounts to display selected items
     loadData();
   }, []);
+  
+  // Also load data when selected items change to ensure we can display them
+  useEffect(() => {
+    console.log('BelongingSelector: Selected items changed', {
+      selectedLessons,
+      selectedCourses,
+      hasLoadedData,
+      mode
+    });
+    if ((selectedLessons.length > 0 || selectedCourses.length > 0) && !hasLoadedData) {
+      console.log('BelongingSelector: Loading data due to selected items');
+      loadData();
+    }
+  }, [selectedLessons, selectedCourses, hasLoadedData]);
 
   useEffect(() => {
     if (showModal) {
       setTempSelectedCourses(selectedCourses);
       setTempSelectedLessons(selectedLessons);
+      // Load data when modal opens if not already loaded
+      if (!hasLoadedData) {
+        loadData();
+      }
     }
-  }, [showModal, selectedCourses, selectedLessons]);
+  }, [showModal, selectedCourses, selectedLessons, hasLoadedData]);
 
   const loadData = async () => {
     if (!user) {
@@ -66,30 +94,36 @@ export function BelongingSelector({
       setLoading(true);
       console.log('Loading courses and lessons for user:', user.id);
       
-      const supabase = createClientComponentClient();
+      const supabase = createSupabaseClient();
       
       const [coursesResult, lessonsResult, schedulesResult] = await Promise.all([
         courseService.getCourses({}),
-        // Get up to 60 lessons for selection
+        // Get ALL lessons for selection with schedule relationship (remove limit for now)
         supabase
           .from('lessons')
-          .select('*')
-          .limit(60)
+          .select(`
+            *,
+            schedule:schedule_id (
+              id,
+              name,
+              course_id
+            )
+          `)
           .order('created_at', { ascending: false }),
-        // Also check schedules table structure
+        // Fetch all schedules to understand course-schedule relationships
         supabase
           .from('schedules')
           .select('*')
-          .limit(3)
+          .order('created_at', { ascending: false })
       ]);
       
-      console.log('Courses loaded:', coursesResult.length);
-      console.log('Lessons query result:', lessonsResult);
-      
-      // Debug: Check courses structure too
-      if (coursesResult && coursesResult.length > 0) {
-        console.log('Sample course structure:', coursesResult[0]);
-      }
+      console.log('Data loading results:', {
+        courses: coursesResult?.length || 0,
+        lessons: lessonsResult.data?.length || 0,
+        schedules: schedulesResult.data?.length || 0,
+        lessonsError: lessonsResult.error,
+        schedulesError: schedulesResult.error
+      });
       
       if (lessonsResult.error) {
         console.error('Lessons query error:', lessonsResult.error);
@@ -98,18 +132,31 @@ export function BelongingSelector({
       
       if (schedulesResult.error) {
         console.error('Schedules query error:', schedulesResult.error);
-      } else if (schedulesResult.data && schedulesResult.data.length > 0) {
-        console.log('Sample schedule structure:', schedulesResult.data[0]);
-        console.log('Schedule fields:', Object.keys(schedulesResult.data[0]));
       }
       
       setCourses(coursesResult || []);
       setLessons(lessonsResult.data || []);
+      setSchedules(schedulesResult.data || []);
+      setHasLoadedData(true);
       
-      // Debug: Log the actual structure of lessons to see available fields
+      // Debug: Log sample data to understand relationships
       if (lessonsResult.data && lessonsResult.data.length > 0) {
-        console.log('Actual lesson structure:', lessonsResult.data[0]);
-        console.log('All lesson fields:', Object.keys(lessonsResult.data[0]));
+        const sampleLesson = lessonsResult.data[0];
+        console.log('Sample lesson:', {
+          id: sampleLesson.id,
+          schedule_id: sampleLesson.schedule_id,
+          schedule: sampleLesson.schedule,
+          course_id: sampleLesson.course_id
+        });
+      }
+      
+      if (schedulesResult.data && schedulesResult.data.length > 0) {
+        const sampleSchedule = schedulesResult.data[0];
+        console.log('Sample schedule:', {
+          id: sampleSchedule.id,
+          course_id: sampleSchedule.course_id,
+          name: sampleSchedule.name
+        });
       }
       
     } catch (error) {
@@ -144,6 +191,11 @@ export function BelongingSelector({
   };
 
   const handleSave = () => {
+    console.log('Saving selections:', {
+      courses: tempSelectedCourses,
+      lessons: tempSelectedLessons,
+      mode
+    });
     onCoursesChange(tempSelectedCourses);
     onLessonsChange(tempSelectedLessons);
     setShowModal(false);
@@ -159,39 +211,79 @@ export function BelongingSelector({
     course.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredLessons = lessons.filter(lesson => {
+  // First, get all lessons that match the search
+  const searchFilteredLessons = lessons.filter(lesson => {
     const title = lesson.topic || lesson.title || `Lesson ${lesson.lesson_number}`;
-    const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // If no courses are selected, show all lessons
-    if (tempSelectedCourses.length === 0) {
-      return matchesSearch;
-    }
-    
-    // Get course ID from lesson directly or from schedule relationship
-    const lessonCourseId = lesson.course_id || lesson.schedule?.course_id || lesson.schedule?.course?.id;
-    
-    // If courses are selected, only show lessons that belong to those courses
-    const shouldInclude = matchesSearch && lessonCourseId && tempSelectedCourses.includes(lessonCourseId);
-    
-    // Debug logging
-    if (tempSelectedCourses.length > 0) {
-      console.log('Filtering lesson:', {
-        lessonTitle: title,
-        lessonCourseId,
-        directCourseId: lesson.course_id,
-        scheduleCourseId: lesson.schedule?.course_id || lesson.schedule?.course?.id,
-        tempSelectedCourses,
-        matchesSearch,
-        shouldInclude
-      });
-    }
-    
-    return shouldInclude;
+    return title.toLowerCase().includes(searchTerm.toLowerCase());
   });
+
+  // Then apply course filtering
+  const filteredLessons = (() => {
+    // For sessions-only mode, use filterCourses prop
+    const coursesToFilter = mode === 'sessions-only' ? filterCourses : tempSelectedCourses;
+    
+    // If no courses are selected/filtered, show all lessons that match search
+    if (coursesToFilter.length === 0) {
+      return searchFilteredLessons;
+    }
+    
+    // First, find all schedules that belong to the selected courses
+    const relevantScheduleIds = schedules
+      .filter(schedule => coursesToFilter.includes(schedule.course_id))
+      .map(schedule => schedule.id);
+    
+    console.log('Filtering sessions:', {
+      selectedCourses: coursesToFilter,
+      relevantSchedules: relevantScheduleIds,
+      totalSchedules: schedules.length
+    });
+    
+    // Filter by course relationship (either direct or through schedule)
+    const courseFilteredLessons = searchFilteredLessons.filter(lesson => {
+      // Check direct course relationship
+      if (lesson.course_id && coursesToFilter.includes(lesson.course_id)) {
+        return true;
+      }
+      
+      // Check schedule relationship (most common)
+      if (lesson.schedule_id && relevantScheduleIds.includes(lesson.schedule_id)) {
+        return true;
+      }
+      
+      // Check schedule object relationship (if populated)
+      if (lesson.schedule?.course_id && coursesToFilter.includes(lesson.schedule.course_id)) {
+        return true;
+      }
+      
+      return false;
+    });
+    
+    // If in sessions-only mode and no matches found but showAllSessionsIfNoMatch is true, 
+    // show all sessions anyway
+    if (mode === 'sessions-only' && courseFilteredLessons.length === 0 && showAllSessionsIfNoMatch) {
+      console.log('No sessions match selected courses, showing all sessions');
+      return searchFilteredLessons;
+    }
+    
+    return courseFilteredLessons;
+  })();
 
   const selectedCoursesData = courses.filter(c => selectedCourses.includes(c.id));
   const selectedLessonsData = lessons.filter(l => selectedLessons.includes(l.id));
+  
+  // Debug logging for sessions display issue
+  if (mode === 'sessions-only' && selectedLessons.length > 0) {
+    console.log('BelongingSelector Display Debug:', {
+      mode,
+      selectedLessons,
+      loadedLessons: lessons.length,
+      selectedLessonsData: selectedLessonsData.length,
+      hasLoadedData,
+      firstFewLessonIds: lessons.slice(0, 3).map(l => l.id),
+      lookingFor: selectedLessons
+    });
+  }
+  
   const totalSelected = selectedCourses.length + selectedLessons.length;
 
   return (
@@ -199,8 +291,7 @@ export function BelongingSelector({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            {totalSelected} item{totalSelected !== 1 ? 's' : ''} selected 
-            ({selectedCourses.length} course{selectedCourses.length !== 1 ? 's' : ''}, {selectedLessons.length} lesson{selectedLessons.length !== 1 ? 's' : ''})
+            {totalSelected} item{totalSelected !== 1 ? 's' : ''} selected
           </p>
           <Button
             type="button"
@@ -208,7 +299,7 @@ export function BelongingSelector({
             onClick={() => setShowModal(true)}
             disabled={disabled}
           >
-            Select Courses & Lessons
+            {buttonLabel}
           </Button>
         </div>
 
@@ -247,7 +338,7 @@ export function BelongingSelector({
             {selectedLessonsData.length > 0 && (
               <div>
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Lessons ({selectedLessonsData.length})
+                  Sessions ({selectedLessonsData.length})
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {selectedLessonsData.map((lesson) => (
@@ -279,13 +370,13 @@ export function BelongingSelector({
       <Modal
         isOpen={showModal}
         onClose={handleCancel}
-        title="Select Courses and Lessons"
+        title={mode === 'courses-only' ? 'Select Courses' : mode === 'sessions-only' ? 'Select Sessions' : 'Select Courses and Sessions'}
         size="lg"
       >
         <div className="space-y-4">
           {/* Search */}
           <SearchBox
-            placeholder="Search courses and lessons..."
+            placeholder={mode === 'courses-only' ? 'Search courses...' : mode === 'sessions-only' ? 'Search sessions...' : 'Search courses and sessions...'}
             onSearch={setSearchTerm}
             defaultValue={searchTerm}
           />
@@ -296,8 +387,9 @@ export function BelongingSelector({
             </div>
           ) : (
             <div className="max-h-96 overflow-y-auto space-y-6">
-              {/* Courses Section */}
-              <div>
+              {/* Courses Section - Hide for 'sessions-only' mode */}
+              {mode !== 'sessions-only' && (
+                <div>
                 <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
                   <GraduationCap className="h-4 w-4 mr-2" />
                   Courses ({filteredCourses.length})
@@ -348,23 +440,66 @@ export function BelongingSelector({
                     ))}
                   </div>
                 )}
-              </div>
+                </div>
+              )}
 
-              {/* Lessons Section */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  Lessons ({filteredLessons.length})
-                  {tempSelectedCourses.length > 0 && (
-                    <span className="ml-2 text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                      Filtered by selected courses
-                    </span>
-                  )}
-                </h3>
+              {/* Sessions Section - Show for 'both' and 'sessions-only' modes */}
+              {(mode === 'both' || mode === 'sessions-only') && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Sessions ({filteredLessons.length})
+                    {(() => {
+                      const coursesToFilter = mode === 'sessions-only' ? filterCourses : tempSelectedCourses;
+                      if (coursesToFilter.length > 0) {
+                        // Check if we're showing all sessions because no matches were found
+                        const hasMatchingCourses = searchFilteredLessons.some(lesson => {
+                          const lessonCourseId = lesson.course_id || lesson.schedule?.course_id || lesson.schedule?.course?.id;
+                          return lessonCourseId && coursesToFilter.includes(lessonCourseId);
+                        });
+                        
+                        if (!hasMatchingCourses && mode === 'sessions-only' && showAllSessionsIfNoMatch) {
+                          return (
+                            <span className="ml-2 text-xs text-amber-600 bg-amber-100 px-2 py-1 rounded">
+                              Showing all sessions (no matches for selected courses)
+                            </span>
+                          );
+                        }
+                        
+                        return (
+                          <span className="ml-2 text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                            Filtered by selected courses
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </h3>
                 {filteredLessons.length === 0 ? (
-                  <p className="text-sm text-gray-500 py-4">
-                    {searchTerm ? 'No lessons found matching your search.' : 'No lessons available.'}
-                  </p>
+                  <div className="text-sm text-gray-500 py-4">
+                    {searchTerm ? (
+                      <p>No sessions found matching your search.</p>
+                    ) : (mode === 'sessions-only' ? filterCourses : tempSelectedCourses).length > 0 ? (
+                      <div className="space-y-2">
+                        <p className="font-medium">No sessions found for the selected course{(mode === 'sessions-only' ? filterCourses : tempSelectedCourses).length > 1 ? 's' : ''}.</p>
+                        <p className="text-xs">Possible reasons:</p>
+                        <ul className="text-xs ml-4 list-disc space-y-1">
+                          <li>The selected course{(mode === 'sessions-only' ? filterCourses : tempSelectedCourses).length > 1 ? 's don\'t' : ' doesn\'t'} have any sessions assigned yet</li>
+                          <li>Sessions may be linked through schedules instead of directly to courses</li>
+                          <li>The course-session relationships need to be established</li>
+                        </ul>
+                        {mode === 'sessions-only' && (
+                          <p className="text-xs mt-2 font-medium">
+                            Try selecting different courses or check if sessions exist for these courses.
+                          </p>
+                        )}
+                      </div>
+                    ) : mode === 'sessions-only' ? (
+                      <p>No courses selected. Please select courses first to see their associated sessions.</p>
+                    ) : (
+                      <p>No sessions available. Sessions will appear here once courses are selected.</p>
+                    )}
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     {filteredLessons.map((lesson) => (
@@ -382,7 +517,11 @@ export function BelongingSelector({
                             <input
                               type="checkbox"
                               checked={tempSelectedLessons.includes(lesson.id)}
-                              onChange={() => handleLessonToggle(lesson.id)}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                handleLessonToggle(lesson.id);
+                              }}
+                              onClick={(e) => e.stopPropagation()}
                               className="mt-1 rounded"
                             />
                             <div className="flex-1">
@@ -400,14 +539,22 @@ export function BelongingSelector({
                                 )}
                                 {lesson.schedule && (
                                   <Badge variant="info" className="text-xs">
-                                    {lesson.schedule.name}
+                                    Schedule: {lesson.schedule.name}
                                   </Badge>
                                 )}
-                                {lesson.course_id && (
-                                  <Badge variant="outline" className="text-xs">
-                                    Course: {courses.find(c => c.id === lesson.course_id)?.title || 'Unknown'}
-                                  </Badge>
-                                )}
+                                {(() => {
+                                  // Show which course this lesson belongs to
+                                  const courseId = lesson.course_id || lesson.schedule?.course_id;
+                                  const course = courseId ? courses.find(c => c.id === courseId) : null;
+                                  if (course) {
+                                    return (
+                                      <Badge variant="outline" className="text-xs">
+                                        Course: {course.title}
+                                      </Badge>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                               </div>
                             </div>
                           </div>
@@ -416,14 +563,20 @@ export function BelongingSelector({
                     ))}
                   </div>
                 )}
-              </div>
+                </div>
+              )}
             </div>
           )}
 
           {/* Actions */}
           <div className="flex justify-between items-center border-t pt-4">
             <p className="text-sm text-gray-600">
-              {tempSelectedCourses.length + tempSelectedLessons.length} item{tempSelectedCourses.length + tempSelectedLessons.length !== 1 ? 's' : ''} selected
+              {mode === 'courses-only' 
+                ? `${tempSelectedCourses.length} course${tempSelectedCourses.length !== 1 ? 's' : ''} selected`
+                : mode === 'sessions-only'
+                ? `${tempSelectedLessons.length} session${tempSelectedLessons.length !== 1 ? 's' : ''} selected`
+                : `${tempSelectedCourses.length + tempSelectedLessons.length} item${tempSelectedCourses.length + tempSelectedLessons.length !== 1 ? 's' : ''} selected`
+              }
             </p>
             <div className="flex space-x-2">
               <Button variant="outline" onClick={handleCancel}>

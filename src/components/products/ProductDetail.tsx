@@ -5,8 +5,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, Book, ShoppingCart, Check, Star } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useCart } from '@/contexts/CartContext';
 import ProductCard from './ProductCard';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface ProductDetailProps {
   id: string;
@@ -47,14 +47,29 @@ export default function ProductDetail({
   rating,
   reviewCount
 }: ProductDetailProps) {
+  const { addToCart, loading: cartLoading } = useCart();
   const [addedToCart, setAddedToCart] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [expandedDescription, setExpandedDescription] = useState(false);
 
-  const handlePurchase = () => {
-    // TODO: Implement actual purchase logic
-    setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 3000);
+  const handlePurchase = async () => {
+    if (!price || cartLoading) return;
+    
+    try {
+      await addToCart({
+        item_type: 'content', // Store products are content items
+        item_id: id,
+        title,
+        price,
+        thumbnail_url: imageUrl,
+        slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+      }, quantity);
+      
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 3000);
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+    }
   };
 
   const backUrl = type === 'library' ? '/library' : '/store';
@@ -198,9 +213,15 @@ export default function ProductDetail({
 
                   <Button
                     onClick={handlePurchase}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={cartLoading || !price}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
                   >
-                    {addedToCart ? (
+                    {cartLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Adding...
+                      </>
+                    ) : addedToCart ? (
                       <>
                         <Check className="h-4 w-4 mr-2" />
                         Added to Cart
@@ -318,7 +339,6 @@ function RelatedProducts({
 }) {
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClientComponentClient();
 
   useEffect(() => {
     loadRelatedProducts();
@@ -326,81 +346,19 @@ function RelatedProducts({
 
   const loadRelatedProducts = async () => {
     try {
-      if (type === 'library') {
-        // For library, get books from the same category
-        const { data: currentBook } = await supabase
-          .from('books')
-          .select('category_id')
-          .eq('id', currentProductId)
-          .single();
+      const params = new URLSearchParams({
+        productId: currentProductId,
+        type: type,
+        ...(category && { category })
+      });
 
-        if (currentBook && currentBook.category_id) {
-          const { data } = await supabase
-            .from('books')
-            .select(`
-              *,
-              category:categories!category_id(
-                id,
-                name,
-                type
-              )
-            `)
-            .eq('category_id', currentBook.category_id)
-            .neq('id', currentProductId)
-            .eq('is_public', true)
-            .limit(4);
-
-          if (data) {
-            const transformedBooks = data.map(book => ({
-              id: book.id,
-              title: book.title,
-              author: book.author || 'Unknown Author',
-              description: book.description?.substring(0, 200) + '...' || '',
-              price: book.metadata?.price || 29.99,
-              imageUrl: book.cover_image_url,
-              category: book.category?.name === 'Virtual' ? 'Virtual Library' : book.category?.name || 'Virtual Library',
-              type: 'library'
-            }));
-            setRelatedProducts(transformedBooks);
-          }
-        }
+      const response = await fetch(`/api/products/related?${params}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setRelatedProducts(data);
       } else {
-        // For store, get products from the same category
-        const { data: categoryData } = await supabase
-          .from('categories')
-          .select('id')
-          .eq('name', category)
-          .single();
-
-        if (categoryData) {
-          const { data } = await supabase
-            .from('content')
-            .select(`
-              *,
-              category:categories!category_id(
-                id,
-                name,
-                type
-              )
-            `)
-            .eq('category_id', categoryData.id)
-            .neq('id', currentProductId)
-            .limit(4);
-
-          if (data) {
-            const transformedProducts = data.map(product => ({
-              id: product.id,
-              title: product.name,
-              author: product.metadata?.author || 'IGPS Education',
-              description: product.content?.substring(0, 200) + '...' || '',
-              price: product.metadata?.price || 29.99,
-              imageUrl: product.metadata?.image_url,
-              category: product.category?.name || 'Uncategorized',
-              type: 'store'
-            }));
-            setRelatedProducts(transformedProducts);
-          }
-        }
+        console.error('Failed to fetch related products');
       }
     } catch (error) {
       console.error('Error loading related products:', error);

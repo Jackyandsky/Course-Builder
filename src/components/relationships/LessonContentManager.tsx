@@ -323,7 +323,7 @@ export function LessonContentManager({ lessonId, onUpdate }: LessonContentManage
                   </div>
                 </div>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => handleRemove('objectives', item.objective_id)}
                   className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
@@ -367,7 +367,7 @@ export function LessonContentManager({ lessonId, onUpdate }: LessonContentManage
                   )}
                 </div>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => handleRemove('methods', item.method_id)}
                   className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
@@ -414,7 +414,7 @@ export function LessonContentManager({ lessonId, onUpdate }: LessonContentManage
                   )}
                 </div>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => handleRemove('tasks', item.task_id)}
                   className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
@@ -453,7 +453,7 @@ export function LessonContentManager({ lessonId, onUpdate }: LessonContentManage
                   </div>
                 </div>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => handleRemove('books', item.book_id)}
                   className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
@@ -489,7 +489,7 @@ export function LessonContentManager({ lessonId, onUpdate }: LessonContentManage
                   </div>
                 </div>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => handleRemove('vocabulary', item.vocabulary_id)}
                   className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"

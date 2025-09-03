@@ -7,12 +7,12 @@ import { Vocabulary } from '@/types/database';
 import { 
   Button, Card, Badge 
 } from '@/components/ui';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { getMiddlewareSupabaseClient } from '@/lib/supabase/middleware-helper';
 
 export default function VocabularyDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = getMiddlewareSupabaseClient();
   const [vocabulary, setVocabulary] = useState<Vocabulary | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -99,7 +99,7 @@ export default function VocabularyDetailPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => router.push('/admin/vocabulary')}
             leftIcon={<ArrowLeft className="h-4 w-4" />}
@@ -146,7 +146,7 @@ export default function VocabularyDetailPage() {
                   <p className="text-lg font-semibold">{vocabulary.word}</p>
                   {vocabulary.audio_url && (
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={playAudio}
                       leftIcon={<Volume2 className="h-4 w-4" />}
@@ -183,8 +183,8 @@ export default function VocabularyDetailPage() {
               <div>
                 <label className="text-sm font-medium text-gray-700">Difficulty</label>
                 <p className="mt-1">
-                  <Badge variant={vocabulary.difficulty === 'beginner' ? 'success' : 
-                              vocabulary.difficulty === 'intermediate' ? 'warning' : 'danger'}>
+                  <Badge variant={vocabulary.difficulty === 'basic' ? 'success' : 
+                              vocabulary.difficulty === 'standard' ? 'warning' : 'danger'}>
                     {vocabulary.difficulty}
                   </Badge>
                 </p>

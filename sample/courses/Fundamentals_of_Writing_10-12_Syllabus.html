@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammaticos Reading & Writing Foundational Course</title>
+    <style>
+        /* Apple-inspired styles with tablet optimization */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #1d1d1f;
+            background-color: #fbfbfd;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 28px;
+            font-weight: 500;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 21px;
+            font-weight: 500;
+            margin-top: 30px;
+        }
+        p {
+            font-size: 17px;
+            color: #333;
+        }
+        .tagline {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Adjusted for units */
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .book { /* Re-using .book class for units/concepts */
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            touch-action: manipulation;
+        }
+        .book:hover, .book:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .book h3 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .book p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .approach {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .feature h3 {
+            font-size: 20px;
+            margin-top: 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        /* Tablet-specific optimizations */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                width: 94%;
+                padding: 15px;
+            }
+            
+            header {
+                padding: 30px 0;
+            }
+            
+            h1 {
+                font-size: 38px;
+            }
+            
+            h2 {
+                font-size: 26px;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Adjusted */
+            }
+            
+            .approach {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature {
+                padding: 20px;
+            }
+        }
+        
+        /* For landscape orientation on tablets */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .grid {
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Adjusted */
+            }
+            
+            .approach {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Improved touch target sizes for tablet */
+        @media (pointer: coarse) {
+            .book, .feature {
+                min-height: 100px;
+            }
+            
+            .book h3, .feature h3 {
+                margin-bottom: 15px;
+            }
+            
+            button, a {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Level 10-12 Fundamentals of Writing</h1>
+        </header>
+
+        <h2>Course Overview</h2>
+        <p>This advanced course for students in grades 10-12 is designed to master essential writing skills crucial for academic success and effective communication. The curriculum focuses on advanced essay structure, sophisticated argumentation, rhetorical analysis, comprehensive research methodologies, and nuanced creative writing techniques. Students will engage with challenging texts, including novels like *Catch-22* and *Lolita*, to analyze authorial craft and inspire their own writing. The course emphasizes critical thinking, rigorous revision, and the development of a versatile writing portfolio.</p>
+
+        <h2>Key Writing Units & Literary Anchor Texts</h2>
+        <div class="grid">
+            <div class="book">
+                <h3>Advanced Academic Writing</h3>
+                <p>Mastering thesis construction, complex claims, robust evidence integration, logical argumentation, synthesis of ideas, and advanced sentence structures. Exploring active vs. passive voice for impact.</p>
+            </div>
+            <div class="book">
+                <h3>Rhetorical Analysis & Persuasion</h3>
+                <p>Deep analysis of persuasive techniques (ethos, pathos, logos) in various non-fiction texts and speeches. Understanding authorial purpose, audience, and context. Applying rhetorical strategies in original arguments.</p>
+            </div>
+            <div class="book">
+                <h3>Research & Synthesis Essays</h3>
+                <p>Developing skills in conducting thorough academic research, evaluating and integrating sources effectively, proper citation (MLA/APA), and constructing sophisticated synthesis essays that present original arguments.</p>
+            </div>
+            <div class="book">
+                <h3>Nuanced Creative Writing</h3>
+                <p>Exploring advanced techniques in fiction, poetry, and creative non-fiction. Focus on voice, style, narrative complexity, figurative language, and thematic depth. Includes workshops and portfolio development.</p>
+            </div>
+            <div class="book">
+                <h3>Literary Anchor: *Catch-22*</h3>
+                <p>Joseph Heller. Analysis of satire, paradox, narrative structure, and anti-war themes as a model for critical and creative writing.</p>
+            </div>
+            <div class="book">
+                <h3>Literary Anchor: *Lolita*</h3>
+                <p>Vladimir Nabokov. Examination of unreliable narration, complex characterization, stylistic virtuosity, and controversial themes to explore authorial craft and reader response.</p>
+            </div>
+        </div>
+
+        <h2>Educational Approach</h2>
+        <div class="approach">
+            <div class="feature">
+                <h3>Workshop-Based Learning & Rigorous Revision</h3>
+                <p>Intensive writing workshops focusing on peer review and detailed instructor feedback. Emphasis on the writing process, particularly substantial revision to improve clarity, argumentation, style, and mechanics.</p>
+            </div>
+            <div class="feature">
+                <h3>Analysis of Model Texts & Authorial Craft</h3>
+                <p>Close reading and deconstruction of exemplary literary and non-fiction texts to understand advanced writing techniques, rhetorical strategies, and stylistic choices. Focus on how published authors achieve their effects.</p>
+            </div>
+            <div class="feature">
+                <h3>LEX Advanced Vocabulary & Stylistic Precision</h3>
+                <p>Comprehensive vocabulary building using the LEX Advanced curriculum (Letters A-Z) to enhance precision, sophistication, and persuasiveness in student writing. Focus on nuanced word choice and sentence variety.</p>
+            </div>
+        </div>
+
+        <h2>Curriculum Structure</h2>
+        <p>The 30-session course is structured around key writing skills, genres, and analytical tasks, typically dedicating 5-6 weeks per major unit (e.g., Academic Argumentation, Rhetorical Analysis, Research Writing, Creative Portfolio). The study of anchor texts like *Catch-22* and *Lolita*, along with various essays, articles, short stories, and poems, is integrated throughout to provide models and inspiration. Regular writing assignments, including analytical essays, research papers, creative pieces, and revisions, form the core of the course. LEX Advanced vocabulary is consistently reinforced. The course culminates in the submission of a polished writing portfolio demonstrating mastery of diverse writing styles and techniques.</p>
+
+        <footer>
+            <p>I GRAMMATICOS PLATFORM SOLUTION © 2020</p>
+            <p>Confidential & Proprietary</p>
+        </footer>
+    </div>
+</body>
+</html>

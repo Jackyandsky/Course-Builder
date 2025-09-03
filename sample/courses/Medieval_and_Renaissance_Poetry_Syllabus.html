@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammaticos Reading & Writing Foundational Course</title>
+    <style>
+        /* Apple-inspired styles with tablet optimization */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #1d1d1f;
+            background-color: #fbfbfd;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 28px;
+            font-weight: 500;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 21px;
+            font-weight: 500;
+            margin-top: 30px;
+        }
+        p {
+            font-size: 17px;
+            color: #333;
+        }
+        .tagline {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Adjusted for themes */
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .book { /* Re-using .book class for themes */
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            touch-action: manipulation;
+        }
+        .book:hover, .book:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .book h3 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .book p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .approach {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .feature h3 {
+            font-size: 20px;
+            margin-top: 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        /* Tablet-specific optimizations */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                width: 94%;
+                padding: 15px;
+            }
+            
+            header {
+                padding: 30px 0;
+            }
+            
+            h1 {
+                font-size: 38px;
+            }
+            
+            h2 {
+                font-size: 26px;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Adjusted */
+            }
+            
+            .approach {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature {
+                padding: 20px;
+            }
+        }
+        
+        /* For landscape orientation on tablets */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .grid {
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Adjusted */
+            }
+            
+            .approach {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Improved touch target sizes for tablet */
+        @media (pointer: coarse) {
+            .book, .feature {
+                min-height: 100px;
+            }
+            
+            .book h3, .feature h3 {
+                margin-bottom: 15px;
+            }
+            
+            button, a {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Medieval and Renaissance Poetry</h1>
+        </header>
+
+        <h2>Course Overview</h2>
+        <p>This course offers an engaging exploration of poetry from the Medieval and Renaissance periods, tracing the evolution of poetic forms, themes, and sensibilities across these transformative eras. Students will delve into works by influential poets, examining themes such as chivalry, courtly love, religious devotion, humanism, and the burgeoning sense of individualism. The curriculum emphasizes close reading, understanding historical and cultural contexts, analyzing poetic devices, and developing sophisticated analytical essays through the 5/5/5 method and LEX Advanced vocabulary.</p>
+
+        <h2>Thematic Explorations & Featured Poets/Works</h2>
+        <div class="grid">
+            <div class="book">
+                <h3>Theme: The Individual vs. Society</h3>
+                <p>Excerpts from Chaucer's *Canterbury Tales*, Dante's *Divine Comedy*; Sonnets by Petrarch and Wyatt, reflecting early humanist thought.</p>
+            </div>
+            <div class="book">
+                <h3>Theme: War and Conflict</h3>
+                <p>Selections from epic poems like *Beowulf* or *Sir Gawain and the Green Knight*; chivalric romance poetry that explores knightly valor and its complexities.</p>
+            </div>
+            <div class="book">
+                <h3>Theme: Love and Courtship</h3>
+                <p>Troubadour poetry, Petrarchan sonnets, Shakespeare's Sonnets, Metaphysical poetry by John Donne exploring sacred and profane love.</p>
+            </div>
+            <div class="book">
+                <h3>Theme: Death, Loss, and Transience</h3>
+                <p>Excerpts from morality plays like *Everyman*, memento mori traditions in poetry, elegies, and explorations of mortality by poets like Donne and Shakespeare.</p>
+            </div>
+            <div class="book">
+                <h3>Theme: Faith, Doubt, and the Divine</h3>
+                <p>Medieval religious lyrics, excerpts from Dante's *Paradiso*, metaphysical explorations of faith by poets like George Herbert, and early hints of religious questioning.</p>
+            </div>
+            <div class="book">
+                <h3>Theme: Humanism & The New World</h3>
+                <p>Poetry reflecting the spirit of Renaissance humanism (e.g., Pico della Mirandola's influence), works by More, Marlowe (e.g., "Hero and Leander"), and Spenser (e.g., *The Faerie Queene* excerpts).</p>
+            </div>
+        </div>
+
+        <h2>Educational Approach</h2>
+        <div class="approach">
+            <div class="feature">
+                <h3>Analysis of Poetic Forms and Devices</h3>
+                <p>Detailed study of poetic forms prominent in these eras (e.g., sonnet, epic, lyric, ballad, allegory) and analysis of literary devices such as metaphor, simile, alliteration, meter, and rhyme scheme.</p>
+            </div>
+            <div class="feature">
+                <h3>Historical and Cultural Contextualization</h3>
+                <p>Understanding poems within their specific Medieval and Renaissance contexts, including feudalism, chivalry, the influence of the Church, the rise of humanism, and the impact of exploration and discovery.</p>
+            </div>
+            <div class="feature">
+                <h3>5/5/5 Analytical Essays & LEX Advanced Vocabulary</h3>
+                <p>Development of advanced analytical writing skills through 5/5/5 essays focusing on thematic interpretation, formal analysis, and contextual understanding. Comprehensive vocabulary building with LEX Advanced (Letters A-Z).</p>
+            </div>
+        </div>
+
+        <h2>Curriculum Structure</h2>
+        <p>This 30-session course is organized into six five-week thematic intensives, each exploring a core theme through a selection of representative poems and poets from the Medieval and Renaissance periods. Students will engage in close reading of 1-3 poems (or significant excerpts) per week, complete 5/5/5 analytical essay responses, and participate in discussions on historical context and literary significance. LEX Advanced vocabulary is integrated throughout, with quizzes covering segments of the alphabet (A-D, E-H, etc.). The course aims to provide a rich understanding of the poetic traditions of these foundational periods and culminates in an in-depth analytical essay on a chosen poem or theme.</p>
+
+        <footer>
+            <p>I GRAMMATICOS PLATFORM SOLUTION © 2020</p>
+            <p>Confidential & Proprietary</p>
+        </footer>
+    </div>
+</body>
+</html>

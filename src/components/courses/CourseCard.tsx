@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Clock, BookOpen, Target, Calendar, Lightbulb, ChevronRight, UserPlus } from 'lucide-react';
+import { Clock, BookOpen, Target, Calendar, Lightbulb, ChevronRight, UserPlus, DollarSign, Tag } from 'lucide-react';
 import { useState } from 'react';
 
 interface CourseCardProps {
@@ -16,6 +16,11 @@ interface CourseCardProps {
     duration_hours?: number;
     difficulty?: string;
     level?: string;
+    price?: number;
+    currency?: string;
+    discount_percentage?: number;
+    sale_price?: number;
+    is_free?: boolean;
     category?: {
       id: string;
       name: string;
@@ -28,7 +33,17 @@ interface CourseCardProps {
   featured?: boolean;
 }
 
-// Tooltip Component with wider popup
+// Price formatting helper
+function formatPrice(price: number = 0, currency: string = 'CAD'): string {
+  return new Intl.NumberFormat('en-CA', {
+    style: 'currency',
+    currency: currency || 'CAD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
+}
+
+// Tooltip Component with responsive popup
 function Tooltip({ children, content }: { children: React.ReactNode; content: React.ReactNode }) {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -43,7 +58,7 @@ function Tooltip({ children, content }: { children: React.ReactNode; content: Re
       
       {isVisible && (
         <div className="absolute z-20 bottom-full left-1/2 transform -translate-x-1/2 mb-2 pointer-events-none">
-          <div className="bg-gray-900 text-white p-4 rounded-lg shadow-xl animate-in slide-in-from-bottom-2 fade-in duration-200 w-80 max-w-none">
+          <div className="bg-gray-900 text-white p-4 rounded-lg shadow-xl animate-in slide-in-from-bottom-2 fade-in duration-200 min-w-[200px] max-w-[600px] w-max">
             <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
               <div className="border-8 border-transparent border-t-gray-900"></div>
             </div>
@@ -68,8 +83,8 @@ export default function CourseCard({ course, featured = false }: CourseCardProps
 
   const handleEnroll = (e: React.MouseEvent) => {
     e.preventDefault();
-    // Add enrollment logic here
-    console.log('Enrolling in course:', course.id);
+    // Start enrollment flow
+    window.location.href = `/enroll?courseId=${course.id}`;
   };
 
   if (featured) {
@@ -102,28 +117,25 @@ export default function CourseCard({ course, featured = false }: CourseCardProps
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             {/* Books */}
             <Tooltip content={
-              <div className="max-h-96 overflow-y-auto">
+              <div>
                 <p className="font-semibold mb-3 text-lg">Required Books ({bookCount})</p>
                 {course.course_books && course.course_books.length > 0 ? (
                   <div>
-                    <ul className="space-y-2">
-                      {course.course_books.slice(0, 15).map((book: any, index: number) => (
+                    <ul className="space-y-1.5">
+                      {course.course_books.map((book: any, index: number) => (
                         <li key={book.id || index} className="flex items-start gap-2">
-                          <span className="text-blue-400 mt-0.5 flex-shrink-0">{index + 1}.</span>
+                          <span className="text-blue-400 flex-shrink-0">{index + 1}.</span>
                           <div className="flex-1">
-                            <p className="font-medium">{book.book?.title || `Book ${index + 1}`}</p>
-                            {book.book?.author && <p className="text-sm text-gray-400">by {book.book.author}</p>}
-                            {book.is_required && <span className="text-xs text-yellow-400 inline-block mt-1">Required</span>}
+                            <p className="font-medium whitespace-normal">
+                              {book.book?.title || `Book ${index + 1}`}
+                              {book.book?.author && <span className="text-sm text-gray-400 font-normal"> — {book.book.author}</span>}
+                            </p>
+                            {book.is_required && <span className="text-xs text-yellow-400">Required</span>}
                           </div>
                         </li>
                       ))}
                     </ul>
-                    {course.course_books.length > 15 && (
-                      <p className="text-sm text-gray-400 mt-3 font-medium">
-                        ...and {course.course_books.length - 15} more books
-                      </p>
-                    )}
-                    <div className="mt-4 pt-3 border-t border-gray-700">
+                    <div className="mt-3 pt-2 border-t border-gray-700">
                       <p className="text-sm text-gray-300">
                         Total: <span className="font-bold text-white">{bookCount}</span> books
                       </p>
@@ -148,19 +160,19 @@ export default function CourseCard({ course, featured = false }: CourseCardProps
 
             {/* Objectives */}
             <Tooltip content={
-              <div className="max-h-96 overflow-y-auto">
+              <div>
                 <p className="font-semibold mb-3 text-lg">Learning Objectives ({objectiveCount})</p>
                 {course.course_objectives && course.course_objectives.length > 0 ? (
                   <div>
                     <ul className="space-y-2">
                       {course.course_objectives.map((obj: any, index: number) => (
                         <li key={obj.id || index} className="flex items-start gap-2">
-                          <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
+                          <span className="text-green-400 flex-shrink-0">✓</span>
                           <p className="flex-1">{obj.objective?.title || obj.objective_text || `Objective ${index + 1}`}</p>
                         </li>
                       ))}
                     </ul>
-                    <div className="mt-4 pt-3 border-t border-gray-700">
+                    <div className="mt-3 pt-2 border-t border-gray-700">
                       <p className="text-sm text-gray-300">
                         Total: <span className="font-bold text-white">{objectiveCount}</span> objectives
                       </p>
@@ -276,6 +288,33 @@ export default function CourseCard({ course, featured = false }: CourseCardProps
                   <p className="font-medium text-gray-900">{course.duration_hours} hours</p>
                 </div>
               )}
+              {/* Price Display */}
+              <div>
+                <p className="text-sm text-gray-500">Price</p>
+                {course.is_free ? (
+                  <p className="font-semibold text-green-600 text-lg">FREE</p>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    {course.discount_percentage && course.discount_percentage > 0 ? (
+                      <>
+                        <p className="font-semibold text-gray-900 text-lg">
+                          {formatPrice(course.sale_price || course.price, course.currency)}
+                        </p>
+                        <p className="text-sm text-gray-500 line-through">
+                          {formatPrice(course.price, course.currency)}
+                        </p>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          -{course.discount_percentage}%
+                        </span>
+                      </>
+                    ) : (
+                      <p className="font-semibold text-gray-900 text-lg">
+                        {formatPrice(course.price, course.currency)}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -283,7 +322,7 @@ export default function CourseCard({ course, featured = false }: CourseCardProps
                 className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg transition-all duration-300 font-medium shadow-sm hover:shadow-md"
               >
                 <UserPlus className="h-4 w-4" />
-                Enroll Now
+                {course.is_free ? 'Start Free' : 'Enroll Now'}
               </button>
               <Link
                 href={`/courses/${course.id}`}
@@ -302,60 +341,87 @@ export default function CourseCard({ course, featured = false }: CourseCardProps
   // Regular Card
   return (
     <div className="group bg-white rounded-lg border border-gray-200 hover:border-blue-500 hover:shadow-lg transition-all duration-300 h-full">
-      <div className="p-6 h-full flex flex-col">
+      <div className="p-5 h-full flex flex-col">
         {/* Header */}
-        <div className="mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            {courseCategory && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-sm">
-                {courseCategory}
-              </span>
-            )}
-            {courseDifficulty && (
-              <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-full">
-                {courseDifficulty}
-              </span>
-            )}
+        <div className="mb-3">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2">
+              {courseCategory && (
+                <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-bold border-2 border-blue-600 text-blue-600">
+                  {courseCategory}
+                </span>
+              )}
+              {courseDifficulty && (
+                <span className="text-xs font-bold text-gray-700 border-2 border-gray-400 px-2 py-1 rounded">
+                  {courseDifficulty}
+                </span>
+              )}
+            </div>
+            {/* Price Badge */}
+            <div className="flex items-center">
+              {course.is_free ? (
+                <span className="inline-flex items-center px-2.5 py-1 border-2 border-green-600 rounded text-xs font-bold text-green-600">
+                  FREE
+                </span>
+              ) : (
+                <div className="flex items-center gap-1">
+                  {course.discount_percentage && course.discount_percentage > 0 ? (
+                    <>
+                      <span className="inline-flex items-center px-2.5 py-1 border-2 border-red-600 rounded text-xs font-bold text-red-600">
+                        {formatPrice(course.sale_price || course.price, course.currency)}
+                      </span>
+                      <span className="text-xs text-gray-400 line-through">
+                        {formatPrice(course.price, course.currency)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-1 border-2 border-gray-700 rounded text-xs font-bold text-gray-700">
+                      {formatPrice(course.price, course.currency)}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-          <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+          <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
             {courseTitle}
           </h3>
         </div>
 
         {/* Quick Stats with Hover */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="grid grid-cols-2 gap-2 mb-3">
           {/* Books */}
           <Tooltip content={
-            <div className="w-full max-h-80 overflow-y-auto">
+            <div className="w-full">
               <p className="font-semibold mb-2">Required Books ({bookCount})</p>
               {course.course_books && course.course_books.length > 0 ? (
                 <div>
-                  <ul className="space-y-1.5">
-                    {course.course_books.slice(0, 10).map((book: any, index: number) => (
+                  <ul className="space-y-1">
+                    {course.course_books.map((book: any, index: number) => (
                       <li key={book.id || index} className="text-sm flex items-start gap-2">
                         <span className="text-blue-400 flex-shrink-0">{index + 1}.</span>
-                        <div className="flex-1">
-                          <span>{book.book?.title || `Book ${index + 1}`}</span>
-                          {book.book?.author && <span className="text-gray-400 text-xs block">by {book.book.author}</span>}
-                        </div>
+                        <span className="flex-1 whitespace-normal">
+                          {book.book?.title || `Book ${index + 1}`}
+                          {book.book?.author && <span className="text-gray-400"> — {book.book.author}</span>}
+                        </span>
                       </li>
                     ))}
                   </ul>
-                  {course.course_books.length > 10 && (
-                    <p className="text-sm text-gray-400 mt-3 pt-2 border-t border-gray-700">
-                      <strong>+{course.course_books.length - 10} more books</strong> (Total: {bookCount})
+                  <div className="mt-2 pt-2 border-t border-gray-700">
+                    <p className="text-sm text-gray-300">
+                      Total: <span className="font-bold text-white">{bookCount}</span> books
                     </p>
-                  )}
+                  </div>
                 </div>
               ) : (
                 <p className="text-sm text-gray-400">No books yet</p>
               )}
             </div>
           }>
-            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded hover:bg-blue-50 transition-colors cursor-pointer">
-              <BookOpen className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-semibold text-gray-900">{bookCount}</span>
-              <span className="text-sm text-gray-600">
+            <div className="flex items-center gap-2 p-2 border-2 border-gray-300 rounded hover:border-blue-600 transition-colors cursor-pointer group/stat">
+              <BookOpen className="h-4 w-4 text-blue-600 font-bold" />
+              <span className="text-sm font-bold text-gray-900 group-hover/stat:text-blue-600">{bookCount}</span>
+              <span className="text-sm font-semibold text-gray-700 group-hover/stat:text-blue-600">
                 {bookCount === 1 ? 'Book' : 'Books'}
               </span>
             </div>
@@ -383,10 +449,10 @@ export default function CourseCard({ course, featured = false }: CourseCardProps
               )}
             </div>
           }>
-            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded hover:bg-green-50 transition-colors cursor-pointer">
-              <Target className="h-4 w-4 text-green-600" />
-              <span className="text-sm font-semibold text-gray-900">{objectiveCount}</span>
-              <span className="text-sm text-gray-600">Goals</span>
+            <div className="flex items-center gap-2 p-2 border-2 border-gray-300 rounded hover:border-green-600 transition-colors cursor-pointer group/stat">
+              <Target className="h-4 w-4 text-green-600 font-bold" />
+              <span className="text-sm font-bold text-gray-900 group-hover/stat:text-green-600">{objectiveCount}</span>
+              <span className="text-sm font-semibold text-gray-700 group-hover/stat:text-green-600">Goals</span>
             </div>
           </Tooltip>
 
@@ -412,10 +478,10 @@ export default function CourseCard({ course, featured = false }: CourseCardProps
               )}
             </div>
           }>
-            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded hover:bg-purple-50 transition-colors cursor-pointer">
-              <Lightbulb className="h-4 w-4 text-purple-600" />
-              <span className="text-sm font-semibold text-gray-900">{methodCount}</span>
-              <span className="text-sm text-gray-600">Methods</span>
+            <div className="flex items-center gap-2 p-2 border-2 border-gray-300 rounded hover:border-purple-600 transition-colors cursor-pointer group/stat">
+              <Lightbulb className="h-4 w-4 text-purple-600 font-bold" />
+              <span className="text-sm font-bold text-gray-900 group-hover/stat:text-purple-600">{methodCount}</span>
+              <span className="text-sm font-semibold text-gray-700 group-hover/stat:text-purple-600">Methods</span>
             </div>
           </Tooltip>
 
@@ -441,23 +507,23 @@ export default function CourseCard({ course, featured = false }: CourseCardProps
               )}
             </div>
           }>
-            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded hover:bg-orange-50 transition-colors cursor-pointer">
-              <Calendar className="h-4 w-4 text-orange-600" />
-              <span className="text-sm font-semibold text-gray-900">{scheduleCount}</span>
-              <span className="text-sm text-gray-600">Schedules</span>
+            <div className="flex items-center gap-2 p-2 border-2 border-gray-300 rounded hover:border-orange-600 transition-colors cursor-pointer group/stat">
+              <Calendar className="h-4 w-4 text-orange-600 font-bold" />
+              <span className="text-sm font-bold text-gray-900 group-hover/stat:text-orange-600">{scheduleCount}</span>
+              <span className="text-sm font-semibold text-gray-700 group-hover/stat:text-orange-600">Schedules</span>
             </div>
           </Tooltip>
         </div>
 
         {/* Description */}
         {course.description && (
-          <p className="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">
+          <p className="text-sm text-gray-600 mb-3 line-clamp-2 flex-grow">
             {course.description}
           </p>
         )}
 
         {/* Footer */}
-        <div className="space-y-3 mt-auto">
+        <div className="space-y-2 mt-auto">
           {/* Instructor and Duration */}
           <div className="flex items-center justify-between text-sm">
             {course.instructor_name && (
@@ -474,17 +540,17 @@ export default function CourseCard({ course, featured = false }: CourseCardProps
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 pt-3 border-t">
+          <div className="flex items-center gap-2 pt-2 border-t">
             <button
               onClick={handleEnroll}
-              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg transition-all duration-300 font-medium text-sm shadow-sm hover:shadow-md"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 border-2 border-green-600 text-green-600 hover:border-green-700 hover:text-green-700 rounded transition-all duration-300 font-bold text-sm"
             >
               <UserPlus className="h-4 w-4" />
-              Enroll
+              {course.is_free ? 'Start' : 'Enroll'}
             </button>
             <Link
               href={`/courses/${course.id}`}
-              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 hover:border-blue-500 text-gray-700 hover:text-blue-600 rounded-lg transition-all duration-300 font-medium text-sm"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 border-2 border-blue-600 text-blue-600 hover:border-blue-700 hover:text-blue-700 rounded transition-all duration-300 font-bold text-sm"
             >
               Details
               <ChevronRight className="h-4 w-4" />

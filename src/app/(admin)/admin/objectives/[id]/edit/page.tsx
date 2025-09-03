@@ -372,7 +372,7 @@ export default function EditObjectivePage() {
               />
             </div>
             <div className="mt-6 flex justify-end gap-3">
-              <Button variant="ghost" onClick={() => setIsCategoryModalOpen(false)}>
+              <Button variant="outline" onClick={() => setIsCategoryModalOpen(false)}>
                 Cancel
               </Button>
               <Button onClick={handleCreateCategory}>

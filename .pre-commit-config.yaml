@@ -1,0 +1,32 @@
+repos:
+  - repo: local
+    hooks:
+      - id: api-structure-check
+        name: Validate API Structure
+        entry: scripts/validate-api-structure.js
+        language: node
+        files: ^src/app/api/.*\.ts$
+        pass_filenames: true
+        
+      - id: no-direct-supabase
+        name: Prevent Direct Supabase Client Usage
+        entry: scripts/check-supabase-usage.js
+        language: node
+        files: ^src/app/(account|admin|public)/.*\.(tsx|ts)$
+        exclude: ^src/app/api/
+        pass_filenames: true
+        
+      - id: service-layer-check
+        name: Ensure Service Layer Usage
+        entry: scripts/validate-service-usage.js
+        language: node
+        files: ^src/app/api/.*\.ts$
+        exclude: ^src/app/api/(auth|public)/
+        pass_filenames: true
+        
+      - id: api-naming-convention
+        name: Check API Naming Convention
+        entry: scripts/check-api-naming.js
+        language: node
+        files: ^src/app/api/.*\.ts$
+        pass_filenames: true

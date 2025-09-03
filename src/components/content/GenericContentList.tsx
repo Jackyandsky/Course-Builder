@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Search, Edit, Trash2, Eye, Package, ChevronUp, ChevronDown, BarChart3, ArrowUpDown, ChevronLeft, ChevronRight, Upload, FileText } from 'lucide-react';
 import { Content, ContentFilters } from '@/types/content';
 import { contentService } from '@/lib/supabase/content';
 import { Button, Card, Badge, Input, Spinner } from '@/components/ui';
+import { ContentPageSkeleton } from '@/components/ui/ContentSkeleton';
 import { cn } from '@/lib/utils';
 import PDFUploadModal from '@/components/content/PDFUploadModal';
 
@@ -17,7 +18,7 @@ interface GenericContentListProps {
 type SortField = 'name' | 'created_at' | 'updated_at' | 'status';
 type SortOrder = 'asc' | 'desc';
 
-export function GenericContentList({ categoryName, categoryId }: GenericContentListProps) {
+export const GenericContentList = memo(function GenericContentList({ categoryName, categoryId }: GenericContentListProps) {
   const router = useRouter();
   const [content, setContent] = useState<Content[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,7 +100,7 @@ export function GenericContentList({ categoryName, categoryId }: GenericContentL
     loadContent();
   }, [categoryName, searchQuery, sortField, sortOrder, currentPage]);
 
-  const loadContent = async () => {
+  const loadContent = useCallback(async () => {
     try {
       const offset = (currentPage - 1) * itemsPerPage;
       const filters: ContentFilters & { sortField?: string; sortOrder?: 'asc' | 'desc' } = {
@@ -114,23 +115,44 @@ export function GenericContentList({ categoryName, categoryId }: GenericContentL
       let count: number;
       
       if (categoryId) {
+        // When we have a specific category ID, use it directly
         data = await contentService.getContent({ ...filters, category_id: categoryId });
         count = await contentService.getContentCount({ 
           category_id: categoryId,
           search: searchQuery 
         });
       } else {
-        data = await contentService.getContentByCategory(categoryName, filters);
-        // Get category to get count
-        const categories = await contentService.getProprietaryProductCategories();
-        const category = categories.find(c => c.name === categoryName);
-        if (category) {
-          count = await contentService.getContentCount({ 
-            category_id: category.id,
-            search: searchQuery 
-          });
-        } else {
-          count = 0;
+        // Try to find the category by name (for backward compatibility)
+        try {
+          // First try to get from content categories
+          const response = await fetch(`/api/categories?type=content&search=${encodeURIComponent(categoryName)}`);
+          const categories = await response.json();
+          const category = categories.find((c: any) => c.name === categoryName);
+          
+          if (category) {
+            data = await contentService.getContent({ ...filters, category_id: category.id });
+            count = await contentService.getContentCount({ 
+              category_id: category.id,
+              search: searchQuery 
+            });
+          } else {
+            // Fallback to old method
+            data = await contentService.getContentByCategory(categoryName, filters);
+            count = 0;
+          }
+        } catch (err) {
+          // Fallback to old method if API fails
+          data = await contentService.getContentByCategory(categoryName, filters);
+          const categories = await contentService.getProprietaryProductCategories();
+          const category = categories.find(c => c.name === categoryName);
+          if (category) {
+            count = await contentService.getContentCount({ 
+              category_id: category.id,
+              search: searchQuery 
+            });
+          } else {
+            count = 0;
+          }
         }
       }
       
@@ -145,7 +167,7 @@ export function GenericContentList({ categoryName, categoryId }: GenericContentL
     } finally {
       setLoading(false);
     }
-  };
+  }, [categoryId, categoryName, searchQuery, sortField, sortOrder, currentPage, itemsPerPage]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -177,11 +199,7 @@ export function GenericContentList({ categoryName, categoryId }: GenericContentL
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spinner size="lg" />
-      </div>
-    );
+    return <ContentPageSkeleton />;
   }
 
   return (
@@ -392,7 +410,7 @@ export function GenericContentList({ categoryName, categoryId }: GenericContentL
                   Edit
                 </Button>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => handleDelete(item.id, item.name)}
                   className="text-red-600 hover:text-red-700"
@@ -419,49 +437,71 @@ export function GenericContentList({ categoryName, categoryId }: GenericContentL
           </Button>
           
           <div className="flex items-center gap-1">
-            {/* First page */}
-            <Button
-              variant={currentPage === 1 ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => goToPage(1)}
-            >
-              1
-            </Button>
-            
-            {/* Show dots if there are many pages */}
-            {currentPage > 3 && <span className="px-2 text-gray-500">...</span>}
-            
-            {/* Pages around current page */}
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              const page = currentPage - 2 + i;
-              if (page > 1 && page < totalPages) {
+            {/* Generate page buttons */}
+            {(() => {
+              const pages = [];
+              const maxVisible = 7; // Maximum number of page buttons to show
+              
+              if (totalPages <= maxVisible) {
+                // Show all pages if total is small
+                for (let i = 1; i <= totalPages; i++) {
+                  pages.push(i);
+                }
+              } else {
+                // Always show first page
+                pages.push(1);
+                
+                // Calculate range around current page
+                let startPage = Math.max(2, currentPage - 2);
+                let endPage = Math.min(totalPages - 1, currentPage + 2);
+                
+                // Adjust range to always show at least 5 pages when possible
+                if (currentPage <= 3) {
+                  endPage = Math.min(5, totalPages - 1);
+                } else if (currentPage >= totalPages - 2) {
+                  startPage = Math.max(totalPages - 4, 2);
+                }
+                
+                // Add dots before range if needed
+                if (startPage > 2) {
+                  pages.push('...');
+                }
+                
+                // Add pages in range
+                for (let i = startPage; i <= endPage; i++) {
+                  pages.push(i);
+                }
+                
+                // Add dots after range if needed
+                if (endPage < totalPages - 1) {
+                  pages.push('...');
+                }
+                
+                // Always show last page
+                pages.push(totalPages);
+              }
+              
+              return pages.map((page, index) => {
+                if (page === '...') {
+                  return (
+                    <span key={`dots-${index}`} className="px-2 text-gray-500">
+                      ...
+                    </span>
+                  );
+                }
+                
                 return (
                   <Button
                     key={page}
                     variant={currentPage === page ? 'primary' : 'ghost'}
                     size="sm"
-                    onClick={() => goToPage(page)}
+                    onClick={() => goToPage(page as number)}
                   >
                     {page}
                   </Button>
                 );
-              }
-              return null;
-            })}
-            
-            {/* Show dots if there are many pages */}
-            {currentPage < totalPages - 2 && <span className="px-2 text-gray-500">...</span>}
-            
-            {/* Last page */}
-            {totalPages > 1 && (
-              <Button
-                variant={currentPage === totalPages ? 'primary' : 'ghost'}
-                size="sm"
-                onClick={() => goToPage(totalPages)}
-              >
-                {totalPages}
-              </Button>
-            )}
+              });
+            })()}
           </div>
           
           <Button
@@ -487,4 +527,4 @@ export function GenericContentList({ categoryName, categoryId }: GenericContentL
       />
     </div>
   );
-}
+});

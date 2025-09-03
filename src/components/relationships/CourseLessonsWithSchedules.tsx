@@ -19,49 +19,116 @@ import {
 
 interface CourseLessonsWithSchedulesProps {
   courseId: string;
+  preloadedData?: any; // Pre-loaded course data
 }
 
-export function CourseLessonsWithSchedules({ courseId }: CourseLessonsWithSchedulesProps) {
+export function CourseLessonsWithSchedules({ courseId, preloadedData }: CourseLessonsWithSchedulesProps) {
   const router = useRouter();
   const [schedules, setSchedules] = useState<any[]>([]);
   const [selectedSchedule, setSelectedSchedule] = useState<string | null>(null);
   const [lessons, setLessons] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [allLessons, setAllLessons] = useState<any[]>([]); // Store all preloaded lessons
+  const [loading, setLoading] = useState(!preloadedData);
   const [lessonsLoading, setLessonsLoading] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  // Storage key for selected schedule
+  const STORAGE_KEY = `selected-schedule-${courseId}`;
 
   useEffect(() => {
     loadSchedules();
-  }, [courseId]);
+  }, [courseId, preloadedData]);
 
   useEffect(() => {
     if (selectedSchedule) {
-      loadLessonsForSchedule(selectedSchedule);
+      if (allLessons.length > 0) {
+        // Use preloaded lessons - filter by selected schedule
+        console.log('[CourseLessonsWithSchedules] Using preloaded lessons - NO API calls');
+        const scheduleSpecificLessons = allLessons.filter(lesson => lesson.schedule_id === selectedSchedule);
+        setLessons(scheduleSpecificLessons);
+      } else {
+        // Fallback to API call if no preloaded data
+        loadLessonsForSchedule(selectedSchedule);
+      }
+      // Save selected schedule to sessionStorage
+      sessionStorage.setItem(STORAGE_KEY, selectedSchedule);
     } else {
       setLessons([]);
     }
-  }, [selectedSchedule]);
+  }, [selectedSchedule, allLessons]);
 
   const loadSchedules = async () => {
-    setLoading(true);
-    try {
-      const courseSchedules = await scheduleService.getSchedules({ course_id: courseId });
+    if (preloadedData && !dataLoaded) {
+      console.log('[CourseLessonsWithSchedules] Using preloaded data - NO API calls needed');
+      
+      // Use preloaded course schedules immediately
+      const courseSchedules = preloadedData.schedules || [];
       setSchedules(courseSchedules);
       
-      // Auto-select first schedule if available
-      if (courseSchedules.length > 0) {
+      // Also load all preloaded lessons
+      const courseLessons = preloadedData.lessons || [];
+      setAllLessons(courseLessons);
+      
+      setDataLoaded(true);
+      setLoading(false);
+      
+      // Try to restore previously selected schedule from sessionStorage
+      const savedScheduleId = sessionStorage.getItem(STORAGE_KEY);
+      
+      if (savedScheduleId && courseSchedules.some(s => s.id === savedScheduleId)) {
+        // Restore saved selection if it still exists
+        setSelectedSchedule(savedScheduleId);
+      } else if (courseSchedules.length > 0) {
+        // Auto-select first schedule if no saved selection or saved doesn't exist
         setSelectedSchedule(courseSchedules[0].id);
       }
-    } catch (error) {
-      console.error('Failed to load schedules:', error);
-    } finally {
-      setLoading(false);
+      
+    } else if (!preloadedData && !dataLoaded) {
+      // Fallback to original loading method if no preloaded data
+      console.log('[CourseLessonsWithSchedules] No preloaded data, using API calls');
+      setLoading(true);
+      try {
+        const courseSchedules = await scheduleService.getSchedules({ course_id: courseId });
+        setSchedules(courseSchedules);
+        setDataLoaded(true);
+        
+        // Try to restore previously selected schedule from sessionStorage
+        const savedScheduleId = sessionStorage.getItem(STORAGE_KEY);
+        
+        if (savedScheduleId && courseSchedules.some(s => s.id === savedScheduleId)) {
+          // Restore saved selection if it still exists
+          setSelectedSchedule(savedScheduleId);
+        } else if (courseSchedules.length > 0) {
+          // Auto-select first schedule if no saved selection or saved doesn't exist
+          setSelectedSchedule(courseSchedules[0].id);
+        }
+      } catch (error) {
+        console.error('Failed to load schedules:', error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   const loadLessonsForSchedule = async (scheduleId: string) => {
     setLessonsLoading(true);
     try {
-      const scheduleLessons = await lessonService.getScheduleLessons(scheduleId);
+      // Use the course lessons API directly with schedule filter for better performance
+      const response = await fetch(`/api/courses/${courseId}/lessons?schedule_id=${scheduleId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch lessons');
+      }
+
+      const data = await response.json();
+      const scheduleLessons = data.lessons || [];
+
       // Sort lessons by date and time
       scheduleLessons.sort((a, b) => {
         const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
@@ -123,12 +190,12 @@ export function CourseLessonsWithSchedules({ courseId }: CourseLessonsWithSchedu
           No schedules yet
         </h3>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          Create a teaching schedule for this course to see lessons
+          Create a teaching schedule for this course to see sessions
         </p>
         <Button 
           className="mt-4" 
           size="sm"
-          onClick={() => router.push(`/schedules/new?courseId=${courseId}`)}
+          onClick={() => router.push(`/admin/schedules/new?courseId=${courseId}`)}
         >
           <Plus className="h-4 w-4 mr-2" />
           Create Schedule
@@ -201,10 +268,10 @@ export function CourseLessonsWithSchedules({ courseId }: CourseLessonsWithSchedu
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium">
-              Lessons from {schedules.find(s => s.id === selectedSchedule)?.name}
+              Sessions from {schedules.find(s => s.id === selectedSchedule)?.name}
             </h3>
             {lessons.length > 0 && (
-              <span className="text-sm text-gray-500">{lessons.length} lesson{lessons.length !== 1 ? 's' : ''}</span>
+              <span className="text-sm text-gray-500">{lessons.length} session{lessons.length !== 1 ? 's' : ''}</span>
             )}
           </div>
 
@@ -215,7 +282,7 @@ export function CourseLessonsWithSchedules({ courseId }: CourseLessonsWithSchedu
           ) : lessons.length === 0 ? (
             <div className="text-center py-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <Clock className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-600 dark:text-gray-400">No lessons found for this schedule</p>
+              <p className="text-gray-600 dark:text-gray-400">No sessions found for this schedule</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -223,14 +290,14 @@ export function CourseLessonsWithSchedules({ courseId }: CourseLessonsWithSchedu
                 <Card
                   key={lesson.id}
                   className="hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => router.push(`/lessons/${lesson.id}/edit`)}
+                  onClick={() => router.push(`/admin/lessons/${lesson.id}/edit`)}
                 >
                   <Card.Content className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <h4 className="font-medium">
-                            Lesson {lesson.lesson_number}: {lesson.topic}
+                            Session {lesson.lesson_number}: {lesson.topic}
                           </h4>
                           <Badge variant={getStatusColor(lesson.status)} size="sm">
                             {lesson.status}

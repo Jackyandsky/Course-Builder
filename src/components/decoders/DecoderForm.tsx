@@ -161,7 +161,7 @@ export function DecoderForm({ initialData }: DecoderFormProps) {
       <div className="mb-8">
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => router.back()}
           leftIcon={<ArrowLeft className="h-4 w-4" />}
@@ -446,7 +446,7 @@ export function DecoderForm({ initialData }: DecoderFormProps) {
           />
         </div>
         <div className="mt-6 flex justify-end gap-3">
-          <Button variant="ghost" onClick={() => setIsCategoryModalOpen(false)}>
+          <Button variant="outline" onClick={() => setIsCategoryModalOpen(false)}>
             Cancel
           </Button>
           <Button onClick={handleCreateCategory}>

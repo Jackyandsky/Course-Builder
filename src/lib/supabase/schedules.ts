@@ -1,6 +1,7 @@
-// src/lib/supabase/schedules.ts
+// src/lib/getSupabase()/schedules.ts
 
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseClient } from '@/lib/supabase';
+import type { Database } from '@/types/database';
 import {
   Schedule,
   Lesson,
@@ -10,7 +11,7 @@ import {
 import { Course } from '@/types/database';
 import { SHARED_USER_ID } from '@/lib/constants/shared';
 
-const supabase = createClientComponentClient();
+const getSupabase = () => createSupabaseClient();
 
 export interface ScheduleFilters {
   course_id?: string;
@@ -24,6 +25,21 @@ export interface CreateScheduleData
 
 export interface UpdateScheduleData extends Partial<CreateScheduleData> {
   id: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    perPage: number;
+    total: number;
+    totalPages: number;
+  };
+  stats?: {
+    total: number;
+    active: number;
+    inactive: number;
+  };
 }
 
 /**
@@ -88,7 +104,7 @@ async function generateRecurringLessons(
   }
 
   if (lessons.length > 0) {
-    const { error } = await supabase.from('lessons').insert(lessons);
+    const { error } = await getSupabase().from('lessons').insert(lessons);
     if (error) throw error;
   }
 }
@@ -102,7 +118,7 @@ export const scheduleService = {
     if (!schedule) throw new Error('Schedule not found');
     
     // Delete existing auto-generated lessons for this schedule
-    await supabase
+    await getSupabase()
       .from('lessons')
       .delete()
       .eq('schedule_id', scheduleId)
@@ -117,59 +133,121 @@ export const scheduleService = {
    * Get all schedules with optional filters.
    */
   async getSchedules(filters: ScheduleFilters = {}) {
-    let query = supabase
-      .from('schedules')
-      .select(
+    try {
+      // If course_id is provided, use the course-specific API route
+      if (filters.course_id) {
+        const response = await fetch(`/api/courses/${filters.course_id}/schedules`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to fetch schedules');
+        }
+
+        const data = await response.json();
+        return data.schedules || [];
+      }
+
+      // For general schedules, we still need to use direct Supabase
+      // TODO: Create a general schedules API route
+      let query = getSupabase()
+        .from('schedules')
+        .select(
+          `
+          *,
+          course:courses(id, title),
+          lessons(count)
         `
-        *,
-        course:courses(id, title),
-        lessons(count)
-      `
-      )
-      .order('created_at', { ascending: false });
+        )
+        .order('created_at', { ascending: false });
 
-    if (filters.course_id) {
-      query = query.eq('course_id', filters.course_id);
-    }
-    if (filters.is_active !== undefined) {
-      query = query.eq('is_active', filters.is_active);
-    }
-    if (filters.user_id) {
-      query = query.eq('user_id', filters.user_id);
-    }
-    if (filters.search) {
-      query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-    }
+      if (filters.is_active !== undefined) {
+        query = query.eq('is_active', filters.is_active);
+      }
+      if (filters.user_id) {
+        query = query.eq('user_id', filters.user_id);
+      }
+      if (filters.search) {
+        query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+      }
 
-    const { data, error } = await query;
-    if (error) throw error;
-    return data;
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching schedules:', error);
+      throw error;
+    }
   },
 
   /**
    * Get a single schedule by its ID.
    */
   async getSchedule(id: string) {
-    const { data, error } = await supabase
-      .from('schedules')
-      .select(
+    try {
+      // Use API route for better error handling and auth
+      const response = await fetch(`/api/schedules/${id}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to fetch schedule: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      // Fallback to direct Supabase call if API fails
+      console.warn('API call failed, falling back to direct Supabase:', error);
+      
+      // Use separate queries to avoid relationship issues
+      const { data: schedule, error: scheduleError } = await getSupabase()
+        .from('schedules')
+        .select(
+          `
+          *,
+          course:courses(*)
         `
-        *,
-        course:courses(*),
-        lessons(*)
-      `
-      )
-      .eq('id', id)
-      .single();
-    if (error) throw error;
-    return data;
+        )
+        .eq('id', id)
+        .single();
+      
+      if (scheduleError) throw scheduleError;
+      
+      // Get lessons separately
+      const { data: lessons, error: lessonsError } = await getSupabase()
+        .from('lessons')
+        .select('*')
+        .eq('schedule_id', id)
+        .order('date', { ascending: true })
+        .order('start_time', { ascending: true });
+      
+      if (lessonsError) {
+        console.error('Error fetching lessons:', lessonsError);
+      }
+      
+      return {
+        ...schedule,
+        lessons: lessons || []
+      };
+    }
   },
 
   /**
    * Create a new schedule and generate recurring lessons if applicable.
    */
   async createSchedule(scheduleData: CreateScheduleData) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('schedules')
       .insert({ ...scheduleData, user_id: SHARED_USER_ID })
       .select()
@@ -188,7 +266,7 @@ export const scheduleService = {
    * Update an existing schedule.
    */
   async updateSchedule(id: string, scheduleData: Partial<UpdateScheduleData>) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('schedules')
       .update({ ...scheduleData, updated_at: new Date().toISOString() })
       .eq('id', id)
@@ -202,7 +280,7 @@ export const scheduleService = {
    * Get all lessons for a specific schedule
    */
   async getScheduleLessons(scheduleId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('lessons')
       .select(`
         *,
@@ -239,7 +317,7 @@ export const scheduleService = {
    * Delete a schedule and its associated lessons.
    */
   async deleteSchedule(id: string) {
-    const { error } = await supabase.from('schedules').delete().eq('id', id);
+    const { error } = await getSupabase().from('schedules').delete().eq('id', id);
     if (error) throw error;
   },
 
@@ -263,6 +341,50 @@ export const scheduleService = {
         className: getLessonClassName(lesson.status)
       };
     });
+  },
+
+  // Get optimized admin schedules list - lightweight for performance
+  async getAdminSchedulesList(filters: ScheduleFilters & { page?: number; perPage?: number; course_ids?: string[] } = {}): Promise<PaginatedResponse<Schedule>> {
+    try {
+      console.log('[ScheduleService] Getting admin schedules list with filters:', filters);
+      const startTime = Date.now();
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (filters.search) params.append('search', filters.search);
+      if (filters.is_active !== undefined) params.append('is_active', String(filters.is_active));
+      if (filters.course_ids && filters.course_ids.length > 0) {
+        // Send course IDs as comma-separated string
+        params.append('course_ids', filters.course_ids.join(','));
+      }
+      params.append('page', String(filters.page || 1));
+      params.append('perPage', String(filters.perPage || 20));
+      
+      // Use optimized admin-list endpoint
+      const response = await fetch(`/api/schedules/admin-list?${params.toString()}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Admin schedules list API error:', error);
+        throw new Error(error.error || 'Failed to fetch admin schedules list');
+      }
+      
+      const result = await response.json();
+      const endTime = Date.now();
+      
+      console.log(`[ScheduleService] Admin schedules list loaded in ${endTime - startTime}ms (API: ${result.loadTime}ms)`);
+      
+      return result;
+    } catch (error) {
+      console.error('Error fetching admin schedules list:', error);
+      throw error;
+    }
   },
 };
 

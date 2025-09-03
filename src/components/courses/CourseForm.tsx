@@ -31,9 +31,24 @@ export function CourseForm({ initialData }: CourseFormProps) {
     description: initialData?.description || '',
     category_id: initialData?.category_id || '',
     status: initialData?.status || 'draft' as CourseStatus,
-    difficulty: initialData?.difficulty || 'beginner' as DifficultyLevel,
+    difficulty: initialData?.difficulty || 'basic' as DifficultyLevel,
+    duration_hours: initialData?.duration_hours || undefined,
     prerequisites: initialData?.prerequisites || [],
     tags: initialData?.tags || [],
+    is_public: initialData?.is_public || false,
+    public_slug: initialData?.public_slug || '',
+    thumbnail_url: initialData?.thumbnail_url || '',
+    price: initialData?.price || 7000,
+    currency: initialData?.currency || 'USD',
+    discount_percentage: initialData?.discount_percentage || 0,
+    sale_price: initialData?.sale_price || undefined,
+    is_free: initialData?.is_free || false,
+    stripe_product_id: initialData?.stripe_product_id || '',
+    stripe_price_id: initialData?.stripe_price_id || '',
+    show_on_menu: initialData?.show_on_menu || false,
+    show_on_homepage: initialData?.show_on_homepage || false,
+    menu_order: initialData?.menu_order || 0,
+    homepage_order: initialData?.homepage_order || 0,
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -83,8 +98,31 @@ export function CourseForm({ initialData }: CourseFormProps) {
     try {
       setLoading(true);
       
+      // Clean the form data - convert empty strings to null/undefined
       const courseData = {
-        ...formData,
+        title: formData.title,
+        short_description: formData.short_description || null,
+        description: formData.description || null,
+        category_id: formData.category_id || null,
+        status: formData.status,
+        difficulty: formData.difficulty,
+        duration_hours: formData.duration_hours || null,
+        prerequisites: formData.prerequisites.length > 0 ? formData.prerequisites : null,
+        tags: formData.tags.length > 0 ? formData.tags : null,
+        is_public: formData.is_public,
+        public_slug: formData.public_slug || null,
+        thumbnail_url: formData.thumbnail_url || null,
+        price: formData.price,
+        currency: formData.currency,
+        discount_percentage: formData.discount_percentage,
+        sale_price: formData.sale_price || null,
+        is_free: formData.is_free,
+        stripe_product_id: formData.stripe_product_id || null,
+        stripe_price_id: formData.stripe_price_id || null,
+        show_on_menu: formData.show_on_menu,
+        show_on_homepage: formData.show_on_homepage,
+        menu_order: formData.menu_order,
+        homepage_order: formData.homepage_order,
       };
       
       if (isEditing) {
@@ -92,14 +130,17 @@ export function CourseForm({ initialData }: CourseFormProps) {
           id: initialData.id,
           ...courseData,
         } as UpdateCourseData);
+        // Redirect to detail page after update
+        router.push(`/admin/courses/${initialData.id}`);
       } else {
-        await courseService.createCourse(courseData as CreateCourseData);
+        const newCourse = await courseService.createCourse(courseData as CreateCourseData);
+        // Redirect to detail page of newly created course
+        router.push(`/admin/courses/${newCourse.id}`);
       }
-      
-      router.push('/admin/courses');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save course:', error);
-      setErrors({ submit: 'Failed to save course. Please try again.' });
+      const errorMessage = error?.message || 'Failed to save course. Please try again.';
+      setErrors({ submit: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -171,10 +212,9 @@ export function CourseForm({ initialData }: CourseFormProps) {
   ];
 
   const difficultyOptions = [
-    { value: 'beginner', label: 'Level 1' },
-    { value: 'intermediate', label: 'Level 2' },
-    { value: 'advanced', label: 'Level 3' },
-    { value: 'expert', label: 'Level 4' },
+    { value: 'basic', label: 'Basic' },
+    { value: 'standard', label: 'Standard' },
+    { value: 'premium', label: 'Premium' },
   ];
 
   return (
@@ -183,7 +223,7 @@ export function CourseForm({ initialData }: CourseFormProps) {
       <div className="mb-8">
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => router.push('/admin/courses')}
           leftIcon={<ArrowLeft className="h-4 w-4" />}
@@ -237,8 +277,8 @@ export function CourseForm({ initialData }: CourseFormProps) {
                 rows={6}
               />
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="lg:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Category
                   </label>
@@ -264,7 +304,7 @@ export function CourseForm({ initialData }: CourseFormProps) {
                   </div>
                 </div>
                 
-                <div className="min-w-0">
+                <div>
                   <Select
                     label="Status"
                     fullWidth
@@ -274,9 +314,9 @@ export function CourseForm({ initialData }: CourseFormProps) {
                   />
                 </div>
                 
-                <div className="min-w-0">
+                <div>
                   <Select
-                    label="Level"
+                    label="Difficulty"
                     fullWidth
                     value={formData.difficulty}
                     onChange={(e) => setFormData({ ...formData, difficulty: e.target.value as DifficultyLevel })}
@@ -321,7 +361,7 @@ export function CourseForm({ initialData }: CourseFormProps) {
                       <span className="flex-1 text-sm">{prerequisite}</span>
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => handleRemovePrerequisite(index)}
                       >
@@ -382,6 +422,165 @@ export function CourseForm({ initialData }: CourseFormProps) {
           </Card.Content>
         </Card>
 
+        {/* Visibility Settings */}
+        <Card>
+          <Card.Header>
+            <h2 className="text-lg font-semibold">Visibility Settings</h2>
+          </Card.Header>
+          <Card.Content>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="is_public"
+                    checked={formData.is_public}
+                    onChange={(e) => setFormData({ ...formData, is_public: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="is_public" className="text-sm font-medium text-gray-700">
+                    Public Course
+                  </label>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="show_on_menu"
+                    checked={formData.show_on_menu}
+                    onChange={(e) => setFormData({ ...formData, show_on_menu: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="show_on_menu" className="text-sm font-medium text-gray-700">
+                    Show in Menu
+                  </label>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="show_on_homepage"
+                    checked={formData.show_on_homepage}
+                    onChange={(e) => setFormData({ ...formData, show_on_homepage: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="show_on_homepage" className="text-sm font-medium text-gray-700">
+                    Show on Homepage
+                  </label>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  type="number"
+                  label="Menu Order"
+                  value={formData.menu_order}
+                  onChange={(e) => setFormData({ ...formData, menu_order: parseInt(e.target.value) || 0 })}
+                  helperText="Display order in menu"
+                  disabled={!formData.show_on_menu}
+                />
+                
+                <Input
+                  type="number"
+                  label="Homepage Order"
+                  value={formData.homepage_order}
+                  onChange={(e) => setFormData({ ...formData, homepage_order: parseInt(e.target.value) || 0 })}
+                  helperText="Display order on homepage"
+                  disabled={!formData.show_on_homepage}
+                />
+              </div>
+            </div>
+          </Card.Content>
+        </Card>
+
+        {/* Pricing Settings */}
+        <Card>
+          <Card.Header>
+            <h2 className="text-lg font-semibold">Pricing Settings</h2>
+          </Card.Header>
+          <Card.Content>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="is_free"
+                  checked={formData.is_free}
+                  onChange={(e) => setFormData({ ...formData, is_free: e.target.checked })}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="is_free" className="text-sm font-medium text-gray-700">
+                  Free Course
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  type="number"
+                  label="Price"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                  placeholder="e.g., 7000"
+                  disabled={formData.is_free}
+                />
+                
+                <Select
+                  label="Currency"
+                  value={formData.currency}
+                  onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                  disabled={formData.is_free}
+                >
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="GBP">GBP</option>
+                  <option value="CAD">CAD</option>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  type="number"
+                  label="Discount Percentage"
+                  value={formData.discount_percentage}
+                  onChange={(e) => setFormData({ ...formData, discount_percentage: parseInt(e.target.value) || 0 })}
+                  placeholder="e.g., 10"
+                  helperText="Percentage discount to apply"
+                  disabled={formData.is_free}
+                />
+                
+                <Input
+                  type="number"
+                  label="Sale Price"
+                  value={formData.sale_price || ''}
+                  onChange={(e) => setFormData({ ...formData, sale_price: parseFloat(e.target.value) || undefined })}
+                  placeholder="e.g., 6300"
+                  helperText="Override calculated sale price"
+                  disabled={formData.is_free}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Stripe Product ID"
+                  value={formData.stripe_product_id}
+                  onChange={(e) => setFormData({ ...formData, stripe_product_id: e.target.value })}
+                  placeholder="prod_..."
+                  helperText="Stripe product identifier"
+                  disabled={formData.is_free}
+                />
+                
+                <Input
+                  label="Stripe Price ID"
+                  value={formData.stripe_price_id}
+                  onChange={(e) => setFormData({ ...formData, stripe_price_id: e.target.value })}
+                  placeholder="price_..."
+                  helperText="Stripe price identifier"
+                  disabled={formData.is_free}
+                />
+              </div>
+            </div>
+          </Card.Content>
+        </Card>
+
         {/* Actions */}
         <div className="flex justify-end gap-3">
           <Button
@@ -424,7 +623,7 @@ export function CourseForm({ initialData }: CourseFormProps) {
           />
         </div>
         <div className="mt-6 flex justify-end gap-3">
-          <Button variant="ghost" onClick={() => setIsCategoryModalOpen(false)}>
+          <Button variant="outline" onClick={() => setIsCategoryModalOpen(false)}>
             Cancel
           </Button>
           <Button onClick={handleCreateCategory}>

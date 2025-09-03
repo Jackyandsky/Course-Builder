@@ -4,6 +4,7 @@ import React from 'react';
 import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from './Button';
+import { Select } from './Select';
 
 export interface PaginationProps {
   currentPage: number;
@@ -12,6 +13,9 @@ export interface PaginationProps {
   showFirstLast?: boolean;
   maxVisible?: number;
   className?: string;
+  pageSize?: number;
+  onPageSizeChange?: (size: number) => void;
+  pageSizeOptions?: number[];
 }
 
 export const Pagination: React.FC<PaginationProps> = ({
@@ -21,6 +25,9 @@ export const Pagination: React.FC<PaginationProps> = ({
   showFirstLast = true,
   maxVisible = 7,
   className,
+  pageSize,
+  onPageSizeChange,
+  pageSizeOptions = [12, 24, 48, 96],
 }) => {
   const generatePageNumbers = () => {
     const pages: (number | string)[] = [];
@@ -65,87 +72,104 @@ export const Pagination: React.FC<PaginationProps> = ({
 
   return (
     <nav
-      className={cn('flex items-center justify-center space-x-1', className)}
+      className={cn('flex items-center justify-center gap-4 flex-wrap', className)}
       aria-label="Pagination"
     >
-      {showFirstLast && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onPageChange(1)}
-          disabled={currentPage === 1}
-          aria-label="Go to first page"
-        >
-          First
-        </Button>
-      )}
-      
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        aria-label="Go to previous page"
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
-      
       <div className="flex items-center space-x-1">
-        {pageNumbers.map((page, index) => {
-          if (page === '...') {
-            return (
-              <span
-                key={`ellipsis-${index}`}
-                className="px-3 py-1 text-gray-400"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </span>
-            );
-          }
-          
-          const pageNumber = page as number;
-          const isActive = pageNumber === currentPage;
-          
-          return (
-            <Button
-              key={pageNumber}
-              variant={isActive ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => onPageChange(pageNumber)}
-              aria-label={`Go to page ${pageNumber}`}
-              aria-current={isActive ? 'page' : undefined}
-              className={cn(
-                'min-w-[2rem]',
-                isActive && 'pointer-events-none'
-              )}
+        {pageSize && onPageSizeChange && (
+          <div className="flex items-center gap-2 mr-4">
+            <span className="text-sm text-gray-600">Show:</span>
+            <Select
+              value={pageSize.toString()}
+              onChange={(e) => onPageSizeChange(parseInt(e.target.value))}
+              className="w-20"
             >
-              {pageNumber}
-            </Button>
-          );
-        })}
-      </div>
-      
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        aria-label="Go to next page"
-      >
-        <ChevronRight className="h-4 w-4" />
-      </Button>
-      
-      {showFirstLast && (
+              {pageSizeOptions.map(size => (
+                <option key={size} value={size.toString()}>{size}</option>
+              ))}
+            </Select>
+          </div>
+        )}
+        
+        {showFirstLast && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(1)}
+            disabled={currentPage === 1}
+            aria-label="Go to first page"
+          >
+            First
+          </Button>
+        )}
+        
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
-          onClick={() => onPageChange(totalPages)}
-          disabled={currentPage === totalPages}
-          aria-label="Go to last page"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          aria-label="Go to previous page"
         >
-          Last
+          <ChevronLeft className="h-4 w-4" />
         </Button>
-      )}
+        
+        <div className="flex items-center space-x-1">
+          {pageNumbers.map((page, index) => {
+            if (page === '...') {
+              return (
+                <span
+                  key={`ellipsis-${index}`}
+                  className="px-3 py-1 text-gray-400"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </span>
+              );
+            }
+            
+            const pageNumber = page as number;
+            const isActive = pageNumber === currentPage;
+            
+            return (
+              <Button
+                key={pageNumber}
+                variant={isActive ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => onPageChange(pageNumber)}
+                aria-label={`Go to page ${pageNumber}`}
+                aria-current={isActive ? 'page' : undefined}
+                className={cn(
+                  'min-w-[2rem]',
+                  isActive && 'pointer-events-none'
+                )}
+              >
+                {pageNumber}
+              </Button>
+            );
+          })}
+        </div>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          aria-label="Go to next page"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        
+        {showFirstLast && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(totalPages)}
+            disabled={currentPage === totalPages}
+            aria-label="Go to last page"
+          >
+            Last
+          </Button>
+        )}
+      </div>
     </nav>
   );
 };

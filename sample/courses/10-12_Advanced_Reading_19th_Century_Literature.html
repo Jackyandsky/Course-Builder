@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammaticos Reading & Writing Foundational Course</title>
+    <style>
+        /* Apple-inspired styles with tablet optimization */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #1d1d1f;
+            background-color: #fbfbfd;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 28px;
+            font-weight: 500;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 21px;
+            font-weight: 500;
+            margin-top: 30px;
+        }
+        p {
+            font-size: 17px;
+            color: #333;
+        }
+        .tagline {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .book {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            touch-action: manipulation;
+        }
+        .book:hover, .book:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .book h3 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .book p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .approach {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .feature h3 {
+            font-size: 20px;
+            margin-top: 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        /* Tablet-specific optimizations */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                width: 94%;
+                padding: 15px;
+            }
+            
+            header {
+                padding: 30px 0;
+            }
+            
+            h1 {
+                font-size: 38px;
+            }
+            
+            h2 {
+                font-size: 26px;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature {
+                padding: 20px;
+            }
+        }
+        
+        /* For landscape orientation on tablets */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Improved touch target sizes for tablet */
+        @media (pointer: coarse) {
+            .book, .feature {
+                min-height: 100px;
+            }
+            
+            .book h3, .feature h3 {
+                margin-bottom: 15px;
+            }
+            
+            button, a {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Level 10-12 Advanced Reading: 19th Century Literature</h1>
+        </header>
+
+        <h2>Course Overview</h2>
+        <p>This advanced course for levels 10-12 provides an in-depth survey of influential literature from the 19th century. Students will explore canonical works by authors such as Wilde, Stoker, Hawthorne, Brontë, Dickens, Crane, Gaskell, Dostoevsky, and Conrad. The course emphasizes understanding these texts within their historical context, including the legacy of the French Revolution, shifting social ideas, class structures, and the rise of literary movements like Romanticism, Gothic fiction, and Realism. Critical analysis, thematic exploration, and vocabulary development are central to the curriculum.</p>
+
+        <h2>Literary Explorations</h2>
+        <div class="grid">
+            <div class="book">
+                <h3>The Picture of Dorian Gray</h3>
+                <p>Oscar Wilde</p>
+            </div>
+            <div class="book">
+                <h3>Dracula</h3>
+                <p>Bram Stoker</p>
+            </div>
+            <div class="book">
+                <h3>The Scarlet Letter</h3>
+                <p>Nathaniel Hawthorne</p>
+            </div>
+            <div class="book">
+                <h3>Jane Eyre</h3>
+                <p>Charlotte Brontë</p>
+            </div>
+            <div class="book">
+                <h3>A Tale of Two Cities</h3>
+                <p>Charles Dickens</p>
+            </div>
+            <div class="book">
+                <h3>The Red Badge of Courage</h3>
+                <p>Stephen Crane</p>
+            </div>
+            <div class="book">
+                <h3>North and South</h3>
+                <p>Elizabeth Gaskell</p>
+            </div>
+            <div class="book">
+                <h3>Crime and Punishment</h3>
+                <p>Fyodor Dostoevsky</p>
+            </div>
+            <div class="book">
+                <h3>Wuthering Heights</h3>
+                <p>Emily Brontë</p>
+            </div>
+            <div class="book">
+                <h3>Heart of Darkness</h3>
+                <p>Joseph Conrad</p>
+            </div>
+        </div>
+
+        <h2>Educational Approach</h2>
+        <div class="approach">
+            <div class="feature">
+                <h3>Contextual Literary Analysis</h3>
+                <p>Students will analyze texts by considering 19th-century historical trends, social issues (e.g., Puritan society, Industrial Revolution, Victorian values, colonialism), and literary movements. Emphasis is placed on art, ethics, morality, feminism, and the Bildungsroman.</p>
+            </div>
+            <div class="feature">
+                <h3>5/5/5 Essay Writing & Critical Responses</h3>
+                <p>Development of analytical writing through the 5/5/5 essay format and other written responses. Students will address complex thematic questions, compare characters, and analyze literary techniques like irony and symbolism.</p>
+            </div>
+            <div class="feature">
+                <h3>LEX Vocabulary and Poetic Analysis</h3>
+                <p>Comprehensive vocabulary building using the LEX curriculum (Letters A-Z) and contextual words from the texts. The course also includes analysis of 19th-century poetry, focusing on poetic elements and themes relevant to the era.</p>
+            </div>
+        </div>
+
+        <h2>Curriculum Structure</h2>
+        <p>The 30-session program is organized into thematic units, each focusing on 1-2 major novels over approximately 2-3 weeks per novel, totaling ten core texts. Weekly sessions involve reading (average 100-150 pages), LEX vocabulary quizzes, and in-depth discussions of "Questions to Ponder" related to themes, characterization (e.g., anti-heroes, heroines), and literary devices. Students will complete 5/5/5 essays, shorter research responses (e.g., on the Faust myth, 19th C. feminism), and engage with supplementary materials such as articles on literary criticism (e.g., "Crane’s Realistic Treatment of War"), historical context (e.g., "The Industrial Revolution"), and poetry packages (Tennyson, Arnold, Rossettis, Brownings, Kipling, Keats). The course culminates in a final essay analyzing a chosen short story, poem, or essay from the period.</p>
+
+        <footer>
+            <p>I GRAMMATICOS PLATFORM SOLUTION © 2020</p>
+            <p>Confidential & Proprietary</p>
+        </footer>
+    </div>
+</body>
+</html>

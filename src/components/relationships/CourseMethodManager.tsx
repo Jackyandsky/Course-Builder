@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { methodService } from '@/lib/supabase/methods';
 import { Button } from '@/components/ui/Button';
@@ -20,37 +20,77 @@ import {
 
 interface CourseMethodManagerProps {
   courseId: string;
+  preloadedData?: any; // Pre-loaded course data
   onUpdate?: () => void;
 }
 
-export function CourseMethodManager({ courseId, onUpdate }: CourseMethodManagerProps) {
+export function CourseMethodManager({ courseId, preloadedData, onUpdate }: CourseMethodManagerProps) {
   const router = useRouter();
   const [methods, setMethods] = useState<any[]>([]);
   const [courseMethods, setCourseMethods] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!preloadedData);
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [adding, setAdding] = useState(false);
   const [selectedMethods, setSelectedMethods] = useState<string[]>([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  
+  // Cache methods to avoid repeated fetching
+  const methodsCache = useRef<{ data: any[], timestamp: number } | null>(null);
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
   useEffect(() => {
     loadData();
-  }, [courseId]);
+  }, [courseId, preloadedData]);
 
   const loadData = async () => {
-    setLoading(true);
+    if (preloadedData && !dataLoaded) {
+      console.log('[CourseMethod] Using preloaded data - NO API calls needed');
+      
+      // Use preloaded course methods immediately
+      setCourseMethods(preloadedData.methods || []);
+      setDataLoaded(true);
+      setLoading(false);
+      
+      // Load all methods for modal only when modal is opened (lazy load)
+      
+    } else if (!preloadedData && !dataLoaded) {
+      // Fallback to original loading method if no preloaded data
+      console.log('[CourseMethod] No preloaded data, using API calls');
+      setLoading(true);
+      try {
+        const courseMethodRelations = await methodService.getCourseMethods(courseId);
+        setCourseMethods(courseMethodRelations);
+        setDataLoaded(true);
+      } catch (error) {
+        console.error('Failed to load methods:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  // Lazy load all methods only when needed for modal
+  const loadAllMethodsForModal = async () => {
+    if (methods.length > 0) return; // Already loaded
+    
     try {
-      const [allMethods, courseMethodRelations] = await Promise.all([
-        methodService.getMethodsWithBelongings({}),
-        methodService.getCourseMethods(courseId)
-      ]);
+      let allMethods;
+      const now = Date.now();
+      const cached = methodsCache.current;
+      
+      if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+        console.log('[CourseMethod] Using cached all methods for modal');
+        allMethods = cached.data;
+      } else {
+        console.log('[CourseMethod] Fetching fresh all methods for modal');
+        allMethods = await methodService.getMethods({});
+        methodsCache.current = { data: allMethods, timestamp: now };
+      }
       
       setMethods(allMethods);
-      setCourseMethods(courseMethodRelations);
     } catch (error) {
-      console.error('Failed to load methods:', error);
-    } finally {
-      setLoading(false);
+      console.error('Failed to load all methods for modal:', error);
     }
   };
 
@@ -75,6 +115,7 @@ export function CourseMethodManager({ courseId, onUpdate }: CourseMethodManagerP
       setShowAddModal(false);
       setSelectedMethods([]);
       setSearchTerm('');
+      setDataLoaded(false); // Allow reload
       await loadData();
       onUpdate?.();
     } catch (error) {
@@ -87,6 +128,7 @@ export function CourseMethodManager({ courseId, onUpdate }: CourseMethodManagerP
   const handleRemoveMethod = async (relationId: string) => {
     try {
       await methodService.removeMethodFromCourse(relationId);
+      setDataLoaded(false); // Allow reload
       await loadData();
       onUpdate?.();
     } catch (error) {
@@ -127,7 +169,10 @@ export function CourseMethodManager({ courseId, onUpdate }: CourseMethodManagerP
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              loadAllMethodsForModal();
+              setShowAddModal(true);
+            }}
             leftIcon={<Plus className="h-4 w-4" />}
           >
             Add Methods
@@ -156,7 +201,10 @@ export function CourseMethodManager({ courseId, onUpdate }: CourseMethodManagerP
           <Button 
             className="mt-4" 
             size="sm"
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              loadAllMethodsForModal();
+              setShowAddModal(true);
+            }}
             leftIcon={<Plus className="h-4 w-4" />}
           >
             Add Methods
@@ -207,7 +255,7 @@ export function CourseMethodManager({ courseId, onUpdate }: CourseMethodManagerP
                     
                     <div className="flex items-center gap-2 ml-4">
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => router.push(`/methods/${courseMethod.method.id}/edit`)}
                         leftIcon={<ExternalLink className="h-4 w-4" />}
@@ -215,7 +263,7 @@ export function CourseMethodManager({ courseId, onUpdate }: CourseMethodManagerP
                         Edit
                       </Button>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => handleRemoveMethod(courseMethod.id)}
                         leftIcon={<Trash2 className="h-4 w-4" />}

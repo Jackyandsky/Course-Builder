@@ -1,7 +1,8 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseClient } from '@/lib/supabase';
 import type { Objective } from '@/types/database';
 
-const supabase = createClientComponentClient();
+const getSupabase = () => createSupabaseClient();
+
 
 export interface CourseObjective {
   id: string;
@@ -23,7 +24,7 @@ export const courseObjectiveService = {
   // Get all objectives for a course
   async getCourseObjectives(courseId: string) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('course_objectives')
         .select(`
           *,
@@ -56,7 +57,7 @@ export const courseObjectiveService = {
   async addObjectiveToCourse(data: CreateCourseObjectiveData) {
     try {
       // Get the next position
-      const { data: existing } = await supabase
+      const { data: existing } = await getSupabase()
         .from('course_objectives')
         .select('position')
         .eq('course_id', data.course_id)
@@ -65,7 +66,7 @@ export const courseObjectiveService = {
 
       const nextPosition = existing?.[0]?.position ? existing[0].position + 1 : 0;
 
-      const { data: result, error } = await supabase
+      const { data: result, error } = await getSupabase()
         .from('course_objectives')
         .insert({
           course_id: data.course_id,
@@ -90,7 +91,7 @@ export const courseObjectiveService = {
 
   // Remove objective from course
   async removeObjectiveFromCourse(courseId: string, objectiveId: string) {
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('course_objectives')
       .delete()
       .eq('course_id', courseId)
@@ -101,7 +102,7 @@ export const courseObjectiveService = {
 
   // Update objective position in course
   async updateObjectivePosition(courseId: string, objectiveId: string, newPosition: number) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('course_objectives')
       .update({ position: newPosition })
       .eq('course_id', courseId)
@@ -121,7 +122,7 @@ export const courseObjectiveService = {
       position: index,
     }));
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('course_objectives')
       .upsert(updates)
       .select(`
@@ -135,7 +136,7 @@ export const courseObjectiveService = {
 
   // Get courses that use a specific objective
   async getCoursesUsingObjective(objectiveId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('course_objectives')
       .select(`
         course_id,
@@ -150,6 +151,7 @@ export const courseObjectiveService = {
 
   // Bulk add objectives to course
   async bulkAddObjectivesToCourse(courseId: string, objectiveIds: string[]) {
+    const supabase = createSupabaseClient();
     const { data: existing } = await supabase
       .from('course_objectives')
       .select('position')
@@ -165,7 +167,7 @@ export const courseObjectiveService = {
       position: startPosition + index,
     }));
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('course_objectives')
       .insert(inserts)
       .select(`

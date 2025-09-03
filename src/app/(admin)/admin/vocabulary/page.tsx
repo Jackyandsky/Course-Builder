@@ -7,17 +7,25 @@ import {
   Grid, List, Users, Filter, Globe, Lock // Import Filter, Globe, and Lock icons
 } from 'lucide-react';
 import { Vocabulary, VocabularyGroup, DifficultyLevel } from '@/types/database';
-import { vocabularyService, VocabularyFilters, VocabularyGroupFilters } from '@/lib/supabase/vocabulary';
+
+interface VocabularyGroupFilters {
+  search?: string;
+  difficulty?: DifficultyLevel;
+  language?: string;
+  targetLanguage?: string;
+  categoryId?: string;
+  tags?: string[];
+  isPublic?: boolean;
+}
 import {
   Button, Card, Badge, SearchBox, FilterPanel, Spinner, Select
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 const difficultyColors: Record<DifficultyLevel, string> = {
-  beginner: 'success',
-  intermediate: 'warning',
-  advanced: 'danger',
-  expert: 'primary',
+  basic: 'success',
+  standard: 'warning',
+  premium: 'danger',
 };
 
 export default function VocabularyPage() {
@@ -27,8 +35,8 @@ export default function VocabularyPage() {
   const [statsLoading, setStatsLoading] = useState(true);
   const [filters, setFilters] = useState<VocabularyGroupFilters>({});
   const [stats, setStats] = useState({
-    vocabulary: { total: 0, beginner: 0, intermediate: 0, advanced: 0, expert: 0 },
-    groups: { total: 0, beginner: 0, intermediate: 0, advanced: 0, expert: 0 }
+    vocabulary: { total: 0, basic: 0, standard: 0, premium: 0 },
+    groups: { total: 0, basic: 0, standard: 0, premium: 0 }
   });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [languages, setLanguages] = useState<string[]>([]);
@@ -36,45 +44,142 @@ export default function VocabularyPage() {
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false); // New state
 
   useEffect(() => {
-    loadInitialData();
+    let mounted = true;
+    
+    // Immediately set loading to false after a short delay to prevent blocking
+    const quickLoadTimer = setTimeout(() => {
+      if (mounted && loading) {
+        setLoading(false);
+      }
+    }, 100);
+    
+    // Load initial data
+    const init = async () => {
+      if (mounted) {
+        try {
+          // Always reload stats when component mounts or remounts
+          setStatsLoading(true);
+          await Promise.all([
+            loadInitialData().catch(console.error),
+            loadStats().catch(console.error)
+          ]);
+        } catch (error) {
+          console.error('Initialization error:', error);
+          if (mounted) {
+            setLoading(false);
+            setStatsLoading(false);
+          }
+        }
+      }
+    };
+    
+    init();
+    
+    // Also reload stats when page becomes visible (handles back navigation)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && mounted) {
+        setStatsLoading(true);
+        loadStats().catch(console.error);
+      }
+    };
+    
+    const handleFocus = () => {
+      if (mounted) {
+        setStatsLoading(true);
+        loadStats().catch(console.error);
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      mounted = false;
+      clearTimeout(quickLoadTimer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   useEffect(() => {
-    loadGroups();
+    if (filters.search !== undefined || filters.difficulty || filters.categoryId) {
+      loadGroups();
+    }
   }, [filters]);
+
+  const loadStats = async () => {
+    try {
+      const response = await fetch('/api/admin/vocabulary?operation=stats', {
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch stats');
+      }
+      
+      const stats = await response.json();
+      setStats(stats);
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+      setStats({
+        vocabulary: { total: 0, basic: 0, standard: 0, premium: 0 },
+        groups: { total: 0, basic: 0, standard: 0, premium: 0 }
+      });
+    } finally {
+      setStatsLoading(false);
+    }
+  };
 
   const loadInitialData = async () => {
     try {
-      setStatsLoading(true);
-      console.log('Loading vocabulary stats...');
-      const [statsData, languagesData] = await Promise.all([
-        vocabularyService.getVocabularyStats(),
-        vocabularyService.getLanguages(),
-      ]);
-
-      console.log('Stats data received:', statsData);
-      console.log('Languages data received:', languagesData);
+      const response = await fetch('/api/admin/vocabulary?viewType=groups', {
+        signal: AbortSignal.timeout(5000)
+      });
       
-      setStats(statsData);
-      setLanguages(languagesData);
+      if (!response.ok) {
+        throw new Error('Failed to fetch vocabulary data');
+      }
+      
+      const { data } = await response.json();
+      
+      setGroups(data.vocabularyGroups || []);
+      setLanguages(data.languages || []);
     } catch (error) {
       console.error('Failed to load initial data:', error);
-      // Set default empty stats if there's an error
-      setStats({
-        vocabulary: { total: 0, beginner: 0, intermediate: 0, advanced: 0, expert: 0 },
-        groups: { total: 0, beginner: 0, intermediate: 0, advanced: 0, expert: 0 }
-      });
+      setGroups([]);
       setLanguages([]);
     } finally {
-      setStatsLoading(false);
+      setLoading(false);
     }
   };
 
   const loadGroups = async () => {
     try {
       setLoading(true);
-      const data = await vocabularyService.getVocabularyGroups(filters);
-      setGroups(data);
+      
+      // Set a maximum timeout for loading states
+      const loadingTimeout = setTimeout(() => {
+        setLoading(false);
+      }, 5000);
+      
+      const params = new URLSearchParams();
+      params.append('viewType', 'groups');
+      if (filters.search) params.append('search', filters.search);
+      if (filters.difficulty) params.append('difficulty', filters.difficulty);
+      if (filters.categoryId) params.append('categoryId', filters.categoryId);
+
+      const response = await fetch(`/api/admin/vocabulary?${params}`, {
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      clearTimeout(loadingTimeout);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch vocabulary groups');
+      }
+      
+      const { data } = await response.json();
+      setGroups(data.vocabularyGroups || []);
     } catch (error) {
       console.error('Failed to load vocabulary groups:', error);
     } finally {
@@ -90,7 +195,11 @@ export default function VocabularyPage() {
     setFilters({ ...filters, [filterId]: value });
   };
 
-  const difficultyLevels = vocabularyService.getDifficultyLevels();
+  const difficultyLevels = [
+    { value: 'basic', label: 'Basic', color: 'green' },
+    { value: 'standard', label: 'Standard', color: 'yellow' },
+    { value: 'premium', label: 'Premium', color: 'purple' },
+  ];
 
   const filterGroups = [
     {
@@ -198,7 +307,7 @@ export default function VocabularyPage() {
                   {level.label}
                 </p>
                 <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                  {statsLoading ? <Spinner size="sm" /> : (stats.vocabulary[level.value] || 0)}
+                  {statsLoading ? <Spinner size="sm" /> : (stats.vocabulary[level.value as keyof typeof stats.vocabulary] || 0)}
                 </p>
               </div>
               <div className={`w-3 h-3 rounded-full bg-${level.color}-500`}></div>

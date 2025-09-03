@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammaticos Reading & Writing Foundational Course</title>
+    <style>
+        /* Apple-inspired styles with tablet optimization */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #1d1d1f;
+            background-color: #fbfbfd;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 28px;
+            font-weight: 500;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 21px;
+            font-weight: 500;
+            margin-top: 30px;
+        }
+        p {
+            font-size: 17px;
+            color: #333;
+        }
+        .tagline {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Adjusted for themes */
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .book { /* Re-using .book class for themes */
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            touch-action: manipulation;
+        }
+        .book:hover, .book:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .book h3 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .book p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .approach {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .feature h3 {
+            font-size: 20px;
+            margin-top: 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        /* Tablet-specific optimizations */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                width: 94%;
+                padding: 15px;
+            }
+            
+            header {
+                padding: 30px 0;
+            }
+            
+            h1 {
+                font-size: 38px;
+            }
+            
+            h2 {
+                font-size: 26px;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Adjusted */
+            }
+            
+            .approach {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature {
+                padding: 20px;
+            }
+        }
+        
+        /* For landscape orientation on tablets */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .grid {
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Adjusted */
+            }
+            
+            .approach {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Improved touch target sizes for tablet */
+        @media (pointer: coarse) {
+            .book, .feature {
+                min-height: 100px;
+            }
+            
+            .book h3, .feature h3 {
+                margin-bottom: 15px;
+            }
+            
+            button, a {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>20th Century Poetry</h1>
+        </header>
+
+        <h2>Course Overview</h2>
+        <p>This course offers a comprehensive survey of influential poetry from the 20th century, engaging with a diverse range of voices and styles. Students will explore how poets responded to themes of modernity, alienation, societal upheaval, war, love, loss, and personal identity through thematic intensives. The curriculum emphasizes the development of analytical skills for interpreting poetic language, form, and devices, alongside contextual understanding and vocabulary enrichment through the LEX program.</p>
+
+        <h2>Thematic Explorations & Featured Poets</h2>
+        <div class="grid">
+            <div class="book">
+                <h3>Individual Versus Society</h3>
+                <p>Robert Frost (The Road Not Taken), Ezra Pound (In a Station of the Metro), T.S. Eliot (The Love Song of J. Alfred Prufrock), Langston Hughes (Harlem), W.H. Auden (Musée des Beaux Arts), Wallace Stevens (The Emperor of Ice-Cream), Sylvia Plath (Daddy), Maya Angelou (Still I Rise), Seamus Heaney (Digging)</p>
+            </div>
+            <div class="book">
+                <h3>War</h3>
+                <p>Wilfred Owen (Dulce et Decorum Est), Siegfried Sassoon (Counter-Attack), W.B. Yeats (The Second Coming), W.H. Auden (September 1, 1939), Randall Jarrell (The Death of the Ball Turret Gunner), Gwendolyn Brooks (The Sonnet-Ballad), Denise Levertov (What Were They Like?)</p>
+            </div>
+            <div class="book">
+                <h3>Love</h3>
+                <p>E.E. Cummings (i carry your heart with me), Edna St. Vincent Millay (What Lips My Lips Have Kissed), W.H. Auden (Funeral Blues), Sylvia Plath (Mad Girl's Love Song), Pablo Neruda (Tonight I Can Write), Elizabeth Bishop (One Art), Adrienne Rich (Diving into the Wreck)</p>
+            </div>
+            <div class="book">
+                <h3>Death, Loss, and Survival</h3>
+                <p>Dylan Thomas (Do Not Go Gentle Into That Good Night), Sylvia Plath (Lady Lazarus), Anne Sexton (The Truth the Dead Know), Elizabeth Bishop (Sestina), Theodore Roethke (My Papa's Waltz), Philip Larkin (Aubade)</p>
+            </div>
+            <div class="book">
+                <h3>Coming of Age and Growth</h3>
+                <p>Dylan Thomas (Fern Hill), Langston Hughes (Theme for English B), Adrienne Rich (Aunt Jennifer's Tigers), Seamus Heaney (Blackberry-Picking), Gwendolyn Brooks (We Real Cool)</p>
+            </div>
+            <div class="book">
+                <h3>Modernity & Postmodernity</h3>
+                <p>T.S. Eliot (The Waste Land excerpts), Ezra Pound (The Cantos excerpts), William Carlos Williams (The Red Wheelbarrow), Wallace Stevens (Thirteen Ways of Looking at a Blackbird), John Ashbery (Self-Portrait in a Convex Mirror excerpts), Frank O'Hara (The Day Lady Died)</p>
+            </div>
+        </div>
+
+        <h2>Educational Approach</h2>
+        <div class="approach">
+            <div class="feature">
+                <h3>Thematic and Formal Poetic Analysis</h3>
+                <p>Students engage in deep analysis of poems, focusing on themes, imagery, tone, and poetic forms (e.g., sonnet, free verse, confessional poetry). Weekly 5/5/5 essay responses and comparative analyses enhance interpretative skills.</p>
+            </div>
+            <div class="feature">
+                <h3>Understanding Poetic Movements</h3>
+                <p>Exploration of major 20th-century poetic movements such as Modernism, Imagism, the Harlem Renaissance, Confessional poetry, and Postmodernism, analyzing how these movements shaped poetic expression.</p>
+            </div>
+            <div class="feature">
+                <h3>LEX Vocabulary Enrichment</h3>
+                <p>Comprehensive vocabulary development through the LEX curriculum (Letters A-Z), with regular quizzes to reinforce learning and ensure application in written analyses of complex poetry.</p>
+            </div>
+        </div>
+
+        <h2>Curriculum Structure</h2>
+        <p>This 30-session course is organized into six five-week thematic intensives: Individual Versus Society, War, Love, Death/Loss/Survival, Coming of Age/Growth, and Modernity/Postmodernity. Each intensive explores a selection of representative poems. Students will read and analyze 1-3 poems per week, complete 5/5/5 essay responses, and engage with critical literary analysis. LEX vocabulary is integrated throughout, with quizzes covering segments of the alphabet (A-D, E-H, etc.). The course culminates in a university-quality in-depth analysis unit essay on a 20th-century poem of the student's choice.</p>
+
+        <footer>
+            <p>I GRAMMATICOS PLATFORM SOLUTION © 2020</p>
+            <p>Confidential & Proprietary</p>
+        </footer>
+    </div>
+</body>
+</html>

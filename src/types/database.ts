@@ -1,6 +1,6 @@
 // Database types
 export type CourseStatus = 'draft' | 'published' | 'archived';
-export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert';
+export type DifficultyLevel = 'basic' | 'standard' | 'premium';
 export type LessonStatus = 'draft' | 'scheduled' |
   'completed' | 'cancelled';
 export type ContentType = 'text' | 'video' | 'audio' | 'pdf' | 'image' | 'interactive';
@@ -39,7 +39,17 @@ export interface Course {
   thumbnail_url?: string;
   is_public: boolean;
   public_slug?: string;
-  instructor_name?: string;
+  price?: number;
+  currency?: string;
+  discount_percentage?: number;
+  sale_price?: number;
+  is_free?: boolean;
+  stripe_product_id?: string;
+  stripe_price_id?: string;
+  show_on_menu?: boolean;
+  show_on_homepage?: boolean;
+  menu_order?: number;
+  homepage_order?: number;
   user_id: string;
   created_at: string;
   updated_at: string;
@@ -77,10 +87,22 @@ export interface Book {
   tags?: string[];
   is_public: boolean;
   public_slug?: string;
+  price?: number;
+  currency?: string;
+  discount_percentage?: number;
+  sale_price?: number;
+  is_free?: boolean;
+  stripe_product_id?: string;
+  stripe_price_id?: string;
   user_id: string;
   created_at: string;
   updated_at: string;
   metadata?: Record<string, any>;
+  
+  // Sync tracking fields
+  last_sync_attempt?: string;
+  sync_attempts?: number;
+  sync_status?: 'success' | 'no_match' | 'low_confidence' | 'error' | null;
   
   // Relations
   category?: Category;
@@ -217,6 +239,10 @@ export interface Task {
   due_date?: string;
   assigned_to?: string;
   status?: string;
+  media_required?: boolean;
+  allowed_media_types?: string[];
+  max_file_size_mb?: number;
+  max_files_count?: number;
   user_id: string;
   created_at: string;
   updated_at: string;
@@ -224,6 +250,26 @@ export interface Task {
   
   // Relations
   category?: Category;
+  task_media?: TaskMedia[];
+}
+
+// Task Media type
+export interface TaskMedia {
+  id: string;
+  task_id: string;
+  user_id: string;
+  file_path: string;
+  file_name: string;
+  display_name?: string;
+  file_type: string;
+  file_size: number;
+  mime_type?: string;
+  thumbnail_path?: string;
+  upload_date: string;
+  metadata?: Record<string, any>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 // Schedule type
@@ -258,6 +304,7 @@ export interface Lesson {
   course_id: string;
   title: string;
   description?: string;
+  content?: string;
   lesson_number?: number;
   date: string;
   start_time: string;
@@ -541,7 +588,7 @@ export type Database = {
     Enums: {
       course_status: 'draft' | 'published' | 'archived';
       lesson_status: 'draft' | 'scheduled' | 'completed' | 'cancelled';
-      difficulty_level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+      difficulty_level: 'basic' | 'standard' | 'premium';
       content_type: 'text' | 'video' | 'audio' | 'pdf' | 'image' | 'interactive';
       recurrence_type_enum: 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly';
       day_of_week_enum: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';

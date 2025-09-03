@@ -163,191 +163,195 @@ export default function NewMethodPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Create New Method</h1>
-        <Button
-          variant="ghost"
-          onClick={() => router.push('/admin/methods')}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Methods
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto py-8 px-4">
+        <div className="mb-8">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => router.push('/admin/methods')}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Methods
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Create New Method</h1>
+              <p className="text-gray-600 mt-1">Add a new method to the system</p>
+            </div>
+          </div>
+        </div>
 
-      <Card>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Method Name *
-            </label>
-            <Input
-              value={formData.name}
-              onChange={(e) => handleChange('name', e.target.value)}
-              placeholder="Enter method name"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
-            <Textarea
-              value={formData.description || ''}
-              onChange={(e) => handleChange('description', e.target.value)}
-              placeholder="Enter method description"
-              rows={4}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category
-            </label>
-            <div className="flex gap-2">
-              <Select
-                value={formData.category_id}
-                onChange={(e) => handleChange('category_id', e.target.value)}
-                className="flex-1"
-              >
-                <option value="">Select a category</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </Select>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsCategoryModalOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tags
-            </label>
-            <div className="flex gap-2 mb-2">
+          <Card>
+            <Card.Header>
+              <h2 className="text-lg font-semibold">Basic Information</h2>
+            </Card.Header>
+            <Card.Content className="space-y-4">
               <Input
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onKeyPress={handleTagKeyPress}
-                placeholder="Add a tag"
+                label="Method Name"
+                value={formData.name}
+                onChange={(e) => handleChange('name', e.target.value)}
+                placeholder="Enter method name"
+                required
               />
-              <Button type="button" onClick={addTag} variant="outline">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.tags.map((tag) => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                  <button
+              
+              <Textarea
+                label="Description"
+                value={formData.description || ''}
+                onChange={(e) => handleChange('description', e.target.value)}
+                placeholder="Enter method description"
+                rows={4}
+              />
+              
+              <div className="flex gap-2">
+                <Select
+                  label="Category"
+                  value={formData.category_id}
+                  onChange={(e) => handleChange('category_id', e.target.value)}
+                  className="flex-1"
+                >
+                  <option value="">Select a category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </Select>
+                <div className="pt-6">
+                  <Button
                     type="button"
-                    onClick={() => removeTag(tag)}
-                    className="ml-1 hover:text-red-500"
+                    variant="outline"
+                    onClick={() => setIsCategoryModalOpen(true)}
                   >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          </div>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tags
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <Input
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyPress={handleTagKeyPress}
+                    placeholder="Add a tag"
+                  />
+                  <Button type="button" onClick={addTag} variant="outline">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formData.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary">
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="ml-1 hover:text-red-500"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </Card.Content>
+          </Card>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Belongs to Courses
-            </label>
-            <BelongingSelector
-              selectedCourses={formData.belongingCourses}
-              selectedLessons={[]}
-              onCoursesChange={(selectedCourses: string[]) => handleChange('belongingCourses', selectedCourses)}
-              onLessonsChange={() => {}}
-            />
-          </div>
+          <Card>
+            <Card.Header>
+              <h2 className="text-lg font-semibold">Relationships</h2>
+            </Card.Header>
+            <Card.Content className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Belongs to Courses
+                </label>
+                <BelongingSelector
+                  selectedCourses={formData.belongingCourses}
+                  selectedLessons={[]}
+                  onCoursesChange={(selectedCourses: string[]) => handleChange('belongingCourses', selectedCourses)}
+                  onLessonsChange={() => {}}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Belongs to Lessons
+                </label>
+                <BelongingSelector
+                  selectedCourses={[]}
+                  selectedLessons={formData.belongingLessons}
+                  onCoursesChange={() => {}}
+                  onLessonsChange={(selectedLessons: string[]) => handleChange('belongingLessons', selectedLessons)}
+                />
+              </div>
+            </Card.Content>
+          </Card>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Belongs to Lessons
-            </label>
-            <BelongingSelector
-              selectedCourses={[]}
-              selectedLessons={formData.belongingLessons}
-              onCoursesChange={() => {}}
-              onLessonsChange={(selectedLessons: string[]) => handleChange('belongingLessons', selectedLessons)}
-            />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-6">
+          <div className="flex justify-end gap-3">
             <Button
               type="button"
               variant="outline"
               onClick={() => router.push('/admin/methods')}
+              disabled={loading}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? (
-                <>
-                  <Spinner className="h-4 w-4 mr-2" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Create Method
-                </>
-              )}
+            <Button
+              type="submit"
+              loading={loading}
+              leftIcon={<Save className="h-4 w-4" />}
+            >
+              Create Method
             </Button>
           </div>
         </form>
-      </Card>
 
-      <Modal
-        isOpen={isCategoryModalOpen}
-        onClose={() => setIsCategoryModalOpen(false)}
-        title="Create New Category"
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category Name
-            </label>
-            <Input
-              value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
-              placeholder="Enter category name"
-            />
+        <Modal
+          isOpen={isCategoryModalOpen}
+          onClose={() => setIsCategoryModalOpen(false)}
+          title="Create New Category"
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category Name
+              </label>
+              <Input
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="Enter category name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Color
+              </label>
+              <input
+                type="color"
+                value={newCategoryColor}
+                onChange={(e) => setNewCategoryColor(e.target.value)}
+                className="h-10 w-full"
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setIsCategoryModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleCreateCategory}>
+                Create Category
+              </Button>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Color
-            </label>
-            <input
-              type="color"
-              value={newCategoryColor}
-              onChange={(e) => setNewCategoryColor(e.target.value)}
-              className="h-10 w-full"
-            />
-          </div>
-          <div className="flex justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setIsCategoryModalOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleCreateCategory}>
-              Create Category
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        </Modal>
+      </div>
     </div>
   );
 }

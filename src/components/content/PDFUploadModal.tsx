@@ -306,7 +306,7 @@ export default function PDFUploadModal({
                 <Checkbox
                   id="autoDetect"
                   checked={autoDetectCategory}
-                  onChange={(e) => setAutoDetectCategory(e.target.checked)}
+                  onChange={(checked) => setAutoDetectCategory(checked)}
                 />
                 <label htmlFor="autoDetect" className="text-sm font-medium text-gray-700 cursor-pointer">
                   Auto-detect category from content
@@ -319,7 +319,7 @@ export default function PDFUploadModal({
                     <Checkbox
                       id="combine"
                       checked={combineFiles}
-                      onChange={(e) => setCombineFiles(e.target.checked)}
+                      onChange={(checked) => setCombineFiles(checked)}
                     />
                     <label htmlFor="combine" className="text-sm font-medium text-gray-700 cursor-pointer">
                       Combine all files into one content item

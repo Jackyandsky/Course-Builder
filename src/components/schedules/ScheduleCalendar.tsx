@@ -30,10 +30,24 @@ interface ScheduleCalendarProps {
 }
 
 export function ScheduleCalendar({ schedule, onSelectLesson }: ScheduleCalendarProps) {
-  const [currentDate, setCurrentDate] = React.useState(new Date());
+  // Initialize the calendar to the schedule's start date or first lesson's date
+  const getInitialDate = () => {
+    if (schedule.lessons && schedule.lessons.length > 0) {
+      // Use the first lesson's date
+      return new Date(schedule.lessons[0].date);
+    } else if (schedule.start_date) {
+      // Use the schedule's start date
+      return new Date(schedule.start_date);
+    } else {
+      // Fallback to current date
+      return new Date();
+    }
+  };
+
+  const [currentDate, setCurrentDate] = React.useState(getInitialDate());
   const [currentView, setCurrentView] = React.useState(Views.MONTH);
 
-  if (!schedule.lessons) {
+  if (!schedule.lessons || schedule.lessons.length === 0) {
     return <div className="p-8 text-center text-gray-500">No lessons to display in calendar.</div>;
   }
   

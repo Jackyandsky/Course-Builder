@@ -8,7 +8,7 @@ import { vocabularyService, CreateVocabularyData, UpdateVocabularyData } from '@
 import { 
   Button, Card, Input, Textarea, Select, Badge, Spinner 
 } from '@/components/ui';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface VocabularyFormProps {
@@ -21,7 +21,7 @@ interface VocabularyFormProps {
 export function VocabularyForm({ initialData, onSave, isLoading, onCancel }: VocabularyFormProps) {
   const router = useRouter();
   const { user } = useAuth();
-  const supabase = createClientComponentClient();
+  const supabase = createSupabaseClient();
   const isEditing = !!initialData;
   const [loading, setLoading] = useState(false);
 
@@ -34,7 +34,7 @@ export function VocabularyForm({ initialData, onSave, isLoading, onCancel }: Voc
     example_sentence: initialData?.example_sentence || '',
     example_translation: initialData?.example_translation || '',
     notes: initialData?.notes || '',
-    difficulty: initialData?.difficulty || 'beginner' as DifficultyLevel,
+    difficulty: initialData?.difficulty || 'basic' as DifficultyLevel,
     audio_url: initialData?.audio_url || '',
     image_url: initialData?.image_url || '',
     tags: initialData?.tags || [],
@@ -212,7 +212,7 @@ export function VocabularyForm({ initialData, onSave, isLoading, onCancel }: Voc
       <div className="mb-8">
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => router.back()}
           leftIcon={<ArrowLeft className="h-4 w-4" />}

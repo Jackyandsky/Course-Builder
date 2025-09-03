@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammaticos Reading & Writing Foundational Course</title>
+    <style>
+        /* Apple-inspired styles with tablet optimization */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #1d1d1f;
+            background-color: #fbfbfd;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 28px;
+            font-weight: 500;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 21px;
+            font-weight: 500;
+            margin-top: 30px;
+        }
+        p {
+            font-size: 17px;
+            color: #333;
+        }
+        .tagline {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .book {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            touch-action: manipulation;
+        }
+        .book:hover, .book:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .book h3 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .book p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .approach {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .feature h3 {
+            font-size: 20px;
+            margin-top: 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        /* Tablet-specific optimizations */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                width: 94%;
+                padding: 15px;
+            }
+            
+            header {
+                padding: 30px 0;
+            }
+            
+            h1 {
+                font-size: 38px;
+            }
+            
+            h2 {
+                font-size: 26px;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature {
+                padding: 20px;
+            }
+        }
+        
+        /* For landscape orientation on tablets */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Improved touch target sizes for tablet */
+        @media (pointer: coarse) {
+            .book, .feature {
+                min-height: 100px;
+            }
+            
+            .book h3, .feature h3 {
+                margin-bottom: 15px;
+            }
+            
+            button, a {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Level 10-12 Advanced Reading: Environmentalism in Literature</h1>
+        </header>
+
+        <h2>Course Overview</h2>
+        <p>This course offers an advanced exploration of environmentalism as a critical theme in literature. Students will engage with seminal works that articulate the complex relationship between humanity and the natural world, analyze the historical development of the environmental movement (from Rachel Carson's "The Silent Spring" to modern concerns like global warming), and discuss various forms of environmental activism and potential solutions to impending ecological challenges. The curriculum is designed to foster critical thinking, analytical writing, and vocabulary enrichment through literary study.</p>
+
+        <h2>Literary Explorations</h2>
+        <div class="grid">
+            <div class="book">
+                <h3>The Overstory</h3>
+                <p>Richard Powers</p>
+            </div>
+            <div class="book">
+                <h3>Walden</h3>
+                <p>Henry David Thoreau</p>
+            </div>
+            <div class="book">
+                <h3>Flight Behaviour</h3>
+                <p>Barbara Kingsolver</p>
+            </div>
+            <div class="book">
+                <h3>The Water Knife</h3>
+                <p>Paolo Bacigalupi</p>
+            </div>
+            <div class="book">
+                <h3>The Road</h3>
+                <p>Cormac McCarthy</p>
+            </div>
+            <div class="book">
+                <h3>Solaris</h3>
+                <p>Stanislaw Lem</p>
+            </div>
+            <div class="book">
+                <h3>Annihilation</h3>
+                <p>Jeff Vandermeer</p>
+            </div>
+            <div class="book">
+                <h3>The Fifth Season</h3>
+                <p>N.K. Jemisin</p>
+            </div>
+            <div class="book">
+                <h3>Into the Wild</h3>
+                <p>Jon Krakauer</p>
+            </div>
+            <div class="book">
+                <h3>Student-Chosen Novel</h3>
+                <p>A novel of the student’s choosing</p>
+            </div>
+        </div>
+
+        <h2>Educational Approach</h2>
+        <div class="approach">
+            <div class="feature">
+                <h3>Analytical Essay Writing (5/5/5 Method)</h3>
+                <p>Students will engage in rigorous analytical writing, often using a 5/5/5 essay structure, to explore themes such as environmental activism, pessimism vs. optimism in human-nature relationships, and the symbolic role of nature in literature.</p>
+            </div>
+            <div class="feature">
+                <h3>Critical Discussion and Debate</h3>
+                <p>Class sessions will involve in-depth discussions on topics like the efficacy of different forms of environmental activism, the literary portrayal of ecological catastrophe, and the philosophical underpinnings of environmental literature, supported by readings of supplementary articles and short stories.</p>
+            </div>
+            <div class="feature">
+                <h3>LEX Vocabulary Enrichment</h3>
+                <p>Systematic vocabulary development through LEX curriculum (Letters A-Z) and contextual words from texts, reinforced by regular quizzes to enhance descriptive and analytical language skills.</p>
+            </div>
+        </div>
+
+        <h2>Curriculum Structure</h2>
+        <p>The 30-session program is designed around an intensive study of ten key literary works focusing on environmental themes, beginning with Richard Powers' "The Overstory" and culminating with a student-selected novel for an end-of-year assessment. Each novel is typically covered over 2-3 weeks, involving reading assignments (100-150 pages weekly), vocabulary quizzes, and 5/5/5 analytical essays. The curriculum integrates discussions on relevant articles (e.g., exploring Richard Powers's influences, the impact of Thoreau's "Walden"), short stories (e.g., by Doris Lessing, Isabel Allende, Shinichi Hoshi, Ray Bradbury), and critical analysis of concepts such as existentialism and the portrayal of apocalypse in literature. A mid-term quiz focuses on analytical essay writing based on a selected text.</p>
+
+        <footer>
+            <p>I GRAMMATICOS PLATFORM SOLUTION © 2020</p>
+            <p>Confidential & Proprietary</p>
+        </footer>
+    </div>
+</body>
+</html>

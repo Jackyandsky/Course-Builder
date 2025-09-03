@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammaticos Reading & Writing Foundational Course</title>
+    <style>
+        /* Apple-inspired styles with tablet optimization */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #1d1d1f;
+            background-color: #fbfbfd;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 28px;
+            font-weight: 500;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 21px;
+            font-weight: 500;
+            margin-top: 30px;
+        }
+        p {
+            font-size: 17px;
+            color: #333;
+        }
+        .tagline {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .book {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            touch-action: manipulation;
+        }
+        .book:hover, .book:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .book h3 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .book p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .approach {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .feature h3 {
+            font-size: 20px;
+            margin-top: 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        /* Tablet-specific optimizations */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                width: 94%;
+                padding: 15px;
+            }
+            
+            header {
+                padding: 30px 0;
+            }
+            
+            h1 {
+                font-size: 38px;
+            }
+            
+            h2 {
+                font-size: 26px;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature {
+                padding: 20px;
+            }
+        }
+        
+        /* For landscape orientation on tablets */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Improved touch target sizes for tablet */
+        @media (pointer: coarse) {
+            .book, .feature {
+                min-height: 100px;
+            }
+            
+            .book h3, .feature h3 {
+                margin-bottom: 15px;
+            }
+            
+            button, a {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Level 10-12 Advanced Reading: 20th Century American Literature</h1>
+        </header>
+
+        <h2>Course Overview</h2>
+        <p>This advanced course for levels 10-12 provides a comprehensive survey of significant works from 20th Century American Literature. Students will engage with a diverse range of influential novels and plays, exploring themes such as mental health, societal critique, race relations, the impacts of war, existentialism, and the complexities of the American experience. The curriculum emphasizes critical analysis, development of literary interpretation skills, vocabulary enrichment, and sophisticated essay writing through the study of canonical authors and their seminal works.</p>
+
+        <h2>Literary Explorations</h2>
+        <div class="grid">
+            <div class="book">
+                <h3>One Flew Over the Cuckoo’s Nest</h3>
+                <p>Ken Kesey</p>
+            </div>
+            <div class="book">
+                <h3>The Violent Bear it Away</h3>
+                <p>Flannery O’Connor</p>
+            </div>
+            <div class="book">
+                <h3>A Streetcar Named Desire</h3>
+                <p>Tennessee Williams</p>
+            </div>
+            <div class="book">
+                <h3>The Bell Jar</h3>
+                <p>Sylvia Plath</p>
+            </div>
+            <div class="book">
+                <h3>The Color Purple</h3>
+                <p>Alice Walker</p>
+            </div>
+            <div class="book">
+                <h3>Native Son</h3>
+                <p>Richard Wright</p>
+            </div>
+            <div class="book">
+                <h3>Slaughterhouse Five</h3>
+                <p>Kurt Vonnegut Jr.</p>
+            </div>
+            <div class="book">
+                <h3>Fear and Loathing in Las Vegas</h3>
+                <p>Hunter S. Thompson</p>
+            </div>
+            <div class="book">
+                <h3>No Country for Old Men</h3>
+                <p>Cormac McCarthy</p>
+            </div>
+            <div class="book">
+                <h3>Lolita</h3>
+                <p>Vladimir Nabokov</p>
+            </div>
+            <div class="book">
+                <h3>The Crying of Lot 49</h3>
+                <p>Thomas Pynchon</p>
+            </div>
+        </div>
+
+        <h2>Educational Approach</h2>
+        <div class="approach">
+            <div class="feature">
+                <h3>In-depth Thematic Analysis</h3>
+                <p>Focuses on exploring complex themes such as the American Dream, mental illness, unreliable narrators, Southern Gothic traditions, race and prejudice, the nature of heroism, and existential questions present in 20th-century American literature.</p>
+            </div>
+            <div class="feature">
+                <h3>Critical Essay Writing</h3>
+                <p>Students develop advanced essay writing skills through analysis essays, character analyses, and responses to thematic prompts, often employing the 5/5/5 essay structure and focusing on argumentative theses and textual evidence.</p>
+            </div>
+            <div class="feature">
+                <h3>Vocabulary and Literary Device Study</h3>
+                <p>Systematic vocabulary building using the LEX curriculum (Letters A-Z) and contextual words from texts. Emphasis is also placed on identifying and analyzing literary concepts such as symbolism, allegory, irony, and narrative perspective.</p>
+            </div>
+        </div>
+
+        <h2>Curriculum Structure</h2>
+        <p>This 30-session course examines eleven seminal works of 20th-century American literature, dedicating approximately 2-3 sessions per novel or play. Each unit involves reading assignments (100-125 pages weekly), LEX vocabulary quizzes, and detailed class discussions centered on "Questions to Ponder" regarding characterization, theme, and literary technique. Students will complete various writing assignments, including character analyses, thematic essays, and responses to critical articles (e.g., on Flannery O'Connor, Hunter S. Thompson, James Baldwin). The course integrates the study of short stories (e.g., by Chekhov, Maupassant, Salinger) and poetry (e.g., Plath) to provide broader literary context. A final essay will require a critical analysis based on a chosen work or theme from the course.</p>
+
+        <footer>
+            <p>I GRAMMATICOS PLATFORM SOLUTION © 2020</p>
+            <p>Confidential & Proprietary</p>
+        </footer>
+    </div>
+</body>
+</html>

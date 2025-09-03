@@ -2,7 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Button, Card, Input, Textarea, Select, Spinner, Badge, Modal, BelongingSelector } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Select } from '@/components/ui/Select';
+import { Spinner } from '@/components/ui/Spinner';
+import { Badge } from '@/components/ui/Badge';
+import { BelongingSelector } from '@/components/ui/BelongingSelector';
 import { methodService } from '@/lib/supabase/methods';
 import { categoryService } from '@/lib/supabase/categories';
 import { ArrowLeft, Save, Plus, X } from 'lucide-react';
@@ -187,8 +194,210 @@ export default function EditMethodPage() {
   }
 
   return (
-    <div>
-      {/* Method edit content */}
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto py-8 px-4">
+        <div className="mb-8">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => router.push('/admin/methods')}
+              leftIcon={<ArrowLeft className="h-4 w-4" />}
+            >
+              Back to Methods
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Edit Method</h1>
+              <p className="text-gray-600 mt-1">Update method details and relationships</p>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Card>
+            <Card.Header>
+              <h2 className="text-lg font-semibold">Basic Information</h2>
+            </Card.Header>
+            <Card.Content className="space-y-4">
+              <Input
+                label="Method Name"
+                value={formData.name}
+                onChange={(e) => handleChange('name', e.target.value)}
+                placeholder="Enter method name"
+                required
+              />
+              
+              <Textarea
+                label="Description"
+                value={formData.description}
+                onChange={(e) => handleChange('description', e.target.value)}
+                placeholder="Enter method description"
+                rows={4}
+              />
+              
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <Select
+                    label="Category"
+                    value={formData.category_id}
+                    onChange={(e) => handleChange('category_id', e.target.value)}
+                    options={[
+                      { value: '', label: 'Select Category' },
+                      ...categories.map((category) => ({
+                        value: category.id,
+                        label: category.name
+                      }))
+                    ]}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCategoryModalOpen(true)}
+                  className="mt-6"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Category
+                </Button>
+              </div>
+            </Card.Content>
+          </Card>
+
+          <Card>
+            <Card.Header>
+              <h2 className="text-lg font-semibold">Tags</h2>
+            </Card.Header>
+            <Card.Content className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyPress={handleTagKeyPress}
+                  placeholder="Add a tag"
+                />
+                <Button
+                  type="button"
+                  onClick={addTag}
+                  variant="outline"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {formData.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-2">
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="hover:bg-gray-200 rounded-full p-1"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </Card.Content>
+          </Card>
+
+          <Card>
+            <Card.Header>
+              <h2 className="text-lg font-semibold">Relationships</h2>
+            </Card.Header>
+            <Card.Content className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Belongs to Courses
+                </label>
+                <BelongingSelector
+                  selectedCourses={formData.belongingCourses}
+                  selectedLessons={[]}
+                  onCoursesChange={(ids) => handleChange('belongingCourses', ids)}
+                  onLessonsChange={() => {}}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Belongs to Lessons
+                </label>
+                <BelongingSelector
+                  selectedCourses={[]}
+                  selectedLessons={formData.belongingLessons}
+                  onCoursesChange={() => {}}
+                  onLessonsChange={(ids) => handleChange('belongingLessons', ids)}
+                />
+              </div>
+            </Card.Content>
+          </Card>
+
+          <div className="flex justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push('/admin/methods')}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              loading={loading}
+              leftIcon={<Save className="h-4 w-4" />}
+            >
+              Update Method
+            </Button>
+          </div>
+        </form>
+        
+        {/* Category Creation Modal */}
+        {isCategoryModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Create New Category</h3>
+              
+              <div className="space-y-4">
+                <Input
+                  label="Category Name"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="Enter category name"
+                  required
+                />
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Color
+                  </label>
+                  <input
+                    type="color"
+                    value={newCategoryColor}
+                    onChange={(e) => setNewCategoryColor(e.target.value)}
+                    className="w-full h-10 rounded border border-gray-300"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-3 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCategoryModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreateCategory}
+                  disabled={!newCategoryName.trim()}
+                >
+                  Create
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

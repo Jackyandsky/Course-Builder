@@ -1,156 +1,259 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { User } from '@supabase/supabase-js';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { 
-  BookOpen, ShoppingBag, Calendar, FileText, 
-  User as UserIcon, CreditCard, Clock, CheckCircle 
+  BookOpen, ShoppingBag, FileText, 
+  Clock, CheckCircle, LogIn, LogOut, ShoppingCart,
+  Library, Calendar
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+interface UserStats {
+  courses: number;
+  orders: number;
+  totalSpent: number;
+  content: number;
+  completedCourses: number;
+  inProgressCourses: number;
+  totalSubmissions: number;
+  completedSubmissions: number;
+}
+
+interface RecentActivity {
+  id: string;
+  type: 'login' | 'logout' | 'order' | 'course_start' | 'course_complete' | 'content_access' | 'booking';
+  title: string;
+  description: string;
+  date: string;
+  icon: any;
+  color: string;
+}
 
 export default function AccountPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [stats, setStats] = useState({
+  const { user, userProfile } = useAuth();
+  const router = useRouter();
+  const [stats, setStats] = useState<UserStats>({
     courses: 0,
     orders: 0,
-    bookings: 0,
-    submissions: 0
+    totalSpent: 0,
+    content: 0,
+    completedCourses: 0,
+    inProgressCourses: 0,
+    totalSubmissions: 0,
+    completedSubmissions: 0
   });
-
-  const supabase = createClientComponentClient();
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getUser();
-    // TODO: Fetch user stats
-  }, []);
+    if (user) {
+      fetchUserStats();
+      fetchRecentActivity();
+    }
+  }, [user]);
 
-  const getUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
+  const fetchUserStats = async () => {
+    if (!user) return;
+    
+    try {
+      const response = await fetch('/api/account/stats');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setStats(data.stats);
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+    }
+  };
+
+  const fetchRecentActivity = async () => {
+    if (!user) return;
+    
+    try {
+      const response = await fetch('/api/account/activity');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Transform activities to include icon components
+      const activities: RecentActivity[] = data.activities.map((activity: any) => ({
+        ...activity,
+        icon: getIconComponent(activity.icon)
+      }));
+      
+      setRecentActivity(activities);
+    } catch (error) {
+      console.error('Error fetching recent activity:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getIconComponent = (iconName: string) => {
+    switch (iconName) {
+      case 'BookOpen': return BookOpen;
+      case 'ShoppingBag': return ShoppingBag;
+      case 'ShoppingCart': return ShoppingCart;
+      case 'FileText': return FileText;
+      case 'CheckCircle': return CheckCircle;
+      case 'LogIn': return LogIn;
+      case 'LogOut': return LogOut;
+      case 'Calendar': return Calendar;
+      default: return FileText;
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-CA', {
+      style: 'currency',
+      currency: 'CAD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
   };
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">My Account</h1>
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="border-b border-gray-200 pb-4">
+        <h1 className="text-3xl font-bold text-gray-900">Account Dashboard</h1>
         <p className="mt-2 text-gray-600">
-          Welcome back, {user?.user_metadata?.first_name || 'Student'}!
+          Welcome back, {user?.email}
         </p>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Active Courses</p>
-              <p className="text-2xl font-bold">{stats.courses}</p>
+      {/* Metrics Panel - Combined Stats and Navigation */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Link href="/account/courses">
+          <Card className="p-4 border border-gray-200 hover:shadow-md transition-all cursor-pointer hover:border-blue-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">My Courses</p>
+                <p className="text-2xl font-semibold text-gray-900">{loading ? '...' : stats.courses}</p>
+                {stats.inProgressCourses > 0 && (
+                  <p className="text-xs text-blue-600 mt-1">{stats.inProgressCourses} in progress</p>
+                )}
+              </div>
+              <BookOpen className="h-5 w-5 text-gray-400" />
             </div>
-            <BookOpen className="h-8 w-8 text-blue-600" />
-          </div>
-        </Card>
+          </Card>
+        </Link>
 
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Orders</p>
-              <p className="text-2xl font-bold">{stats.orders}</p>
+        <Link href="/account/orders">
+          <Card className="p-4 border border-gray-200 hover:shadow-md transition-all cursor-pointer hover:border-blue-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Orders</p>
+                <p className="text-2xl font-semibold text-gray-900">{loading ? '...' : stats.orders}</p>
+                {stats.totalSpent > 0 && (
+                  <p className="text-xs text-gray-600 mt-1">{formatCurrency(stats.totalSpent)} total</p>
+                )}
+              </div>
+              <ShoppingBag className="h-5 w-5 text-gray-400" />
             </div>
-            <ShoppingBag className="h-8 w-8 text-green-600" />
-          </div>
-        </Card>
+          </Card>
+        </Link>
 
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Bookings</p>
-              <p className="text-2xl font-bold">{stats.bookings}</p>
+        <Link href="/account/library">
+          <Card className="p-4 border border-gray-200 hover:shadow-md transition-all cursor-pointer hover:border-blue-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">My Library</p>
+                <p className="text-2xl font-semibold text-gray-900">{loading ? '...' : stats.content}</p>
+                <p className="text-xs text-gray-600 mt-1">Items available</p>
+              </div>
+              <Library className="h-5 w-5 text-gray-400" />
             </div>
-            <Calendar className="h-8 w-8 text-purple-600" />
-          </div>
-        </Card>
+          </Card>
+        </Link>
 
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Submissions</p>
-              <p className="text-2xl font-bold">{stats.submissions}</p>
+        <Link href="/account/submissions">
+          <Card className="p-4 border border-gray-200 hover:shadow-md transition-all cursor-pointer hover:border-blue-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Submissions</p>
+                <p className="text-2xl font-semibold text-gray-900">{loading ? '...' : stats.totalSubmissions}</p>
+                {stats.completedSubmissions > 0 && (
+                  <p className="text-xs text-green-600 mt-1">{stats.completedSubmissions} completed</p>
+                )}
+              </div>
+              <FileText className="h-5 w-5 text-gray-400" />
             </div>
-            <FileText className="h-8 w-8 text-orange-600" />
-          </div>
-        </Card>
+          </Card>
+        </Link>
       </div>
 
-      {/* Quick Actions */}
+
+      {/* Recent Activity - Minimal Style */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card className="p-6 hover:shadow-lg transition-shadow">
-            <Link href="/account/courses" className="block">
-              <BookOpen className="h-12 w-12 text-blue-600 mb-4" />
-              <h3 className="font-semibold mb-2">My Courses</h3>
-              <p className="text-sm text-gray-600">
-                View and manage your enrolled courses
-              </p>
-            </Link>
+        <h2 className="text-lg font-semibold mb-4 text-gray-900">Recent Activity</h2>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
+          </div>
+        ) : recentActivity.length > 0 ? (
+          <div className="space-y-2">
+            {recentActivity.slice(0, 5).map((activity) => {
+              const Icon = activity.icon;
+              return (
+                <Card key={activity.id} className="p-4">
+                  <div className="flex items-center gap-3">
+                    <Icon className={`h-5 w-5 ${activity.color || 'text-gray-500'}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">{activity.title}</p>
+                      <p className="text-xs text-gray-600 mt-0.5">{activity.description}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(activity.date).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <Card className="p-8">
+            <div className="text-center">
+              <Clock className="h-8 w-8 text-gray-300 mx-auto mb-3" />
+              <p className="text-sm text-gray-600">No recent activity</p>
+              <p className="text-xs text-gray-500 mt-1">Your activity will appear here</p>
+            </div>
           </Card>
+        )}
+      </div>
 
-          <Card className="p-6 hover:shadow-lg transition-shadow">
-            <Link href="/account/bookings" className="block">
-              <Calendar className="h-12 w-12 text-purple-600 mb-4" />
-              <h3 className="font-semibold mb-2">Bookings</h3>
-              <p className="text-sm text-gray-600">
-                Manage your tutoring sessions and appointments
-              </p>
-            </Link>
-          </Card>
-
-          <Card className="p-6 hover:shadow-lg transition-shadow">
-            <Link href="/account/orders" className="block">
-              <ShoppingBag className="h-12 w-12 text-green-600 mb-4" />
-              <h3 className="font-semibold mb-2">Order History</h3>
-              <p className="text-sm text-gray-600">
-                View your past purchases and downloads
-              </p>
-            </Link>
-          </Card>
-
-          <Card className="p-6 hover:shadow-lg transition-shadow">
-            <Link href="/account/submissions" className="block">
-              <FileText className="h-12 w-12 text-orange-600 mb-4" />
-              <h3 className="font-semibold mb-2">Submissions</h3>
-              <p className="text-sm text-gray-600">
-                Track your course assignments and feedback
-              </p>
-            </Link>
-          </Card>
-
-          <Card className="p-6 hover:shadow-lg transition-shadow">
-            <Link href="/account/settings" className="block">
-              <UserIcon className="h-12 w-12 text-gray-600 mb-4" />
-              <h3 className="font-semibold mb-2">Account Settings</h3>
-              <p className="text-sm text-gray-600">
-                Update your profile and preferences
-              </p>
-            </Link>
-          </Card>
+      {/* Summary Stats */}
+      {stats.orders > 0 && (
+        <div className="pt-6 border-t border-gray-200">
+          <div className="flex gap-6 text-sm text-gray-600">
+            <div>
+              <span className="font-medium text-gray-900">{stats.inProgressCourses}</span> in progress
+            </div>
+            <div>
+              <span className="font-medium text-gray-900">{stats.completedCourses}</span> completed
+            </div>
+            <div>
+              Total spent: <span className="font-medium text-gray-900">{formatCurrency(stats.totalSpent)}</span>
+            </div>
+          </div>
         </div>
-      </div>
-
-      {/* Recent Activity */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-        <Card>
-          <div className="p-6">
-            <p className="text-gray-600 text-center py-8">
-              No recent activity to display
-            </p>
-          </div>
-        </Card>
-      </div>
+      )}
     </div>
   );
 }

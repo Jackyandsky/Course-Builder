@@ -389,6 +389,39 @@ CREATE POLICY "Users can manage lesson vocabulary they own" ON lesson_vocabulary
         )
     );
 
+-- Content RLS
+ALTER TABLE content ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public can view store content" ON content
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM categories c
+            WHERE c.id = content.category_id
+            AND c.name IN ('Decoders', 'Complete Study Packages', 'Standardizers', 'LEX')
+        )
+    );
+
+CREATE POLICY "Public can view library content" ON content
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM categories c
+            WHERE c.id = content.category_id
+            AND c.name IN ('Virtual Library', 'Physical Library')
+        )
+    );
+
+CREATE POLICY "Users can view their own content" ON content
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own content" ON content
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own content" ON content
+    FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own content" ON content
+    FOR DELETE USING (auth.uid() = user_id);
+
 -- Public Links RLS
 ALTER TABLE public_links ENABLE ROW LEVEL SECURITY;
 

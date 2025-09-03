@@ -15,7 +15,7 @@ export default function PublicLayout({
   return (
     <div className="min-h-screen bg-[#f5f5f7]" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
       <PublicHeader />
-      <main className="min-h-[calc(100vh-50px)]">
+      <main className="min-h-[calc(100vh-44px)] pt-[44px]">
         {children}
       </main>
       <PublicFooter />

@@ -7,12 +7,12 @@ import { VocabularyGroup, Vocabulary, Book } from '@/types/database';
 import { 
   Button, Card, Badge, Table, Spinner, Modal, Input 
 } from '@/components/ui';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { getMiddlewareSupabaseClient } from '@/lib/supabase/middleware-helper';
 
 export default function VocabularyGroupDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = getMiddlewareSupabaseClient();
   const [group, setGroup] = useState<VocabularyGroup | null>(null);
   const [vocabulary, setVocabulary] = useState<Vocabulary[]>([]);
   const [relatedBooks, setRelatedBooks] = useState<Book[]>([]);
@@ -103,7 +103,7 @@ export default function VocabularyGroupDetailPage() {
         .eq('id', group.id);
 
       if (error) throw error;
-      router.push('/admin/vocabulary/groups');
+      router.push('/admin/vocabulary');
     } catch (error) {
       console.error('Failed to delete vocabulary group:', error);
     }
@@ -134,7 +134,7 @@ export default function VocabularyGroupDetailPage() {
           <p className="mt-2 text-gray-600">The vocabulary group you're looking for doesn't exist.</p>
           <Button
             className="mt-4"
-            onClick={() => router.push('/admin/vocabulary/groups')}
+            onClick={() => router.push('/admin/vocabulary')}
             leftIcon={<ArrowLeft className="h-4 w-4" />}
           >
             Back to Groups
@@ -150,9 +150,9 @@ export default function VocabularyGroupDetailPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            onClick={() => router.push('/admin/vocabulary/groups')}
+            onClick={() => router.push('/admin/vocabulary')}
             leftIcon={<ArrowLeft className="h-4 w-4" />}
           >
             Back
@@ -201,8 +201,8 @@ export default function VocabularyGroupDetailPage() {
               <div>
                 <label className="text-sm font-medium text-gray-700">Difficulty</label>
                 <p className="mt-1">
-                  <Badge variant={group.difficulty === 'beginner' ? 'success' : 
-                              group.difficulty === 'intermediate' ? 'warning' : 'danger'}>
+                  <Badge variant={group.difficulty === 'basic' ? 'success' : 
+                              group.difficulty === 'standard' ? 'warning' : 'danger'}>
                     {group.difficulty}
                   </Badge>
                 </p>
@@ -323,7 +323,7 @@ export default function VocabularyGroupDetailPage() {
                         {word.word}
                       </h3>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => handleRemoveWord(word.id)}
                         className="opacity-0 group-hover:opacity-100 transition-opacity h-4 w-4 p-0 text-red-600 hover:text-red-700 ml-1"
@@ -346,8 +346,8 @@ export default function VocabularyGroupDetailPage() {
                         </Badge>
                       )}
                       <Badge 
-                        variant={word.difficulty === 'beginner' ? 'success' : 
-                                word.difficulty === 'intermediate' ? 'warning' : 'danger'}
+                        variant={word.difficulty === 'basic' ? 'success' : 
+                                word.difficulty === 'standard' ? 'warning' : 'danger'}
                         className="text-xs px-1 py-0.5"
                       >
                         {word.difficulty.charAt(0).toUpperCase()}
@@ -355,7 +355,7 @@ export default function VocabularyGroupDetailPage() {
                     </div>
                     
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => router.push(`/admin/vocabulary/${word.id}`)}
                       className="w-full h-6 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
@@ -392,7 +392,7 @@ function AddVocabularyModal({
   onClose: () => void;
   onWordAdded: () => void;
 }) {
-  const supabase = createClientComponentClient();
+  const supabase = getMiddlewareSupabaseClient();
   const [availableWords, setAvailableWords] = useState<Vocabulary[]>([]);
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -521,8 +521,8 @@ function AddVocabularyModal({
                           </Badge>
                         )}
                         <Badge 
-                          variant={word.difficulty === 'beginner' ? 'success' : 
-                                  word.difficulty === 'intermediate' ? 'warning' : 'danger'}
+                          variant={word.difficulty === 'basic' ? 'success' : 
+                                  word.difficulty === 'standard' ? 'warning' : 'danger'}
                           className="text-xs"
                         >
                           {word.difficulty}

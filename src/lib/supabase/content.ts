@@ -1,4 +1,3 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { SHARED_USER_ID } from '@/lib/constants/shared';
 import { 
   Content, 
@@ -8,402 +7,241 @@ import {
   ProprietaryProductCategory 
 } from '@/types/content';
 
-const supabase = createClientComponentClient();
-
 export const contentService = {
   // Get all content with optional filters
   async getContent(filters: ContentFilters & { sortField?: string; sortOrder?: 'asc' | 'desc' } = {}) {
-    let query = supabase
-      .from('content')
-      .select(`
-        *,
-        category:categories!category_id(
-          id,
-          name,
-          color,
-          icon
-        ),
-        content_books(
-          book_id,
-          is_primary,
-          book:books(
-            id,
-            title
-          )
-        )
-      `);
-
-    // Apply filters
-    if (filters.search) {
-      query = query.or(`name.ilike.%${filters.search}%,content.ilike.%${filters.search}%`);
+    try {
+      const params = new URLSearchParams();
+      
+      if (filters.search) params.append('search', filters.search);
+      if (filters.category_id) params.append('category_id', filters.category_id);
+      if (filters.parent_category_id) params.append('parent_category_id', filters.parent_category_id);
+      if (filters.book_id) params.append('book_id', filters.book_id);
+      if (filters.sortField) params.append('sortField', filters.sortField);
+      if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
+      if (filters.limit) params.append('limit', filters.limit.toString());
+      if (filters.offset) params.append('offset', filters.offset.toString());
+      
+      const response = await fetch(`/api/admin/content?${params.toString()}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch content');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to fetch content:', error);
+      return [];
     }
-    
-    if (filters.category_id) {
-      query = query.eq('category_id', filters.category_id);
-    }
-    
-    if (filters.parent_category_id) {
-      query = query.eq('parent_category_id', filters.parent_category_id);
-    }
-    
-    if (filters.book_id) {
-      query = query.eq('book_id', filters.book_id);
-    }
-    
-    if (filters.is_public !== undefined) {
-      query = query.eq('is_public', filters.is_public);
-    }
-    
-    if (filters.status) {
-      query = query.eq('status', filters.status);
-    }
-    
-    if (filters.featured !== undefined) {
-      query = query.eq('featured', filters.featured);
-    }
-    
-    if (filters.tags && filters.tags.length > 0) {
-      query = query.contains('tags', filters.tags);
-    }
-    
-    if (filters.limit) {
-      query = query.limit(filters.limit);
-    }
-    
-    if (filters.offset) {
-      query = query.range(filters.offset, filters.offset + (filters.limit || 50) - 1);
-    }
-
-    // Apply sorting
-    const sortField = filters.sortField || 'name';
-    const sortOrder = filters.sortOrder || 'asc';
-    query = query.order(sortField, { ascending: sortOrder === 'asc' });
-
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    return data as Content[];
   },
 
   // Get total count of content items with filters
   async getContentCount(filters: ContentFilters = {}) {
-    let query = supabase
-      .from('content')
-      .select('id', { count: 'exact', head: true });
-
-    // Apply filters
-    if (filters.search) {
-      query = query.or(`name.ilike.%${filters.search}%,content.ilike.%${filters.search}%`);
+    try {
+      const params = new URLSearchParams();
+      params.append('operation', 'count');
+      
+      if (filters.search) params.append('search', filters.search);
+      if (filters.category_id) params.append('category_id', filters.category_id);
+      if (filters.parent_category_id) params.append('parent_category_id', filters.parent_category_id);
+      if (filters.book_id) params.append('book_id', filters.book_id);
+      
+      const response = await fetch(`/api/admin/content?${params.toString()}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch content count');
+      }
+      
+      const result = await response.json();
+      return result.count || 0;
+    } catch (error) {
+      console.error('Failed to fetch content count:', error);
+      return 0;
     }
-    
-    if (filters.category_id) {
-      query = query.eq('category_id', filters.category_id);
-    }
-    
-    if (filters.parent_category_id) {
-      query = query.eq('parent_category_id', filters.parent_category_id);
-    }
-    
-    if (filters.book_id) {
-      query = query.eq('book_id', filters.book_id);
-    }
-    
-    if (filters.is_public !== undefined) {
-      query = query.eq('is_public', filters.is_public);
-    }
-    
-    if (filters.status) {
-      query = query.eq('status', filters.status);
-    }
-    
-    if (filters.featured !== undefined) {
-      query = query.eq('featured', filters.featured);
-    }
-    
-    if (filters.tags && filters.tags.length > 0) {
-      query = query.contains('tags', filters.tags);
-    }
-
-    const { count, error } = await query;
-    
-    if (error) throw error;
-    return count || 0;
   },
 
   // Get content by category name (e.g., "Decoders", "Study Packages")
   async getContentByCategory(categoryName: string, filters: ContentFilters & { sortField?: string; sortOrder?: 'asc' | 'desc' } = {}) {
-    // First get the category
-    const { data: category, error: categoryError } = await supabase
-      .from('categories')
-      .select('id')
-      .eq('name', categoryName)
-      .eq('type', 'content')
-      .single();
-    
-    if (categoryError) throw categoryError;
-    
-    return this.getContent({ ...filters, category_id: category.id });
+    try {
+      const params = new URLSearchParams();
+      params.append('category_name', categoryName);
+      
+      if (filters.search) params.append('search', filters.search);
+      if (filters.sortField) params.append('sortField', filters.sortField);
+      if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
+      if (filters.limit) params.append('limit', filters.limit.toString());
+      if (filters.offset) params.append('offset', filters.offset.toString());
+      
+      const response = await fetch(`/api/admin/content?${params.toString()}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch content by category');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to fetch content by category:', error);
+      return [];
+    }
   },
 
   // Get single content item by ID
   async getContentById(id: string) {
-    const { data, error } = await supabase
-      .from('content')
-      .select(`
-        *,
-        category:categories!category_id(
-          id,
-          name,
-          color,
-          icon,
-          parent_id,
-          description
-        ),
-        parent_category:categories!parent_category_id(
-          id,
-          name,
-          color,
-          icon,
-          description
-        ),
-        book:books(
-          id,
-          title,
-          author,
-          content_type,
-          description,
-          publication_year,
-          publisher,
-          total_pages,
-          category:categories(id, name, color, icon)
-        ),
-        content_books(
-          id,
-          book_id,
-          is_primary,
-          notes,
-          position,
-          book:books(
-            id,
-            title,
-            author,
-            content_type,
-            description,
-            publication_year,
-            publisher,
-            total_pages,
-            category:categories(id, name, color, icon)
-          )
-        )
-      `)
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
-    return data as Content;
+    try {
+      const response = await fetch(`/api/admin/content/${id}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch content');
+      }
+      
+      return await response.json() as Content;
+    } catch (error) {
+      console.error('Failed to fetch content by ID:', error);
+      throw error;
+    }
   },
 
   // Create new content
   async createContent(contentData: CreateContentData) {
-    const { book_ids, ...dataWithoutBookIds } = contentData;
-    
-    const dataWithDefaults = {
-      ...dataWithoutBookIds,
-      is_public: contentData.is_public || false,
-      status: contentData.status || 'active',
-      user_id: SHARED_USER_ID,
-      tags: contentData.tags || [],
-      content_data: contentData.content_data || {},
-    };
-
-    // Create the content first
-    const { data: newContent, error } = await supabase
-      .from('content')
-      .insert(dataWithDefaults)
-      .select(`
-        *,
-        category:categories!category_id(
-          id,
-          name,
-          color,
-          icon,
-          parent_id
-        ),
-        parent_category:categories!parent_category_id(
-          id,
-          name,
-          color,
-          icon
-        ),
-        book:books(
-          id,
-          title,
-          author,
-          content_type
-        )
-      `)
-      .single();
-    
-    if (error) throw error;
-    
-    // If book_ids are provided, create content_books relationships
-    if (book_ids && book_ids.length > 0) {
-      const contentBookData = book_ids.map((bookId, index) => ({
-        content_id: newContent.id,
-        book_id: bookId,
-        is_primary: index === 0, // First book is primary
-        position: index
-      }));
+    try {
+      const response = await fetch('/api/admin/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...contentData,
+          is_public: contentData.is_public || false,
+          status: contentData.status || 'active',
+          user_id: SHARED_USER_ID,
+          tags: contentData.tags || [],
+          content_data: contentData.content_data || {},
+        }),
+        signal: AbortSignal.timeout(5000)
+      });
       
-      const { error: bookError } = await supabase
-        .from('content_books')
-        .insert(contentBookData);
-        
-      if (bookError) {
-        console.error('Failed to create content-book relationships:', bookError);
-        // Don't throw - content was created successfully
+      if (!response.ok) {
+        throw new Error('Failed to create content');
       }
+      
+      const newContent = await response.json();
+      
+      // If book_ids are provided, create content_books relationships
+      if (contentData.book_ids && contentData.book_ids.length > 0) {
+        await fetch('/api/admin/content/books', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content_id: newContent.id,
+            book_ids: contentData.book_ids
+          }),
+          signal: AbortSignal.timeout(5000)
+        }).catch(error => {
+          console.error('Failed to create content-book relationships:', error);
+        });
+      }
+      
+      // Return the content with its relationships
+      return this.getContentById(newContent.id);
+    } catch (error) {
+      console.error('Failed to create content:', error);
+      throw error;
     }
-    
-    // Return the content with its relationships
-    return this.getContentById(newContent.id);
   },
 
   // Update content
   async updateContent({ id, ...contentData }: UpdateContentData) {
-    const { book_ids, ...dataWithoutBookIds } = contentData;
-    
-    // Update the content first
-    const { data, error } = await supabase
-      .from('content')
-      .update({
-        ...dataWithoutBookIds,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select(`
-        *,
-        category:categories!category_id(
+    try {
+      const { book_ids, ...dataWithoutBookIds } = contentData;
+      
+      const response = await fetch('/api/admin/content', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           id,
-          name,
-          color,
-          icon,
-          parent_id
-        ),
-        parent_category:categories!parent_category_id(
-          id,
-          name,
-          color,
-          icon
-        ),
-        book:books(
-          id,
-          title,
-          author,
-          content_type
-        )
-      `)
-      .single();
-    
-    if (error) throw error;
-    
-    // If book_ids are provided, update content_books relationships
-    if (book_ids !== undefined) {
-      // First, delete existing relationships
-      const { error: deleteError } = await supabase
-        .from('content_books')
-        .delete()
-        .eq('content_id', id);
-        
-      if (deleteError) {
-        console.error('Failed to delete existing content-book relationships:', deleteError);
+          ...dataWithoutBookIds,
+          updated_at: new Date().toISOString(),
+        }),
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update content');
       }
       
-      // Then create new relationships
-      if (book_ids.length > 0) {
-        const contentBookData = book_ids.map((bookId, index) => ({
-          content_id: id,
-          book_id: bookId,
-          is_primary: index === 0, // First book is primary
-          position: index
-        }));
-        
-        const { error: bookError } = await supabase
-          .from('content_books')
-          .insert(contentBookData);
-          
-        if (bookError) {
-          console.error('Failed to create content-book relationships:', bookError);
-        }
+      // If book_ids are provided, update content_books relationships
+      if (book_ids !== undefined) {
+        await fetch('/api/admin/content/books', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content_id: id,
+            book_ids
+          }),
+          signal: AbortSignal.timeout(5000)
+        }).catch(error => {
+          console.error('Failed to update content-book relationships:', error);
+        });
       }
+      
+      // Return the content with its relationships
+      return this.getContentById(id);
+    } catch (error) {
+      console.error('Failed to update content:', error);
+      throw error;
     }
-    
-    // Return the content with its relationships
-    return this.getContentById(id);
   },
 
   // Delete content
   async deleteContent(id: string) {
-    const { error } = await supabase
-      .from('content')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
+    try {
+      const response = await fetch(`/api/admin/content?id=${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete content');
+      }
+    } catch (error) {
+      console.error('Failed to delete content:', error);
+      throw error;
+    }
   },
 
   // Get proprietary product categories (subcategories under "Proprietary Products")
   async getProprietaryProductCategories(): Promise<ProprietaryProductCategory[]> {
-    // First get the parent category - this should be shared across all users
-    const { data: parentCategory, error: parentError } = await supabase
-      .from('categories')
-      .select('id, user_id')
-      .eq('name', 'Proprietary Products')
-      .eq('type', 'proprietary_product')
-      .single();
-    
-    if (parentError) {
-      // If parent category doesn't exist, create it
-      console.warn('Proprietary Products parent category not found, creating it');
-      const { data: newParent, error: createError } = await supabase
-        .from('categories')
-        .insert({
-          name: 'Proprietary Products',
-          description: 'Parent category for all proprietary product types',
-          type: 'proprietary_product',
-          color: '#9333EA',
-          icon: 'package',
-          user_id: SHARED_USER_ID // Use shared user ID for shared categories
-        })
-        .select()
-        .single();
+    try {
+      const response = await fetch('/api/admin/content?operation=categories', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
       
-      if (createError) {
-        console.error('Failed to create parent category:', createError);
-        return [];
+      if (!response.ok) {
+        throw new Error('Failed to fetch proprietary product categories');
       }
       
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to fetch proprietary product categories:', error);
       return [];
     }
-    
-    // Then get all subcategories - these should also be visible to all users
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('parent_id', parentCategory.id)
-      .eq('type', 'content')
-      .order('name');
-    
-    if (error) {
-      console.error('Error fetching proprietary product categories:', error);
-      throw error;
-    }
-    
-    // For now, return without content count - we'll add it separately if needed
-    return (data || []).map(cat => ({
-      ...cat,
-      content_count: 0 // Will be implemented separately if needed
-    })) as ProprietaryProductCategory[];
   },
 
   // Create a new proprietary product category
@@ -413,121 +251,95 @@ export const contentService = {
     color?: string;
     icon?: string;
   }) {
-    // First get the parent category
-    let parentCategory;
-    const { data: existingParent, error: parentError } = await supabase
-      .from('categories')
-      .select('id')
-      .eq('name', 'Proprietary Products')
-      .eq('type', 'proprietary_product')
-      .single();
-    
-    if (parentError) {
-      // Create parent category if it doesn't exist
-      const { data: newParent, error: createError } = await supabase
-        .from('categories')
-        .insert({
-          name: 'Proprietary Products',
-          description: 'Parent category for all proprietary product types',
-          type: 'proprietary_product',
-          color: '#8B5CF6',
-          icon: 'package',
-          user_id: SHARED_USER_ID,
-        })
-        .select()
-        .single();
+    try {
+      const response = await fetch('/api/admin/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...categoryData,
+          type: 'content',
+          parent_name: 'Proprietary Products',
+          user_id: SHARED_USER_ID
+        }),
+        signal: AbortSignal.timeout(5000)
+      });
       
-      if (createError) throw createError;
-      parentCategory = newParent;
-    } else {
-      parentCategory = existingParent;
+      if (!response.ok) {
+        throw new Error('Failed to create category');
+      }
+      
+      return await response.json() as ProprietaryProductCategory;
+    } catch (error) {
+      console.error('Failed to create proprietary product category:', error);
+      throw error;
     }
-    
-    const { data, error } = await supabase
-      .from('categories')
-      .insert({
-        ...categoryData,
-        type: 'content',
-        parent_id: parentCategory.id,
-        user_id: SHARED_USER_ID,
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as ProprietaryProductCategory;
   },
 
   // Get content statistics by category
   async getContentStats() {
-    const categories = await this.getProprietaryProductCategories();
-    const stats = await Promise.all(
-      categories.map(async (category) => {
-        const { data, error } = await supabase
-          .from('content')
-          .select('id, is_public, status', { count: 'exact' })
-          .eq('category_id', category.id);
-        
-        if (error) throw error;
-        
-        return {
-          category: category.name,
-          category_id: category.id,
-          total: data?.length || 0,
-          public: data?.filter(c => c.is_public).length || 0,
-          private: data?.filter(c => !c.is_public).length || 0,
-          active: data?.filter(c => c.status === 'active').length || 0,
-          draft: data?.filter(c => c.status === 'draft').length || 0,
-          archived: data?.filter(c => c.status === 'archived').length || 0,
-        };
-      })
-    );
-    
-    return stats;
+    try {
+      const response = await fetch('/api/admin/content?operation=stats', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch content stats');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to fetch content stats:', error);
+      return [];
+    }
   },
 
   // Delete a proprietary product category
   async deleteProprietaryProductCategory(categoryId: string) {
-    // First check if there are any content items in this category
-    const { data: contentItems, error: contentError } = await supabase
-      .from('content')
-      .select('id')
-      .eq('category_id', categoryId)
-      .limit(1);
-    
-    if (contentError) throw contentError;
-    
-    if (contentItems && contentItems.length > 0) {
-      throw new Error('Cannot delete category with existing content items. Please delete or move all content first.');
+    try {
+      const response = await fetch(`/api/admin/categories?id=${categoryId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete category');
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to delete proprietary product category:', error);
+      throw error;
     }
-    
-    // Delete the category
-    const { error } = await supabase
-      .from('categories')
-      .delete()
-      .eq('id', categoryId);
-    
-    if (error) throw error;
-    
-    return { success: true };
   },
 
   // Check if content name already exists
   async checkDuplicateName(name: string, excludeId?: string): Promise<boolean> {
-    let query = supabase
-      .from('content')
-      .select('id')
-      .eq('name', name)
-      .limit(1);
-    
-    if (excludeId) {
-      query = query.neq('id', excludeId);
+    try {
+      const params = new URLSearchParams();
+      params.append('operation', 'check_duplicate');
+      params.append('name', name);
+      if (excludeId) params.append('exclude_id', excludeId);
+      
+      const response = await fetch(`/api/admin/content?${params.toString()}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to check duplicate name');
+      }
+      
+      const result = await response.json();
+      return result.exists || false;
+    } catch (error) {
+      console.error('Failed to check duplicate name:', error);
+      throw error;
     }
-    
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    return (data && data.length > 0);
   },
 
   // Migrate decoder to content (for backwards compatibility)
@@ -546,18 +358,31 @@ export const contentService = {
       is_public: decoder.is_public || false,
     };
     
-    // Get decoder category
-    const { data: category, error: categoryError } = await supabase
-      .from('categories')
-      .select('id')
-      .eq('name', 'Decoders')
-      .eq('type', 'content')
-      .single();
-    
-    if (categoryError) throw categoryError;
-    
-    contentData.category_id = category.id;
-    
-    return this.createContent(contentData);
+    // Get decoder category from API
+    try {
+      const response = await fetch('/api/categories?type=content&name=Decoders', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch decoder category');
+      }
+      
+      const categories = await response.json();
+      const category = categories.find((c: any) => c.name === 'Decoders');
+      
+      if (!category) {
+        throw new Error('Decoder category not found');
+      }
+      
+      contentData.category_id = category.id;
+      
+      return this.createContent(contentData);
+    } catch (error) {
+      console.error('Failed to migrate decoder to content:', error);
+      throw error;
+    }
   },
 };

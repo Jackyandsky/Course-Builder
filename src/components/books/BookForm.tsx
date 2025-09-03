@@ -6,7 +6,7 @@ import { ArrowLeft, Save, X, Plus, BookOpen, Search } from 'lucide-react';
 import { Book, Category, ContentType, VocabularyGroup } from '@/types/database';
 import { bookService, CreateBookData, UpdateBookData } from '@/lib/supabase/books';
 import { categoryService } from '@/lib/supabase/categories';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseClient } from '@/lib/supabase';
 import { 
   Button, Card, Input, Textarea, Select, Badge, Modal, Spinner 
 } from '@/components/ui';
@@ -17,7 +17,7 @@ interface BookFormProps {
 
 export function BookForm({ initialData }: BookFormProps) {
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = createSupabaseClient();
   const isEditing = !!initialData;
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -43,6 +43,22 @@ export function BookForm({ initialData }: BookFormProps) {
     cover_image_url: initialData?.cover_image_url || '',
     publication_year: initialData?.publication_year || '',
     is_public: initialData?.is_public || false,
+    price: initialData?.price || 50.00,
+    currency: initialData?.currency || 'CAD',
+    discount_percentage: initialData?.discount_percentage || 0,
+    sale_price: initialData?.sale_price || null,
+    is_free: initialData?.is_free || false,
+    // Additional fields
+    isbn: (initialData as any)?.isbn || '',
+    publisher: (initialData as any)?.publisher || '',
+    edition: (initialData as any)?.edition || '',
+    page_count: (initialData as any)?.page_count || '',
+    file_url: (initialData as any)?.file_url || '',
+    // Visibility fields
+    show_on_menu: initialData?.show_on_menu || false,
+    show_on_homepage: initialData?.show_on_homepage || false,
+    menu_order: initialData?.menu_order || 0,
+    homepage_order: initialData?.homepage_order || 0,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [newTag, setNewTag] = useState('');
@@ -114,7 +130,20 @@ export function BookForm({ initialData }: BookFormProps) {
     try {
       const bookData = {
         ...formData,
+        // Handle UUID fields - convert empty strings to null
+        category_id: formData.category_id || null,
+        // Handle other fields
         publication_year: formData.publication_year ? Number(formData.publication_year) : undefined,
+        price: formData.price,
+        currency: formData.currency,
+        discount_percentage: formData.discount_percentage,
+        sale_price: formData.sale_price,
+        is_free: formData.is_free,
+        isbn: formData.isbn || undefined,
+        publisher: formData.publisher || undefined,
+        edition: formData.edition || undefined,
+        page_count: formData.page_count ? Number(formData.page_count) : undefined,
+        file_url: formData.file_url || undefined,
       };
       
       let bookId: string;
@@ -130,8 +159,13 @@ export function BookForm({ initialData }: BookFormProps) {
       // Save vocabulary group relationships
       await saveVocabGroupRelationships(bookId);
       
-      router.push('/books');
-      router.refresh(); // To reflect changes on the book list page
+      // Navigate to the appropriate page based on whether we're creating or editing
+      if (isEditing) {
+        router.push(`/admin/books/${bookId}`);
+      } else {
+        router.push('/admin/books');
+      }
+      router.refresh();
     } catch (error: any) {
       console.error('Failed to save book:', error);
       setErrors({ submit: error.message || 'Failed to save book. Please try again.' });
@@ -223,7 +257,7 @@ export function BookForm({ initialData }: BookFormProps) {
       <div className="mb-8">
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => router.back()}
           leftIcon={<ArrowLeft className="h-4 w-4" />}
@@ -267,21 +301,42 @@ export function BookForm({ initialData }: BookFormProps) {
               placeholder="Detailed book description"
               rows={4}
             />
+            <div className="space-y-4">
+              <Input
+                label="Cover Image URL"
+                type="url"
+                value={formData.cover_image_url}
+                onChange={(e) => setFormData({ ...formData, cover_image_url: e.target.value })}
+                placeholder="https://example.com/image.jpg"
+              />
+              {formData.cover_image_url && (
+                <div className="mt-2">
+                  <img 
+                    src={formData.cover_image_url} 
+                    alt="Cover preview" 
+                    className="w-32 h-48 object-cover rounded-lg border"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+            </div>
             <Input
-              label="Cover Image URL"
+              label="File URL (PDF/EPUB)"
               type="url"
-              value={formData.cover_image_url}
-              onChange={(e) => setFormData({ ...formData, cover_image_url: e.target.value })}
-              placeholder="https://example.com/image.jpg"
+              value={formData.file_url}
+              onChange={(e) => setFormData({ ...formData, file_url: e.target.value })}
+              placeholder="https://example.com/book.pdf"
+              helperText="URL to the book file for download"
             />
           </Card.Content>
         </Card>
 
-        <Card>
+<Card>
           <Card.Header><h2 className="text-lg font-semibold">Details & Categorization</h2></Card.Header>
           <Card.Content className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-1">
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Category
               </label>
@@ -300,33 +355,64 @@ export function BookForm({ initialData }: BookFormProps) {
                   variant="outline"
                   size="md"
                   onClick={() => setIsCategoryModalOpen(true)}
-                  className="flex-shrink-0 !h-10" // Using !h-10 to match the input height
+                  className="flex-shrink-0 !h-10"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
             </div>
-              <Input
-                label="Publication Year"
-                type="number"
-                value={formData.publication_year}
-                onChange={(e) => setFormData({ ...formData, publication_year: e.target.value })}
-                error={errors.publication_year}
-                placeholder="e.g., 2023"
-              />
-            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <Select
-                label="Content Type"
-                value={formData.content_type}
-                onChange={(e) => setFormData({ ...formData, content_type: e.target.value as ContentType })}
-                options={bookService.getContentTypes()}
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Year"
+                  type="number"
+                  value={formData.publication_year}
+                  onChange={(e) => setFormData({ ...formData, publication_year: e.target.value })}
+                  error={errors.publication_year}
+                  placeholder="2023"
+                />
+                <Input
+                  label="Language"
+                  value={formData.language}
+                  onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                  placeholder="en"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Select
+                  label="Type"
+                  value={formData.content_type}
+                  onChange={(e) => setFormData({ ...formData, content_type: e.target.value as ContentType })}
+                  options={bookService.getContentTypes()}
+                />
+                <Input
+                  label="Pages"
+                  type="number"
+                  value={formData.page_count}
+                  onChange={(e) => setFormData({ ...formData, page_count: e.target.value })}
+                  placeholder="200"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input
+                label="ISBN"
+                value={formData.isbn}
+                onChange={(e) => setFormData({ ...formData, isbn: e.target.value })}
+                placeholder="978-3-16-148410-0"
               />
               <Input
-                label="Language"
-                value={formData.language}
-                onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-                placeholder="e.g., en"
+                label="Publisher"
+                value={formData.publisher}
+                onChange={(e) => setFormData({ ...formData, publisher: e.target.value })}
+                placeholder="Publisher name"
+              />
+              <Input
+                label="Edition"
+                value={formData.edition}
+                onChange={(e) => setFormData({ ...formData, edition: e.target.value })}
+                placeholder="1st"
               />
             </div>
             <div className="flex items-center space-x-2 pt-2">
@@ -344,6 +430,94 @@ export function BookForm({ initialData }: BookFormProps) {
           </Card.Content>
         </Card>
         
+        <Card>
+          <Card.Header><h2 className="text-lg font-semibold">Pricing</h2></Card.Header>
+          <Card.Content>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 mb-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_free}
+                    onChange={(e) => setFormData({ ...formData, is_free: e.target.checked })}
+                    className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Free Book
+                  </span>
+                </label>
+              </div>
+              
+              {!formData.is_free && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Price
+                      </label>
+                      <div className="flex gap-2">
+                        <Select
+                          value={formData.currency}
+                          onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                          className="w-24"
+                        >
+                          <option value="CAD">CAD</option>
+                          <option value="USD">USD</option>
+                        </Select>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={formData.price}
+                          onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                          placeholder="0.00"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Discount (%)
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={formData.discount_percentage}
+                        onChange={(e) => {
+                          const discount = parseInt(e.target.value) || 0;
+                          const salePrice = discount > 0 
+                            ? formData.price * (1 - discount / 100) 
+                            : null;
+                          setFormData({ 
+                            ...formData, 
+                            discount_percentage: discount,
+                            sale_price: salePrice ? parseFloat(salePrice.toFixed(2)) : null
+                          });
+                        }}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                  
+                  {formData.discount_percentage > 0 && (
+                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <p className="text-sm text-green-800 dark:text-green-200">
+                        Sale Price: {formData.currency === 'CAD' ? 'CA$' : '$'}
+                        {formData.sale_price?.toFixed(2)} 
+                        <span className="text-gray-600 dark:text-gray-400 ml-2">
+                          (Original: {formData.currency === 'CAD' ? 'CA$' : '$'}{formData.price.toFixed(2)})
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </Card.Content>
+        </Card>
+
         <Card>
           <Card.Header><h2 className="text-lg font-semibold">Tags</h2></Card.Header>
           <Card.Content className="space-y-4">
@@ -368,6 +542,64 @@ export function BookForm({ initialData }: BookFormProps) {
                 ))}
               </div>
             )}
+          </Card.Content>
+        </Card>
+
+        {/* Visibility Settings */}
+        <Card>
+          <Card.Header>
+            <h2 className="text-lg font-semibold">Visibility Settings</h2>
+          </Card.Header>
+          <Card.Content>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="show_on_menu"
+                    checked={formData.show_on_menu}
+                    onChange={(e) => setFormData({ ...formData, show_on_menu: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="show_on_menu" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Show in Navigation Menu
+                  </label>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="show_on_homepage"
+                    checked={formData.show_on_homepage}
+                    onChange={(e) => setFormData({ ...formData, show_on_homepage: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="show_on_homepage" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Show on Homepage
+                  </label>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  type="number"
+                  label="Menu Order"
+                  value={formData.menu_order}
+                  onChange={(e) => setFormData({ ...formData, menu_order: parseInt(e.target.value) || 0 })}
+                  helperText="Lower numbers appear first in menu"
+                  disabled={!formData.show_on_menu}
+                />
+                
+                <Input
+                  type="number"
+                  label="Homepage Order"
+                  value={formData.homepage_order}
+                  onChange={(e) => setFormData({ ...formData, homepage_order: parseInt(e.target.value) || 0 })}
+                  helperText="Lower numbers appear first on homepage"
+                  disabled={!formData.show_on_homepage}
+                />
+              </div>
+            </div>
           </Card.Content>
         </Card>
 
@@ -421,7 +653,7 @@ export function BookForm({ initialData }: BookFormProps) {
                       </div>
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => handleVocabGroupToggle(groupId)}
                         className="text-red-600 hover:text-red-700"
@@ -437,7 +669,19 @@ export function BookForm({ initialData }: BookFormProps) {
         </Card>
 
         <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={() => router.push('/books')}>Cancel</Button>
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => {
+              if (isEditing && initialData) {
+                router.push(`/admin/books/${initialData.id}`);
+              } else {
+                router.push('/admin/books');
+              }
+            }}
+          >
+            Cancel
+          </Button>
           <Button type="submit" loading={loading} leftIcon={<Save className="h-4 w-4" />}>
             {isEditing ? 'Update Book' : 'Create Book'}
           </Button>
@@ -466,7 +710,7 @@ export function BookForm({ initialData }: BookFormProps) {
           />
         </div>
         <div className="mt-6 flex justify-end gap-3">
-          <Button variant="ghost" onClick={() => setIsCategoryModalOpen(false)}>
+          <Button variant="outline" onClick={() => setIsCategoryModalOpen(false)}>
             Cancel
           </Button>
           <Button onClick={handleCreateCategory}>

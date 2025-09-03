@@ -1,32 +1,104 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useParams } from 'next/navigation';
-import { GenericContentList } from '@/components/content/GenericContentList';
-import { contentService } from '@/lib/supabase/content';
-import { ProprietaryProductCategory } from '@/types/content';
-import { Spinner } from '@/components/ui';
+import { ContentPageSkeleton } from '@/components/ui/ContentSkeleton';
+import { categoryCache } from '@/lib/cache/category-cache';
+
+// Lazy load the heavy component
+const GenericContentList = lazy(() => 
+  import('@/components/content/GenericContentList').then(mod => ({
+    default: mod.GenericContentList
+  }))
+);
 
 export default function CategoryPage() {
   const params = useParams();
   const categorySlug = params.category as string;
   const [categoryName, setCategoryName] = useState<string | null>(null);
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     const loadCategory = async () => {
       try {
-        // Get all proprietary categories
-        const categories = await contentService.getProprietaryProductCategories();
+        // Try cache first
+        let rootCategories = categoryCache.get<any[]>('content-categories');
+        let allCats: any[] = [];
         
-        // Find the category that matches the slug
-        const matchedCategory = categories.find(
-          cat => cat.name.toLowerCase().replace(/\s+/g, '-') === categorySlug
+        if (rootCategories) {
+          // Use cached data
+          allCats = [...rootCategories];
+          
+          // Get cached subcategories
+          for (const rootCat of rootCategories) {
+            const cached = categoryCache.get<any[]>(`subcategories-${rootCat.id}`);
+            if (cached) {
+              allCats.push(...cached);
+            }
+          }
+        } else {
+          // Fetch fresh data
+          const response = await fetch('/api/categories?type=content');
+          rootCategories = await response.json();
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch categories');
+          }
+          
+          categoryCache.set('content-categories', rootCategories);
+          
+          // Fetch all subcategories in parallel
+          allCats = [...rootCategories];
+          const subCategoryPromises = rootCategories.map(async (rootCat) => {
+            try {
+              const subResponse = await fetch(`/api/categories?parent_id=${rootCat.id}`);
+              if (subResponse.ok) {
+                const subData = await subResponse.json();
+                categoryCache.set(`subcategories-${rootCat.id}`, subData);
+                return subData;
+              }
+            } catch (e) {
+              console.warn('Failed to fetch subcategories for', rootCat.name);
+            }
+            return [];
+          });
+          
+          const subCategoryArrays = await Promise.all(subCategoryPromises);
+          subCategoryArrays.forEach(subCats => {
+            if (subCats) allCats.push(...subCats);
+          });
+        }
+        
+        const categories = allCats;
+        
+        // First try exact slug matching
+        let matchedCategory = categories.find(
+          (cat: any) => cat.name.toLowerCase().replace(/\s+/g, '-') === categorySlug
         );
+        
+        // If no exact match, try flexible matching like the header does
+        if (!matchedCategory) {
+          // Map of common URL slugs to category name patterns
+          const slugToCategoryMap: { [key: string]: string } = {
+            'standardizers': 'Standardizers',
+            'complete-study-packages': 'Complete Study Packages', 
+            'decoders': 'Decoders',
+            'lex': 'LEX'
+          };
+          
+          const expectedCategoryName = slugToCategoryMap[categorySlug];
+          if (expectedCategoryName) {
+            matchedCategory = categories.find((cat: any) => 
+              cat.name.toLowerCase() === expectedCategoryName.toLowerCase()
+            );
+          }
+        }
         
         if (matchedCategory) {
           setCategoryName(matchedCategory.name);
+          setCategoryId(matchedCategory.id);
         } else {
           setError(true);
         }
@@ -42,11 +114,7 @@ export default function CategoryPage() {
   }, [categorySlug]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Spinner size="lg" />
-      </div>
-    );
+    return <ContentPageSkeleton />;
   }
 
   if (error || !categoryName) {
@@ -58,5 +126,9 @@ export default function CategoryPage() {
     );
   }
 
-  return <GenericContentList categoryName={categoryName} />;
+  return (
+    <Suspense fallback={<ContentPageSkeleton />}>
+      <GenericContentList categoryName={categoryName} categoryId={categoryId} />
+    </Suspense>
+  );
 }

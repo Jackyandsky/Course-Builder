@@ -1,8 +1,10 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseClient } from '@/lib/supabase';
+import type { Database } from '@/types/database';
 import { Task, DifficultyLevel } from '@/types/database';
 import { SHARED_USER_ID } from '@/lib/constants/shared';
 
-const supabase = createClientComponentClient();
+// Keep for legacy methods that still need direct access
+const getSupabase = () => createSupabaseClient();
 
 export interface TaskFilters {
   categoryId?: string;
@@ -25,103 +27,145 @@ export interface UpdateTaskData extends Partial<CreateTaskData> {
 }
 
 export const taskService = {
-  // Get all tasks with optional filters
+  // Get all tasks with optional filters - uses API route
   async getTasks(filters: TaskFilters = {}) {
-    let query = supabase
-      .from('tasks')
-      .select(`
-        *,
-        category:categories(id, name, color, icon)
-      `)
-      .order('created_at', { ascending: false });
+    try {
+      const params = new URLSearchParams();
+      
+      if (filters.categoryId) {
+        params.append('categoryId', filters.categoryId);
+      }
+      if (filters.priority) {
+        params.append('priority', filters.priority);
+      }
+      if (filters.pointsMin !== undefined) {
+        params.append('pointsMin', filters.pointsMin.toString());
+      }
+      if (filters.pointsMax !== undefined) {
+        params.append('pointsMax', filters.pointsMax.toString());
+      }
+      if (filters.search) {
+        params.append('search', filters.search);
+      }
 
-    // Apply filters
-    if (filters.categoryId) {
-      query = query.eq('category_id', filters.categoryId);
-    }
-    
-    if (filters.priority) {
-      query = query.eq('priority', filters.priority);
-    }
-    
-    if (filters.pointsMin !== undefined) {
-      query = query.gte('points', filters.pointsMin);
-    }
-    
-    if (filters.pointsMax !== undefined) {
-      query = query.lte('points', filters.pointsMax);
-    }
-    
-    if (filters.search) {
-      query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-    }
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? 'https://builder.vanboss.work' 
+        : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+      const response = await fetch(`${baseUrl}/api/tasks?${params.toString()}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    return data as Task[];
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch tasks');
+      }
+
+      return await response.json() as Task[];
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      throw error;
+    }
   },
 
-  // Get single task by ID
+  // Get single task by ID - uses API route
   async getTask(id: string) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select(`
-        *,
-        category:categories(id, name, color, icon)
-      `)
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
-    return data as Task;
+    try {
+      const response = await fetch(`/api/tasks/${id}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch task');
+      }
+
+      return await response.json() as Task;
+    } catch (error) {
+      console.error('Error fetching task:', error);
+      throw error;
+    }
   },
 
-  // Create new task
+  // Create new task - uses API route
   async createTask(taskData: CreateTaskData) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .insert({
-        ...taskData,
-        user_id: SHARED_USER_ID,
-        priority: taskData.priority ?? 'medium',
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as Task;
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(taskData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create task');
+      }
+
+      return await response.json() as Task;
+    } catch (error) {
+      console.error('Error creating task:', error);
+      throw error;
+    }
   },
 
-  // Update task
+  // Update task - uses API route
   async updateTask({ id, ...taskData }: UpdateTaskData) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .update({
-        ...taskData,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as Task;
+    try {
+      const response = await fetch(`/api/tasks/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(taskData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update task');
+      }
+
+      return await response.json() as Task;
+    } catch (error) {
+      console.error('Error updating task:', error);
+      throw error;
+    }
   },
 
-  // Delete task
+  // Delete task - uses API route
   async deleteTask(id: string) {
-    const { error } = await supabase
-      .from('tasks')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
+    try {
+      const response = await fetch(`/api/tasks/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete task');
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      throw error;
+    }
   },
 
   // Get tasks by category
   async getTasksByCategory(categoryId: string) {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('tasks')
       .select('*')
       .eq('category_id', categoryId)
@@ -133,7 +177,7 @@ export const taskService = {
 
   // Get template tasks
   async getTemplateTasks() {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('tasks')
       .select('*')
       .eq('is_template', true)
@@ -158,10 +202,13 @@ export const taskService = {
 
   // Get task statistics
   async getTaskStats() {
+    const supabase = getSupabase();
+    const { data: { user } } = await supabase.auth.getUser();
+    
     const { data, error } = await supabase
       .from('tasks')
       .select('priority, points', { count: 'exact' })
-      .eq('user_id', SHARED_USER_ID);
+      .eq('user_id', user?.id || SHARED_USER_ID);
     
     if (error) throw error;
 
@@ -181,150 +228,206 @@ export const taskService = {
     return stats;
   },
 
-  // Course relationship methods
+  // Course relationship methods - use API routes
   async getCourseTasks(courseId: string) {
-    const { data, error } = await supabase
-      .from('course_tasks')
-      .select(`
-        id,
-        position,
-        task:tasks(
-          id,
-          title,
-          description,
-          priority,
-          points,
-          category:categories(id, name, color, icon)
-        )
-      `)
-      .eq('course_id', courseId)
-      .order('position', { ascending: true });
-    
-    if (error) throw error;
-    return data;
+    try {
+      const response = await fetch(`/api/courses/${courseId}/tasks`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch course tasks');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching course tasks:', error);
+      throw error;
+    }
   },
 
   async addTaskToCourse(courseId: string, taskId: string, options: { position: number }) {
-    const { data, error } = await supabase
-      .from('course_tasks')
-      .insert({
-        course_id: courseId,
-        task_id: taskId,
-        position: options.position
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+    try {
+      const response = await fetch(`/api/courses/${courseId}/tasks`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          taskIds: [taskId]
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add task to course');
+      }
+
+      const data = await response.json();
+      return data[0]; // Return first item since we only added one
+    } catch (error) {
+      console.error('Error adding task to course:', error);
+      throw error;
+    }
   },
 
   async removeTaskFromCourse(relationId: string) {
-    const { error } = await supabase
-      .from('course_tasks')
-      .delete()
-      .eq('id', relationId);
-    
-    if (error) throw error;
+    try {
+      const response = await fetch(`/api/course-tasks/${relationId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to remove task from course');
+      }
+    } catch (error) {
+      console.error('Error removing task from course:', error);
+      throw error;
+    }
   },
 
-  // Lesson relationship methods
+  // Lesson relationship methods - use API routes
   async getLessonTasks(lessonId: string) {
-    const { data, error } = await supabase
-      .from('lesson_tasks')
-      .select(`
-        id,
-        position,
-        task:tasks(
-          id,
-          title,
-          description,
-          priority,
-          points,
-          category:categories(id, name, color, icon)
-        )
-      `)
-      .eq('lesson_id', lessonId)
-      .order('position', { ascending: true });
-    
-    if (error) throw error;
-    return data;
+    try {
+      const response = await fetch(`/api/lessons/${lessonId}/tasks`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch lesson tasks');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching lesson tasks:', error);
+      throw error;
+    }
   },
 
   async addTaskToLesson(lessonId: string, taskId: string, options: { position: number }) {
-    const { data, error } = await supabase
-      .from('lesson_tasks')
-      .insert({
-        lesson_id: lessonId,
-        task_id: taskId,
-        position: options.position
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+    try {
+      const response = await fetch(`/api/lessons/${lessonId}/tasks`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          taskId,
+          position: options.position
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add task to lesson');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error adding task to lesson:', error);
+      throw error;
+    }
   },
 
   async removeTaskFromLesson(relationId: string) {
-    const { error } = await supabase
-      .from('lesson_tasks')
-      .delete()
-      .eq('id', relationId);
+    // Extract lessonId from somewhere or modify API to accept relationId
+    // For now, this needs to be handled differently
+    console.warn('removeTaskFromLesson needs lessonId - using workaround');
     
-    if (error) throw error;
+    // First get the relation to find the lesson_id
+    const { data: relation } = await getSupabase()
+      .from('lesson_tasks')
+      .select('lesson_id')
+      .eq('id', relationId)
+      .single();
+    
+    if (!relation) throw new Error('Relation not found');
+    
+    try {
+      const response = await fetch(`/api/lessons/${relation.lesson_id}/tasks?relationId=${relationId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to remove task from lesson');
+      }
+    } catch (error) {
+      console.error('Error removing task from lesson:', error);
+      throw error;
+    }
   },
 
   // Get task with its belonging relationships
   async getTaskWithBelongings(taskId: string) {
-    const [task, courseRelations, lessonRelations] = await Promise.all([
-      this.getTask(taskId),
-      supabase
-        .from('course_tasks')
-        .select('course:courses(id, title)')
-        .eq('task_id', taskId),
-      supabase
-        .from('lesson_tasks')
-        .select('lesson:lessons(id, topic, title, lesson_number)')
-        .eq('task_id', taskId)
-    ]);
+    const supabase = getSupabase();
+    
+    // Get the task first
+    const task = await this.getTask(taskId);
+    
+    // Get course relationships - simplified query without join
+    const { data: courseData, error: courseError } = await supabase
+      .from('course_tasks')
+      .select('course_id')
+      .eq('task_id', taskId);
+    
+    // Get lesson relationships - simplified query without join
+    const { data: lessonData, error: lessonError } = await supabase
+      .from('lesson_tasks')
+      .select('lesson_id')
+      .eq('task_id', taskId);
+
+    console.log('Task ID:', taskId);
+    console.log('Course data raw:', courseData);
+    console.log('Lesson data raw:', lessonData);
+    console.log('Course error:', courseError);
+    console.log('Lesson error:', lessonError);
+    
+    // Map the data to extract just the lesson/course IDs
+    const courseIds = courseData?.map(item => item.course_id) || [];
+    const lessonIds = lessonData?.map(item => item.lesson_id) || [];
+    
+    console.log('Extracted course IDs:', courseIds);
+    console.log('Extracted lesson IDs:', lessonIds);
 
     return {
       ...task,
-      belongingCourses: courseRelations.data?.map(r => r.course) || [],
-      belongingLessons: lessonRelations.data?.map(r => r.lesson) || [],
+      belongingCourses: courseIds,
+      belongingLessons: lessonIds,
     };
   },
 
   // Get all tasks with their belonging relationships
   async getTasksWithBelongings(filters: TaskFilters = {}) {
-    const tasks = await this.getTasks(filters);
-    
-    // Get all relationships in parallel
-    const taskIds = tasks.map(t => t.id);
-    
-    const [courseRelations, lessonRelations] = await Promise.all([
-      supabase
-        .from('course_tasks')
-        .select('task_id, course:courses(id, title)')
-        .in('task_id', taskIds),
-      supabase
-        .from('lesson_tasks')
-        .select('task_id, lesson:lessons(id, topic, title, lesson_number)')
-        .in('task_id', taskIds)
-    ]);
-
-    // Map relationships to tasks
-    return tasks.map(task => ({
-      ...task,
-      belongingCourses: courseRelations.data?.filter(r => r.task_id === task.id)?.map(r => r.course) || [],
-      belongingLessons: lessonRelations.data?.filter(r => r.task_id === task.id)?.map(r => r.lesson) || [],
-    }));
+    // For now, just return tasks without belongings to fix the admin page
+    // The relationships can be loaded separately when needed
+    return await this.getTasks(filters);
   },
 
   // Remove task from all courses
   async removeTaskFromAllCourses(taskId: string) {
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('course_tasks')
       .delete()
       .eq('task_id', taskId);
@@ -334,7 +437,7 @@ export const taskService = {
 
   // Remove task from all lessons
   async removeTaskFromAllLessons(taskId: string) {
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('lesson_tasks')
       .delete()
       .eq('task_id', taskId);

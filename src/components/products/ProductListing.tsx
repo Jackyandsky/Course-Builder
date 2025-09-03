@@ -13,9 +13,22 @@ interface Product {
   author?: string;
   description?: string;
   price?: number;
+  currency?: string;
+  discount_percentage?: number;
+  sale_price?: number;
+  is_free?: boolean;
   imageUrl?: string;
   category?: string;
   type?: string;
+}
+
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
 }
 
 interface ProductListingProps {
@@ -25,6 +38,12 @@ interface ProductListingProps {
   subtitle?: string;
   categories?: string[];
   initialCategory?: string;
+  searchValue?: string;
+  onSearch?: (value: string) => void;
+  onCategoryChange?: (category: string) => void;
+  onProductClick?: (productId: string) => void;
+  pagination?: PaginationProps;
+  loading?: boolean;
 }
 
 export default function ProductListing({
@@ -33,14 +52,19 @@ export default function ProductListing({
   title,
   subtitle,
   categories = [],
-  initialCategory
+  initialCategory,
+  searchValue = '',
+  onSearch,
+  onCategoryChange,
+  onProductClick,
+  pagination,
+  loading = false
 }: ProductListingProps) {
   const [products, setProducts] = useState(initialProducts);
-  const [filteredProducts, setFilteredProducts] = useState(initialProducts);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [localSearchTerm, setLocalSearchTerm] = useState(searchValue);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory || 'all');
   const [sortBy, setSortBy] = useState('title');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(pagination?.currentPage || 1);
   const [showFilters, setShowFilters] = useState(false);
 
   // Update products when initialProducts change
@@ -48,29 +72,61 @@ export default function ProductListing({
     setProducts(initialProducts);
   }, [initialProducts]);
 
+  // Update search term when searchValue prop changes
+  useEffect(() => {
+    setLocalSearchTerm(searchValue);
+  }, [searchValue]);
+
   // Update selected category when URL changes
   useEffect(() => {
     setSelectedCategory(initialCategory || 'all');
-    setCurrentPage(1); // Reset to first page when category changes
   }, [initialCategory]);
   
-  const itemsPerPage = 12;
+  const itemsPerPage = pagination?.pageSize || 12;
 
-  // Filter and sort products
-  useEffect(() => {
+  // Handle search changes
+  const handleSearchChange = (value: string) => {
+    setLocalSearchTerm(value);
+    if (onSearch) {
+      onSearch(value);
+    }
+  };
+
+  // Handle category changes
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    if (onCategoryChange) {
+      onCategoryChange(category);
+    }
+  };
+
+  // Handle product click
+  const handleProductClick = (productId: string) => {
+    if (onProductClick) {
+      onProductClick(productId);
+    }
+  };
+
+  // Filter and sort products for local mode
+  const filteredProducts = (() => {
+    if (pagination) {
+      // When using external pagination, no local filtering
+      return products;
+    }
+    
     let filtered = [...products];
 
-    // Search filter
-    if (searchTerm) {
+    // Local search filter
+    if (localSearchTerm && !onSearch) {
       filtered = filtered.filter(product =>
-        product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.author?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description?.toLowerCase().includes(searchTerm.toLowerCase())
+        product.title.toLowerCase().includes(localSearchTerm.toLowerCase()) ||
+        product.author?.toLowerCase().includes(localSearchTerm.toLowerCase()) ||
+        product.description?.toLowerCase().includes(localSearchTerm.toLowerCase())
       );
     }
 
-    // Category filter
-    if (selectedCategory !== 'all') {
+    // Category filter (only if no external handler)
+    if (selectedCategory !== 'all' && !onCategoryChange) {
       filtered = filtered.filter(product => product.category === selectedCategory);
     }
 
@@ -90,14 +146,22 @@ export default function ProductListing({
       }
     });
 
-    setFilteredProducts(filtered);
-    setCurrentPage(1); // Reset to first page when filters change
-  }, [products, searchTerm, selectedCategory, sortBy]);
+    return filtered;
+  })();
 
-  // Pagination
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const displayedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  // Calculate pagination values
+  const startIndex = pagination 
+    ? (pagination.currentPage - 1) * pagination.pageSize 
+    : (currentPage - 1) * itemsPerPage;
+  
+  const endIndex = pagination
+    ? Math.min(startIndex + pagination.pageSize, pagination.totalItems || products.length)
+    : Math.min(startIndex + itemsPerPage, filteredProducts.length);
+
+  // Get displayed products
+  const displayedProducts = pagination 
+    ? products 
+    : filteredProducts.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -122,8 +186,8 @@ export default function ProductListing({
                 <Input
                   type="text"
                   placeholder="Search by title, author, or description..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={localSearchTerm}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   className="pl-10 pr-4"
                 />
               </div>
@@ -134,7 +198,7 @@ export default function ProductListing({
               {categories.length > 0 && (
                 <Select
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  onChange={(e) => handleCategoryChange(e.target.value)}
                   className="w-48"
                 >
                   <option value="all">All Categories</option>
@@ -209,28 +273,48 @@ export default function ProductListing({
       {/* Results Summary */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <p className="text-sm text-gray-600">
-          Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredProducts.length)} of {filteredProducts.length} results
-          {searchTerm && ` for "${searchTerm}"`}
-          {selectedCategory !== 'all' && ` in ${selectedCategory}`}
+          {pagination ? (
+            <>
+              Showing {startIndex + 1}-{endIndex} of {pagination.totalItems} results
+              {localSearchTerm && ` for "${localSearchTerm}"`}
+              {selectedCategory !== 'all' && ` in ${selectedCategory}`}
+            </>
+          ) : (
+            <>
+              Showing {filteredProducts.length > 0 ? startIndex + 1 : 0}-{endIndex} of {filteredProducts.length} results
+              {localSearchTerm && ` for "${localSearchTerm}"`}
+              {selectedCategory !== 'all' && ` in ${selectedCategory}`}
+            </>
+          )}
         </p>
       </div>
 
       {/* Product Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 relative">
+        {loading && (
+          <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        )}
         {displayedProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {displayedProducts.map(product => (
-              <ProductCard
-                key={product.id}
-                id={product.id}
-                title={product.title}
-                author={product.author}
-                description={product.description}
-                price={product.price}
-                imageUrl={product.imageUrl}
-                type={type}
-                category={product.category}
-              />
+              <div key={product.id} onClick={() => handleProductClick(product.id)}>
+                <ProductCard
+                  id={product.id}
+                  title={product.title}
+                  author={product.author}
+                  description={product.description}
+                  price={product.price}
+                  currency={product.currency}
+                  discount_percentage={product.discount_percentage}
+                  sale_price={product.sale_price}
+                  is_free={product.is_free}
+                  imageUrl={product.imageUrl}
+                  type={type}
+                  category={product.category}
+                />
+              </div>
             ))}
           </div>
         ) : (
@@ -238,7 +322,7 @@ export default function ProductListing({
             <p className="text-gray-500">No products found matching your criteria.</p>
             <button
               onClick={() => {
-                setSearchTerm('');
+                setLocalSearchTerm('');
                 setSelectedCategory('all');
               }}
               className="mt-4 text-blue-600 hover:text-blue-700"
@@ -250,14 +334,32 @@ export default function ProductListing({
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
-        </div>
+      {pagination ? (
+        (pagination.totalPages > 1 || pagination.onPageSizeChange) && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+            <Pagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              onPageChange={pagination.onPageChange}
+              pageSize={pagination.pageSize}
+              onPageSizeChange={pagination.onPageSizeChange}
+              pageSizeOptions={[12, 24, 48, 96]}
+            />
+          </div>
+        )
+      ) : (
+        (() => {
+          const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+          return totalPages > 1 ? (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          ) : null;
+        })()
       )}
     </div>
   );

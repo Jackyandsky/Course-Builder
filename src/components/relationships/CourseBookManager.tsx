@@ -12,10 +12,11 @@ import { Book, Loader2 } from 'lucide-react'
 
 interface CourseBookManagerProps {
   courseId: string
+  preloadedData?: any // Pre-loaded course data
   onUpdate?: () => void
 }
 
-export function CourseBookManager({ courseId, onUpdate }: CourseBookManagerProps) {
+export function CourseBookManager({ courseId, preloadedData, onUpdate }: CourseBookManagerProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedBooks, setSelectedBooks] = useState<string[]>([])
@@ -24,16 +25,29 @@ export function CourseBookManager({ courseId, onUpdate }: CourseBookManagerProps
   const [loading, setLoading] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [dataLoaded, setDataLoaded] = useState(false)
 
   // Load course books
   const loadCourseBooks = useCallback(async () => {
-    try {
-      const books = await courseBookService.getCourseBooksWithDetails(courseId)
-      setCourseBooks(books || [])
-    } catch (error) {
-      console.error('Failed to load course books:', error)
+    if (preloadedData && !dataLoaded) {
+      console.log('[CourseBook] Using preloaded data - NO API calls needed');
+      
+      // Use preloaded course books immediately
+      setCourseBooks(preloadedData.books || []);
+      setDataLoaded(true);
+      
+    } else if (!preloadedData && !dataLoaded) {
+      // Fallback to original loading method if no preloaded data
+      console.log('[CourseBook] No preloaded data, using API calls');
+      try {
+        const books = await courseBookService.getCourseBooksWithDetails(courseId)
+        setCourseBooks(books || [])
+        setDataLoaded(true);
+      } catch (error) {
+        console.error('Failed to load course books:', error)
+      }
     }
-  }, [courseId])
+  }, [courseId, preloadedData, dataLoaded])
 
   // Memoize course book IDs to prevent unnecessary re-renders
   const courseBooksIds = useMemo(() => {
@@ -286,7 +300,7 @@ export function CourseBookManager({ courseId, onUpdate }: CourseBookManagerProps
                       {courseBook.book?.category?.name || 'Uncategorized'}
                     </Badge>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => handleRemoveBook(courseBook.book_id)}
                       className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-red-600 hover:text-red-700"

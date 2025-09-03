@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import type { UserRole } from '@/types/user-management';
 
 interface LoginFormProps {
   onToggleMode: () => void;
@@ -16,7 +18,9 @@ export function LoginForm({ onToggleMode, isSignUp = false }: LoginFormProps) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [role, setRole] = useState<UserRole>('student'); // Default to student
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   const { signIn, signUp } = useAuth();
@@ -24,6 +28,7 @@ export function LoginForm({ onToggleMode, isSignUp = false }: LoginFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
     setLoading(true);
 
     try {
@@ -38,12 +43,18 @@ export function LoginForm({ onToggleMode, isSignUp = false }: LoginFormProps) {
             first_name: firstName,
             last_name: lastName,
             full_name: `${firstName} ${lastName}`.trim(),
+            role: role,
+            needs_verification: role !== 'student' && role !== 'parent', // Auto-approve students and parents
           },
         });
 
         if (error) {
           setError(error.message);
         } else if (user) {
+          // Show verification message for roles that need approval
+          if (role !== 'student' && role !== 'parent') {
+            setSuccessMessage('Your account has been created successfully! Please wait for an administrator to verify your account. You will receive an email once approved.');
+          }
           // Success - user will be redirected by auth state change
         }
       } else {
@@ -53,6 +64,8 @@ export function LoginForm({ onToggleMode, isSignUp = false }: LoginFormProps) {
           setError(error.message);
         } else if (user) {
           // Success - user will be redirected by auth state change
+          // AuthGuard and layouts will handle role-based redirection and verification
+          console.log('LoginForm - Login successful, redirecting...');
         }
       }
     } catch (err) {
@@ -78,24 +91,44 @@ export function LoginForm({ onToggleMode, isSignUp = false }: LoginFormProps) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {isSignUp && (
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="First Name"
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="First Name"
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+                placeholder="John"
+              />
+              <Input
+                label="Last Name"
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+                placeholder="Doe"
+              />
+            </div>
+            
+            <Select
+              label="I am a..."
+              value={role}
+              onChange={(e) => setRole(e.target.value as UserRole)}
               required
-              placeholder="John"
-            />
-            <Input
-              label="Last Name"
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              required
-              placeholder="Doe"
-            />
-          </div>
+            >
+              <option value="student">Student</option>
+              <option value="parent">Parent</option>
+              <option value="teacher">Teacher</option>
+              <option value="admin">Administrator</option>
+            </Select>
+            
+            {role !== 'student' && role !== 'parent' && (
+              <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md text-sm">
+                <strong>Note:</strong> Teacher and Administrator accounts require verification. You'll receive an email once your account is approved.
+              </div>
+            )}
+          </>
         )}
 
         <Input
@@ -130,6 +163,12 @@ export function LoginForm({ onToggleMode, isSignUp = false }: LoginFormProps) {
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
             {error}
+          </div>
+        )}
+        
+        {successMessage && (
+          <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-md text-sm">
+            {successMessage}
           </div>
         )}
 

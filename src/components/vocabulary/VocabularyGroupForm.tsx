@@ -6,7 +6,7 @@ import { ArrowLeft, Save, X, Plus, Upload, FileText, Book, Search } from 'lucide
 import { VocabularyGroup, Category, DifficultyLevel, Book as BookType } from '@/types/database';
 import { vocabularyService, CreateVocabularyGroupData, UpdateVocabularyGroupData } from '@/lib/supabase/vocabulary';
 import { categoryService } from '@/lib/supabase/categories';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createSupabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Button, Card, Input, Textarea, Select, Badge, Modal, Spinner 
@@ -22,7 +22,7 @@ interface VocabularyGroupFormProps {
 export function VocabularyGroupForm({ initialData, onSave, isLoading, onCancel }: VocabularyGroupFormProps) {
   const router = useRouter();
   const { user } = useAuth();
-  const supabase = createClientComponentClient();
+  const supabase = createSupabaseClient();
   const isEditing = !!initialData;
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -49,7 +49,7 @@ export function VocabularyGroupForm({ initialData, onSave, isLoading, onCancel }
     category_id: initialData?.category_id || '',
     language: initialData?.language || 'en',
     target_language: initialData?.target_language || '',
-    difficulty: initialData?.difficulty || 'beginner' as DifficultyLevel,
+    difficulty: initialData?.difficulty || 'basic' as DifficultyLevel,
     tags: initialData?.tags || [],
     is_public: initialData?.is_public || false,
   });
@@ -350,7 +350,7 @@ export function VocabularyGroupForm({ initialData, onSave, isLoading, onCancel }
       <div className="mb-8">
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => router.back()}
           leftIcon={<ArrowLeft className="h-4 w-4" />}
@@ -603,7 +603,7 @@ create,v.,bring something into existence`}
                       </div>
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => handleBookToggle(bookId)}
                         className="text-red-600 hover:text-red-700"
@@ -649,7 +649,7 @@ create,v.,bring something into existence`}
           />
         </div>
         <div className="mt-6 flex justify-end gap-3">
-          <Button variant="ghost" onClick={() => setIsCategoryModalOpen(false)}>
+          <Button variant="outline" onClick={() => setIsCategoryModalOpen(false)}>
             Cancel
           </Button>
           <Button onClick={handleCreateCategory}>

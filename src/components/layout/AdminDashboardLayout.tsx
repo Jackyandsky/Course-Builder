@@ -21,6 +21,8 @@ import {
   UsersIcon,
   CubeIcon,
   ClipboardDocumentCheckIcon,
+  WrenchScrewdriverIcon,
+  PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -29,11 +31,12 @@ import { cn } from '@/lib/utils';
 import { contentService } from '@/lib/supabase/content';
 import { ProprietaryProductCategory } from '@/types/content';
 
-// Icon mapping for proprietary product categories
+// Icon mapping for content categories
 const categoryIcons: Record<string, any> = {
   'Decoders': KeyIcon,
   'Complete Study Packages': CubeIcon,
   'Standardizers': ClipboardDocumentCheckIcon,
+  'LEX': LanguageIcon,
   'default': DocumentTextIcon,
 };
 
@@ -52,6 +55,7 @@ interface LinkNavigationItem extends BaseNavigationItem {
   href: string;
   isCategory?: never;
   children?: never;
+  isSubsection?: boolean;
 }
 
 interface CategoryNavigationItem extends BaseNavigationItem {
@@ -66,7 +70,7 @@ const staticNavigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/admin', icon: HomeIcon },
   { name: 'Courses', href: '/admin/courses', icon: AcademicCapIcon },
   { name: 'Schedules', href: '/admin/schedules', icon: CalendarIcon },
-  { name: 'Lessons', href: '/admin/lessons', icon: ClockIcon },
+  { name: 'Sessions', href: '/admin/lessons', icon: ClockIcon },
   { name: 'Tasks', href: '/admin/tasks', icon: CheckCircleIcon },
   { name: 'Objectives', href: '/admin/objectives', icon: DocumentTextIcon },
   { name: 'Methods', href: '/admin/methods', icon: CogIcon },
@@ -80,67 +84,214 @@ interface AdminDashboardLayoutProps {
 
 export function AdminDashboardLayout({ children }: AdminDashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState<string[]>(['Proprietary Products']);
-  const [proprietaryCategories, setProprietaryCategories] = useState<ProprietaryProductCategory[]>([]);
-  const [navigation, setNavigation] = useState<NavigationItem[]>(staticNavigation);
+  const [expandedCategories, setExpandedCategories] = useState<string[]>(['Content Products', 'Tools']);
+  const [contentCategories, setContentCategories] = useState<any[]>([]);
+  const [navigation, setNavigation] = useState<NavigationItem[]>(() => {
+    // Try to get cached navigation from sessionStorage first
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('admin-navigation-cache');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          // Restore icons from the mapping
+          const restoreIcons = (items: any[]): NavigationItem[] => {
+            return items.map(item => {
+              if (item.isCategory && item.children) {
+                return {
+                  ...item,
+                  icon: categoryIcons[item.name] || CubeIcon,
+                  children: item.children.map((child: any) => ({
+                    ...child,
+                    icon: categoryIcons[child.name] || categoryIcons.default
+                  }))
+                };
+              }
+              return {
+                ...item,
+                icon: staticNavigation.find(s => s.name === item.name)?.icon ||
+                      categoryIcons[item.name] || categoryIcons.default
+              };
+            });
+          };
+          return restoreIcons(parsed);
+        } catch (e) {
+          console.log('Failed to parse cached navigation');
+        }
+      }
+    }
+    
+    // Initialize with static navigation as fallback
+    const fallbackNav = [...staticNavigation];
+    const fallbackContentItem: CategoryNavigationItem = {
+      name: 'Content Products',
+      icon: CubeIcon,
+      isCategory: true,
+      children: [
+        { name: 'Decoders', href: '/admin/decoders', icon: KeyIcon },
+        { name: 'Standardizers', href: '/admin/standardizers', icon: ClipboardDocumentCheckIcon },
+        { name: 'Complete Study Packages', href: '/admin/complete-study-packages', icon: CubeIcon, isSubsection: true },
+        { name: 'LEX', href: '/admin/lex', icon: LanguageIcon }
+      ]
+    };
+    const fallbackToolsItem: CategoryNavigationItem = {
+      name: 'Tools',
+      icon: WrenchScrewdriverIcon,
+      isCategory: true,
+      children: [
+        { name: 'Essay Builder', href: '/admin/tools/essay-builder', icon: PencilSquareIcon }
+      ]
+    };
+    fallbackNav.splice(fallbackNav.length, 0, fallbackContentItem);
+    fallbackNav.splice(fallbackNav.length, 0, fallbackToolsItem);
+    fallbackNav.push({ name: 'Users', href: '/admin/users', icon: UsersIcon });
+    return fallbackNav;
+  });
   const pathname = usePathname();
 
-  // Load proprietary product categories
+  // Load content categories with non-blocking approach
   useEffect(() => {
+    let mounted = true;
+    
     const loadCategories = async () => {
       try {
-        const categories = await contentService.getProprietaryProductCategories();
-        setProprietaryCategories(categories);
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
         
-        // Build dynamic navigation
-        const proprietaryProductItem: CategoryNavigationItem = {
-          name: 'Proprietary Products',
+        // Fetch root categories with timeout and skip counts for faster loading
+        const response = await fetch('/api/categories?parent_id=null&type=content&skipCounts=true', {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch categories');
+        }
+        
+        const categories = await response.json();
+        
+        if (!mounted) return; // Check if still mounted
+        
+        setContentCategories(categories);
+        
+        // Build navigation items for each category
+        const navigationItems: any[] = [];
+        
+        // Use Promise.all for parallel loading of subcategories
+        const subcategoryPromises = categories.map(async (cat: any) => {
+          try {
+            // Only fetch subcategories for Standardizers
+            if (cat.name === 'Standardizers') {
+              const subController = new AbortController();
+              const subTimeoutId = setTimeout(() => subController.abort(), 2000);
+              
+              const subResponse = await fetch(`/api/categories?parent_id=${cat.id}&skipCounts=true`, {
+                signal: subController.signal
+              });
+              clearTimeout(subTimeoutId);
+              
+              if (subResponse.ok) {
+                const subcategories = await subResponse.json();
+                return { category: cat, subcategories };
+              }
+            }
+            return { category: cat, subcategories: [] };
+          } catch (error) {
+            console.error(`Failed to load subcategories for ${cat.name}:`, error);
+            return { category: cat, subcategories: [] };
+          }
+        });
+        
+        const results = await Promise.all(subcategoryPromises);
+        
+        if (!mounted) return; // Check again after async operations
+        
+        // Build navigation from results
+        for (const { category, subcategories } of results) {
+          navigationItems.push({
+            name: category.name,
+            href: `/admin/${generateSlug(category.name)}`,
+            icon: categoryIcons[category.name] || categoryIcons.default,
+          });
+          
+          // Add subcategories if any
+          if (category.name === 'Standardizers' && subcategories && subcategories.length > 0) {
+            subcategories.forEach((sub: any) => {
+              navigationItems.push({
+                name: sub.name,
+                href: `/admin/${generateSlug(sub.name)}`,
+                icon: categoryIcons[sub.name] || categoryIcons.default,
+                isSubsection: true,
+              });
+            });
+          }
+        }
+        
+        // Build dynamic navigation for content categories
+        const contentProductItem: CategoryNavigationItem = {
+          name: 'Content Products',
           icon: CubeIcon,
           isCategory: true,
+          children: navigationItems
+        };
+        
+        // Add Tools section to navigation
+        const toolsItem: CategoryNavigationItem = {
+          name: 'Tools',
+          icon: WrenchScrewdriverIcon,
+          isCategory: true,
           children: [
-            ...categories.map(cat => ({
-              name: cat.name,
-              href: `/admin/${generateSlug(cat.name)}`,
-              icon: categoryIcons[cat.name] || categoryIcons.default,
-            })),
-            { 
-              name: 'Manage Categories', 
-              href: '/admin/proprietary-categories', 
-              icon: CogIcon 
-            },
+            { name: 'Essay Builder', href: '/admin/tools/essay-builder', icon: PencilSquareIcon }
           ]
         };
         
-        // Add proprietary products to navigation before Users
-        const newNav = [...staticNavigation];
-        newNav.splice(newNav.length, 0, proprietaryProductItem);
-        newNav.push({ name: 'Users', href: '/admin/users', icon: UsersIcon });
-        
-        setNavigation(newNav);
+        // Update navigation if still mounted
+        if (mounted) {
+          const newNav = [...staticNavigation];
+          newNav.splice(newNav.length, 0, contentProductItem);
+          newNav.splice(newNav.length, 0, toolsItem);
+          newNav.push({ name: 'Users', href: '/admin/users', icon: UsersIcon });
+          
+          setNavigation(newNav);
+          
+          // Cache the navigation structure (without icons since they can't be serialized)
+          if (typeof window !== 'undefined') {
+            const navToCache = newNav.map(item => {
+              if ('isCategory' in item && item.isCategory) {
+                return {
+                  name: item.name,
+                  isCategory: true,
+                  children: item.children.map(child => ({
+                    name: child.name,
+                    href: child.href,
+                    isSubsection: child.isSubsection
+                  }))
+                };
+              }
+              return {
+                name: item.name,
+                href: item.href
+              };
+            });
+            sessionStorage.setItem('admin-navigation-cache', JSON.stringify(navToCache));
+          }
+        }
       } catch (error) {
-        console.error('Failed to load proprietary categories:', error);
-        // Fallback to static navigation with just decoders
-        const fallbackNav = [...staticNavigation];
-        const fallbackProprietaryItem: CategoryNavigationItem = {
-          name: 'Proprietary Products',
-          icon: CubeIcon,
-          isCategory: true,
-          children: [
-            { name: 'Decoders', href: '/admin/decoders', icon: KeyIcon },
-            { 
-              name: 'Manage Categories', 
-              href: '/admin/proprietary-categories', 
-              icon: CogIcon 
-            },
-          ]
-        };
-        fallbackNav.push(fallbackProprietaryItem);
-        fallbackNav.push({ name: 'Users', href: '/admin/users', icon: UsersIcon });
-        setNavigation(fallbackNav);
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.log('Category loading timed out, using fallback navigation');
+        } else {
+          console.error('Failed to load content categories:', error);
+        }
+        // Navigation already initialized with fallback, no need to update
       }
     };
 
+    // Load categories in background without blocking UI
     loadCategories();
+    
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const toggleCategory = (categoryName: string) => {
@@ -153,62 +304,67 @@ export function AdminDashboardLayout({ children }: AdminDashboardLayoutProps) {
 
   const renderNavigationItem = (item: NavigationItem, isMobile: boolean = false) => {
     if (item.isCategory) {
-      const isExpanded = expandedCategories.includes(item.name);
+      // Always show expanded for Content Products
       return (
         <li key={item.name}>
-          <button
-            onClick={() => toggleCategory(item.name)}
-            className="w-full group flex items-center gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold text-gray-700 hover:text-primary-600 hover:bg-gray-50"
-          >
+          <div className="w-full group flex items-center gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold text-gray-700">
             <item.icon
-              className="h-6 w-6 shrink-0 text-gray-400 group-hover:text-primary-600"
+              className="h-6 w-6 shrink-0 text-gray-400"
               aria-hidden="true"
             />
             <span className="flex-1 text-left">{item.name}</span>
-            {isExpanded ? (
-              <ChevronDownIcon className="h-4 w-4 text-gray-400" />
-            ) : (
-              <ChevronRightIcon className="h-4 w-4 text-gray-400" />
-            )}
-          </button>
-          {isExpanded && item.children && (
+          </div>
+          {item.children && (
             <ul className="ml-6 mt-1 space-y-1">
-              {item.children.map((child) => (
-                <li key={child.name}>
-                  <Link
-                    href={child.href}
-                    className={cn(
-                      pathname === child.href
-                        ? 'bg-gray-50 text-primary-600'
-                        : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50',
-                      'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
-                    )}
-                    onClick={isMobile ? () => setSidebarOpen(false) : undefined}
-                  >
-                    <child.icon
+              {item.children.map((child: any) => {
+                // Check if this is a subsection
+                const isSubsection = child.isSubsection || false;
+                // Check if this child is active
+                const isChildActive = pathname.startsWith(child.href);
+                
+                return (
+                  <li key={child.name}>
+                    <Link
+                      href={child.href}
                       className={cn(
-                        pathname === child.href
-                          ? 'text-primary-600'
-                          : 'text-gray-400 group-hover:text-primary-600',
-                        'h-6 w-6 shrink-0'
+                        isChildActive
+                          ? 'bg-gray-50 text-primary-600'
+                          : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50',
+                        'group flex gap-x-3 rounded-md p-2 text-sm leading-6',
+                        isSubsection ? 'ml-4 text-xs' : 'font-semibold'
                       )}
-                      aria-hidden="true"
-                    />
-                    {child.name}
-                  </Link>
-                </li>
-              ))}
+                      onClick={isMobile ? () => setSidebarOpen(false) : undefined}
+                    >
+                      <child.icon
+                        className={cn(
+                          isChildActive
+                            ? 'text-primary-600'
+                            : 'text-gray-400 group-hover:text-primary-600',
+                          isSubsection ? 'h-5 w-5 shrink-0' : 'h-6 w-6 shrink-0'
+                        )}
+                        aria-hidden="true"
+                      />
+                      {child.name}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </li>
       );
     } else {
+      // Check if this is the active route
+      const isActive = item.href === '/admin' 
+        ? pathname === '/admin'
+        : pathname.startsWith(item.href);
+      
       return (
         <li key={item.name}>
           <Link
             href={item.href}
             className={cn(
-              pathname === item.href
+              isActive
                 ? 'bg-gray-50 text-primary-600'
                 : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50',
               'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
@@ -217,7 +373,7 @@ export function AdminDashboardLayout({ children }: AdminDashboardLayoutProps) {
           >
             <item.icon
               className={cn(
-                pathname === item.href
+                isActive
                   ? 'text-primary-600'
                   : 'text-gray-400 group-hover:text-primary-600',
                 'h-6 w-6 shrink-0'
@@ -318,24 +474,38 @@ export function AdminDashboardLayout({ children }: AdminDashboardLayoutProps) {
       </div>
 
       <div className="lg:pl-72">
-        {/* Top navigation */}
-        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
-          <button
-            type="button"
-            className="-m-2.5 p-2.5 text-gray-700 lg:hidden"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <span className="sr-only">Open sidebar</span>
-            <Bars3Icon className="h-6 w-6" aria-hidden="true" />
-          </button>
-
-          <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-            <div className="flex flex-1"></div>
-            <div className="flex items-center gap-x-4 lg:gap-x-6">
-              <UserProfile />
+        {/* Top navigation - Similar to account header */}
+        <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-16">
+              <div className="flex items-center gap-x-4">
+                <button
+                  type="button"
+                  className="-m-2.5 p-2.5 text-gray-700 lg:hidden"
+                  onClick={() => setSidebarOpen(true)}
+                >
+                  <span className="sr-only">Open sidebar</span>
+                  <Bars3Icon className="h-6 w-6" aria-hidden="true" />
+                </button>
+                <Link href="/" className="flex items-center">
+                  <span className="text-2xl font-bold text-blue-600">IGPS</span>
+                </Link>
+              </div>
+              <div className="flex items-center gap-x-4 lg:gap-x-6">
+                {/* Dashboard Switcher */}
+                <Link
+                  href="/account"
+                  className="text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors"
+                  title="Switch to Account Dashboard"
+                >
+                  <span className="hidden sm:inline">Account Dashboard</span>
+                  <UsersIcon className="h-5 w-5 sm:hidden" aria-hidden="true" />
+                </Link>
+                <UserProfile />
+              </div>
             </div>
           </div>
-        </div>
+        </nav>
 
         <main className="py-10">
           <div className="px-4 sm:px-6 lg:px-8">

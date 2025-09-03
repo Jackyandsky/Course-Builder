@@ -23,27 +23,27 @@ import { cn } from '@/lib/utils';
 interface AccordionCourseViewProps {
   course: Course;
   courseId: string;
+  courseData?: any; // Pre-loaded complete course data
   onUpdate: () => void;
   onShare: () => void;
 }
 
 const difficultyColors = {
-  beginner: 'info',
-  intermediate: 'warning',
-  advanced: 'danger',
-  expert: 'primary',
+  basic: 'info',
+  standard: 'warning',
+  premium: 'primary',
 } as const;
 
 const difficultyLabels = {
-  beginner: 'Level 1',
-  intermediate: 'Level 2',
-  advanced: 'Level 3',
-  expert: 'Level 4',
+  basic: 'Basic',
+  standard: 'Standard',
+  premium: 'Premium',
 } as const;
 
 export function AccordionCourseView({ 
   course, 
   courseId, 
+  courseData,
   onUpdate,
   onShare 
 }: AccordionCourseViewProps) {
@@ -126,7 +126,7 @@ export function AccordionCourseView({
     { id: 'objectives', label: 'Objectives', icon: <Target className="h-4 w-4" /> },
     { id: 'methods', label: 'Methods', icon: <Settings className="h-4 w-4" /> },
     { id: 'schedules', label: 'Schedules', icon: <Calendar className="h-4 w-4" /> },
-    { id: 'lessons', label: 'Lessons', icon: <Clock className="h-4 w-4" /> },
+    { id: 'lessons', label: 'Sessions', icon: <Clock className="h-4 w-4" /> },
     { id: 'books', label: 'Books', icon: <Bookmark className="h-4 w-4" /> },
     { id: 'vocabulary', label: 'Vocabulary', icon: <FileText className="h-4 w-4" /> },
     { id: 'tasks', label: 'Tasks', icon: <FileText className="h-4 w-4" /> },
@@ -339,7 +339,11 @@ export function AccordionCourseView({
             isExpanded={expandedSections.has('objectives')}
             onToggle={handleSectionToggle}
           >
-            <CourseObjectiveManager courseId={courseId} onUpdate={onUpdate} />
+            <CourseObjectiveManager 
+              courseId={courseId} 
+              preloadedData={courseData} 
+              onUpdate={onUpdate} 
+            />
           </AccordionSection>
         </div>
 
@@ -352,7 +356,11 @@ export function AccordionCourseView({
             isExpanded={expandedSections.has('methods')}
             onToggle={handleSectionToggle}
           >
-            <CourseMethodManager courseId={courseId} onUpdate={onUpdate} />
+            <CourseMethodManager 
+              courseId={courseId} 
+              preloadedData={courseData} 
+              onUpdate={onUpdate} 
+            />
           </AccordionSection>
         </div>
 
@@ -365,25 +373,25 @@ export function AccordionCourseView({
             isExpanded={expandedSections.has('schedules')}
             onToggle={handleSectionToggle}
           >
-            <CourseScheduleList courseId={courseId} />
+            <CourseScheduleList courseId={courseId} preloadedData={courseData} />
           </AccordionSection>
         </div>
 
-        {/* Lessons Section */}
+        {/* Sessions Section */}
         <div ref={(el) => { sectionRefs.current['lessons'] = el; }}>
           <AccordionSection
             id="lessons"
-            title="Lessons"
+            title="Sessions"
             icon={<Clock className="h-5 w-5" />}
             isExpanded={expandedSections.has('lessons')}
             onToggle={handleSectionToggle}
           >
             <div className="mb-4">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Select a schedule to view and manage its lessons. Lessons are automatically created from course schedules.
+                Select a schedule to view and manage its sessions. Sessions are automatically created from course schedules.
               </p>
             </div>
-            <CourseLessonsWithSchedules courseId={courseId} />
+            <CourseLessonsWithSchedules courseId={courseId} preloadedData={courseData} />
           </AccordionSection>
         </div>
 
@@ -396,7 +404,11 @@ export function AccordionCourseView({
             isExpanded={expandedSections.has('books')}
             onToggle={handleSectionToggle}
           >
-            <CourseBookManager courseId={courseId} onUpdate={onUpdate} />
+            <CourseBookManager 
+              courseId={courseId} 
+              preloadedData={courseData} 
+              onUpdate={onUpdate} 
+            />
           </AccordionSection>
         </div>
 
@@ -409,7 +421,11 @@ export function AccordionCourseView({
             isExpanded={expandedSections.has('vocabulary')}
             onToggle={handleSectionToggle}
           >
-            <CourseVocabularyManager courseId={courseId} onUpdate={onUpdate} />
+            <CourseVocabularyManager 
+              courseId={courseId} 
+              preloadedData={courseData} 
+              onUpdate={onUpdate} 
+            />
           </AccordionSection>
         </div>
 
@@ -422,7 +438,11 @@ export function AccordionCourseView({
             isExpanded={expandedSections.has('tasks')}
             onToggle={handleSectionToggle}
           >
-            <CourseTaskManager courseId={courseId} onUpdate={onUpdate} />
+            <CourseTaskManager 
+              courseId={courseId} 
+              preloadedData={courseData} 
+              onUpdate={onUpdate} 
+            />
           </AccordionSection>
         </div>
       </div>

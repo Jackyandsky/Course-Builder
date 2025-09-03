@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammaticos Reading & Writing Foundational Course</title>
+    <style>
+        /* Apple-inspired styles with tablet optimization */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #1d1d1f;
+            background-color: #fbfbfd;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        h1 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 28px;
+            font-weight: 500;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        h3 {
+            font-size: 21px;
+            font-weight: 500;
+            margin-top: 30px;
+        }
+        p {
+            font-size: 17px;
+            color: #333;
+        }
+        .tagline {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .book {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            touch-action: manipulation;
+        }
+        .book:hover, .book:active {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .book h3 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .book p {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .approach {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .feature h3 {
+            font-size: 20px;
+            margin-top: 0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: #999;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        /* Tablet-specific optimizations */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                width: 94%;
+                padding: 15px;
+            }
+            
+            header {
+                padding: 30px 0;
+            }
+            
+            h1 {
+                font-size: 38px;
+            }
+            
+            h2 {
+                font-size: 26px;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .feature {
+                padding: 20px;
+            }
+        }
+        
+        /* For landscape orientation on tablets */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            
+            .approach {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Improved touch target sizes for tablet */
+        @media (pointer: coarse) {
+            .book, .feature {
+                min-height: 100px;
+            }
+            
+            .book h3, .feature h3 {
+                margin-bottom: 15px;
+            }
+            
+            button, a {
+                min-height: 44px;
+                min-width: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Curated 1:4 Grade 5 Reading & Writing</h1>
+        </header>
+
+        <h2>Course Overview</h2>
+        <p>This curated Grade 5 Reading & Writing course offers a stimulating exploration of diverse literary works, designed to enhance reading comprehension, critical thinking, and writing skills. In a supportive 1:4 teacher-student ratio, students will delve into classic and contemporary novels, focusing on themes of adventure, morality, social justice, and imagination. The curriculum emphasizes vocabulary development (LEX Intermediate A-Z), structured essay writing (3/5/5 and 5/5/5 methods), and active participation in literary discussions.</p>
+
+        <h2>Literary Explorations</h2>
+        <div class="grid">
+            <div class="book">
+                <h3>Charlie and the Chocolate Factory</h3>
+                <p>Roald Dahl</p>
+            </div>
+            <div class="book">
+                <h3>Holes</h3>
+                <p>Louis Sachar</p>
+            </div>
+            <div class="book">
+                <h3>Number the Stars</h3>
+                <p>Lois Lowry</p>
+            </div>
+            <div class="book">
+                <h3>The Hobbit</h3>
+                <p>J.R.R. Tolkien</p>
+            </div>
+            <div class="book">
+                <h3>Redwall</h3>
+                <p>Brian Jacques</p>
+            </div>
+            <div class="book">
+                <h3>The Little Prince</h3>
+                <p>Antoine de Saint-Exupéry</p>
+            </div>
+            <div class="book">
+                <h3>The Outsiders</h3>
+                <p>S.E. Hinton</p>
+            </div>
+            <div class="book">
+                <h3>Bridge to Terabithia</h3>
+                <p>Katherine Paterson</p>
+            </div>
+        </div>
+
+        <h2>Educational Approach</h2>
+        <div class="approach">
+            <div class="feature">
+                <h3>Developing Analytical Writing</h3>
+                <p>Introduction and practice with 3/5/5 and progressing to 5/5/5 essay structures, focusing on thesis development, providing textual evidence, and analyzing literary elements such as theme, character, and conflict.</p>
+            </div>
+            <div class="feature">
+                <h3>Critical Reading and Discussion</h3>
+                <p>Engaging with texts through "Questions to Ponder" to foster deeper understanding, critical interpretation, and the ability to articulate insights in class discussions and written responses.</p>
+            </div>
+            <div class="feature">
+                <h3>LEX Intermediate Vocabulary</h3>
+                <p>Systematic vocabulary building using the LEX Intermediate curriculum (Letters A-Z), with weekly quizzes and application in writing to expand students' expressive capabilities.</p>
+            </div>
+        </div>
+
+        <h2>Curriculum Structure</h2>
+        <p>This 30-session course is divided into units, each focusing on one of the eight selected novels for approximately 3-4 weeks. Weekly sessions in a 1:4 setting include LEX Intermediate vocabulary quizzes, discussions centered on reading comprehension and literary analysis, and progressive development of essay writing skills. Students will complete multiple written responses and essays for each novel, receiving personalized feedback. The course aims to build confidence and proficiency in reading and writing, preparing students for more advanced literary studies.</p>
+
+        <footer>
+            <p>I GRAMMATICOS PLATFORM SOLUTION © 2020</p>
+            <p>Confidential & Proprietary</p>
+        </footer>
+    </div>
+</body>
+</html>

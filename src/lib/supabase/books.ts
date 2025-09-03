@@ -1,8 +1,4 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Book, ContentType } from '@/types/database';
-import { SHARED_USER_ID } from '@/lib/constants/shared';
-
-const supabase = createClientComponentClient();
 
 export interface BookFilters {
   search?: string;
@@ -14,6 +10,17 @@ export interface BookFilters {
   tags?: string[];
   isPublic?: boolean;
   limit?: number;
+  offset?: number;
+  page?: number;
+  pageSize?: number;
+  // Missing field filters
+  missingDescription?: boolean;
+  missingAuthor?: boolean;
+  missingCover?: boolean;
+  missingPublisher?: boolean;
+  missingYear?: boolean;
+  missingISBN?: boolean;
+  missingLanguage?: boolean;
 }
 
 export interface CreateBookData {
@@ -31,6 +38,11 @@ export interface CreateBookData {
   language: string;
   tags?: string[];
   is_public?: boolean;
+  price?: number;
+  currency?: string;
+  discount_percentage?: number;
+  sale_price?: number;
+  is_free?: boolean;
 }
 
 export interface UpdateBookData extends Partial<CreateBookData> {
@@ -38,84 +50,94 @@ export interface UpdateBookData extends Partial<CreateBookData> {
 }
 
 export const bookService = {
-  // Get all books with optional filters
+  // Get all books with optional filters and pagination
   async getBooks(filters: BookFilters = {}) {
-    let query = supabase
-      .from('books')
-      .select(`
-        *,
-        category:categories(id, name, color, icon),
-        vocabulary_group_books(
-          vocabulary_group:vocabulary_groups(
-            id,
-            name,
-            difficulty
-          )
-        )
-      `)
-      .order('created_at', { ascending: false })
-      .limit(filters.limit || 50);
+    const params = new URLSearchParams();
+    
+    // Add filters to query params
+    if (filters.page) params.set('page', filters.page.toString());
+    if (filters.pageSize) params.set('pageSize', filters.pageSize.toString());
+    if (filters.search) params.set('search', filters.search);
+    if (filters.author) params.set('author', filters.author);
+    if (filters.categoryId) params.set('categoryId', filters.categoryId);
+    if (filters.contentType) params.set('contentType', filters.contentType);
+    if (filters.language) params.set('language', filters.language);
+    if (filters.publicationYear) params.set('publicationYear', filters.publicationYear.toString());
+    if (filters.isPublic !== undefined) params.set('isPublic', filters.isPublic.toString());
+    
+    const response = await fetch(`/api/admin/books?${params.toString()}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(5000) // 5 second timeout
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch books');
+    }
+    
+    const data = await response.json();
+    return data.books as Book[];
+  },
 
-    // Apply filters
-    if (filters.search) {
-      query = query.or(`title.ilike.%${filters.search}%,author.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+  // Get books with total count for pagination
+  async getBooksWithCount(filters: BookFilters = {}) {
+    const params = new URLSearchParams();
+    
+    // Add all filters to query params
+    if (filters.page) params.set('page', filters.page.toString());
+    if (filters.pageSize) params.set('pageSize', filters.pageSize.toString());
+    if (filters.search) params.set('search', filters.search);
+    if (filters.author) params.set('author', filters.author);
+    if (filters.categoryId) params.set('categoryId', filters.categoryId);
+    if (filters.contentType) params.set('contentType', filters.contentType);
+    if (filters.language) params.set('language', filters.language);
+    if (filters.publicationYear) params.set('publicationYear', filters.publicationYear.toString());
+    if (filters.isPublic !== undefined) params.set('isPublic', filters.isPublic.toString());
+    
+    // Missing field filters
+    if (filters.missingDescription) params.set('missingDescription', 'true');
+    if (filters.missingAuthor) params.set('missingAuthor', 'true');
+    if (filters.missingCover) params.set('missingCover', 'true');
+    if (filters.missingPublisher) params.set('missingPublisher', 'true');
+    if (filters.missingYear) params.set('missingYear', 'true');
+    if (filters.missingISBN) params.set('missingISBN', 'true');
+    if (filters.missingLanguage) params.set('missingLanguage', 'true');
+    
+    // Optimize category loading for list views
+    if (filters.pageSize && filters.pageSize > 50) {
+      params.set('includeCategory', 'false');
     }
     
-    if (filters.author) {
-      query = query.ilike('author', `%${filters.author}%`);
+    const response = await fetch(`/api/admin/books?${params.toString()}`, {
+      method: 'GET',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache' // Prevent stale data
+      },
+      signal: AbortSignal.timeout(3000) // Reduced to 3 seconds
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP ${response.status}: Failed to fetch books`);
     }
     
-    if (filters.categoryId) {
-      query = query.eq('category_id', filters.categoryId);
-    }
-    
-    if (filters.contentType) {
-      query = query.eq('content_type', filters.contentType);
-    }
-    
-    if (filters.language) {
-      query = query.eq('language', filters.language);
-    }
-    
-    if (filters.publicationYear) {
-      query = query.eq('publication_year', filters.publicationYear);
-    }
-    
-    if (filters.isPublic !== undefined) {
-      query = query.eq('is_public', filters.isPublic);
-    }
-    
-    if (filters.tags && filters.tags.length > 0) {
-      query = query.contains('tags', filters.tags);
-    }
-
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    return data as Book[];
+    return await response.json();
   },
 
   // Get single book by ID
   async getBook(id: string) {
-    const { data, error } = await supabase
-      .from('books')
-      .select(`
-        *,
-        category:categories(id, name, color, icon),
-        course_books(
-          id,
-          course_id,
-          is_required,
-          notes,
-          position,
-          course:courses(id, title, status)
-        )
-      `)
-      .eq('id', id)
-      .single();
+    const response = await fetch(`/api/admin/books/${id}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(5000)
+    });
     
-    if (error) throw error;
-    return data as Book;
+    if (!response.ok) {
+      throw new Error('Failed to fetch book');
+    }
+    
+    return await response.json() as Book;
   },
 
   // Create new book
@@ -125,99 +147,121 @@ export const bookService = {
       ...bookData,
       language: bookData.language || 'en',
       is_public: bookData.is_public || false,
-      user_id: SHARED_USER_ID, // Use a shared user ID since authentication is not required
+      user_id: 'shared', // Use a shared user ID since authentication is not required
     };
 
-    const { data, error } = await supabase
-      .from('books')
-      .insert(dataWithDefaults)
-      .select()
-      .single();
+    const response = await fetch('/api/admin/books', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dataWithDefaults),
+      signal: AbortSignal.timeout(5000)
+    });
     
-    if (error) throw error;
-    return data as Book;
+    if (!response.ok) {
+      throw new Error('Failed to create book');
+    }
+    
+    return await response.json() as Book;
   },
 
   // Update book
   async updateBook({ id, ...bookData }: UpdateBookData) {
-    const { data, error } = await supabase
-      .from('books')
-      .update({
-        ...bookData,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select()
-      .single();
+    const response = await fetch('/api/admin/books', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, ...bookData }),
+      signal: AbortSignal.timeout(5000)
+    });
     
-    if (error) throw error;
-    return data as Book;
+    if (!response.ok) {
+      throw new Error('Failed to update book');
+    }
+    
+    return await response.json() as Book;
   },
 
   // Delete book
   async deleteBook(id: string) {
-    const { error } = await supabase
-      .from('books')
-      .delete()
-      .eq('id', id);
+    const response = await fetch(`/api/admin/books?id=${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(5000)
+    });
     
-    if (error) throw error;
+    if (!response.ok) {
+      throw new Error('Failed to delete book');
+    }
   },
 
   // Get book statistics
   async getBookStats() {
-    const { count: totalCount, error: totalError } = await supabase
-      .from('books')
-      .select('*', { count: 'exact', head: true });
-    
-    if (totalError) throw totalError;
-
-    // Get count by content type
-    const { data, error } = await supabase
-      .from('books')
-      .select('content_type');
-    
-    if (error) throw error;
-
-    const stats = {
-      total: totalCount || 0,
-      text: data?.filter(b => b.content_type === 'text').length || 0,
-      video: data?.filter(b => b.content_type === 'video').length || 0,
-      audio: data?.filter(b => b.content_type === 'audio').length || 0,
-      pdf: data?.filter(b => b.content_type === 'pdf').length || 0,
-      other: data?.filter(b => ['image', 'interactive'].includes(b.content_type)).length || 0,
-    };
-
-    return stats;
+    try {
+      const response = await fetch('/api/admin/books?operation=stats', {
+        method: 'GET',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'max-age=300' // Cache for 5 minutes
+        },
+        signal: AbortSignal.timeout(5000) // Increased timeout to 5 seconds
+      });
+      
+      if (!response.ok) {
+        console.warn(`Failed to fetch book stats: HTTP ${response.status}`);
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Book stats loaded successfully:', data);
+      return data;
+    } catch (error) {
+      // More detailed error logging
+      if (error.name === 'AbortError') {
+        console.warn('Book stats request timed out after 5 seconds');
+      } else {
+        console.warn('Failed to fetch book stats:', error.message);
+      }
+      
+      // Return default stats on failure to prevent UI blocking
+      return {
+        total: 0,
+        text: 0,
+        video: 0,
+        audio: 0,
+        pdf: 0,
+        image: 0,
+        interactive: 0,
+      };
+    }
   },
 
   // Get unique authors
   async getAuthors() {
-    const { data, error } = await supabase
-      .from('books')
-      .select('author')
-      .not('author', 'is', null);
+    const response = await fetch('/api/admin/books?operation=authors', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(5000)
+    });
     
-    if (error) throw error;
-
-    // Extract unique authors
-    const authorsSet = new Set(data?.map(book => book.author).filter(Boolean));
-    const authors = Array.from(authorsSet).sort();
-    return authors;
+    if (!response.ok) {
+      throw new Error('Failed to fetch authors');
+    }
+    
+    return await response.json();
   },
 
   // Get unique languages
   async getLanguages() {
-    const { data, error } = await supabase
-      .from('books')
-      .select('language');
+    const response = await fetch('/api/admin/books?operation=languages', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(5000)
+    });
     
-    if (error) throw error;
-
-    // Extract unique languages
-    const languagesSet = new Set(data?.map(book => book.language).filter(Boolean));
-    const languages = Array.from(languagesSet).sort();
-    return languages;
+    if (!response.ok) {
+      throw new Error('Failed to fetch languages');
+    }
+    
+    return await response.json();
   },
 
   // Get content type options

@@ -1,8 +1,5 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Method } from '@/types/database';
 import { SHARED_USER_ID } from '@/lib/constants/shared';
-
-const supabase = createClientComponentClient();
 
 export interface MethodFilters {
   categoryId?: string;
@@ -21,90 +18,147 @@ export interface UpdateMethodData extends Partial<CreateMethodData> {
   id: string;
 }
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    perPage: number;
+    total: number;
+    totalPages: number;
+  };
+  stats?: {
+    total: number;
+    with_duration: number;
+    with_tags: number;
+  };
+}
+
 export const methodService = {
-  // Get all methods with optional filters
+  // Get all methods with optional filters - uses API route
   async getMethods(filters: MethodFilters = {}) {
-    let query = supabase
-      .from('methods')
-      .select(`
-        *,
-        category:categories(id, name, color, icon)
-      `)
-      .order('created_at', { ascending: false });
+    try {
+      const params = new URLSearchParams();
+      
+      if (filters.categoryId) {
+        params.append('categoryId', filters.categoryId);
+      }
+      if (filters.search) {
+        params.append('search', filters.search);
+      }
+      if (filters.tags && filters.tags.length > 0) {
+        filters.tags.forEach(tag => params.append('tags', tag));
+      }
 
-    // Apply filters
-    if (filters.categoryId) {
-      query = query.eq('category_id', filters.categoryId);
-    }
-    
-    if (filters.search) {
-      query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-    }
-    
-    if (filters.tags && filters.tags.length > 0) {
-      query = query.contains('tags', filters.tags);
-    }
+      const response = await fetch(`/api/methods?${params.toString()}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    return data as Method[];
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch methods');
+      }
+
+      return await response.json() as Method[];
+    } catch (error) {
+      console.error('Error fetching methods:', error);
+      throw error;
+    }
   },
 
-  // Get single method by ID
+  // Get single method by ID - uses API route
   async getMethod(id: string) {
-    const { data, error } = await supabase
-      .from('methods')
-      .select(`
-        *,
-        category:categories(id, name, color, icon)
-      `)
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
-    return data as Method;
+    try {
+      const response = await fetch(`/api/methods/${id}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch method');
+      }
+
+      return await response.json() as Method;
+    } catch (error) {
+      console.error('Error fetching method:', error);
+      throw error;
+    }
   },
 
-  // Create new method
+  // Create new method - uses API route
   async createMethod(methodData: CreateMethodData) {
-    const { data, error } = await supabase
-      .from('methods')
-      .insert({
-        ...methodData,
-        user_id: SHARED_USER_ID,
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as Method;
+    try {
+      const response = await fetch('/api/methods', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(methodData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create method');
+      }
+
+      return await response.json() as Method;
+    } catch (error) {
+      console.error('Error creating method:', error);
+      throw error;
+    }
   },
 
-  // Update method
+  // Update method - uses API route
   async updateMethod({ id, ...methodData }: UpdateMethodData) {
-    const { data, error } = await supabase
-      .from('methods')
-      .update({
-        ...methodData,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data as Method;
+    try {
+      const response = await fetch(`/api/methods/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(methodData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update method');
+      }
+
+      return await response.json() as Method;
+    } catch (error) {
+      console.error('Error updating method:', error);
+      throw error;
+    }
   },
 
-  // Delete method
+  // Delete method - uses API route
   async deleteMethod(id: string) {
-    const { error } = await supabase
-      .from('methods')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
+    try {
+      const response = await fetch(`/api/methods/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete method');
+      }
+    } catch (error) {
+      console.error('Error deleting method:', error);
+      throw error;
+    }
   },
 
   // Get methods by category
@@ -162,96 +216,153 @@ export const methodService = {
     return stats;
   },
 
-  // Course relationship methods
+  // Course relationship methods - use API routes
   async getCourseMethods(courseId: string) {
-    const { data, error } = await supabase
-      .from('course_methods')
-      .select(`
-        id,
-        position,
-        method:methods(
-          id,
-          name,
-          description,
-          tags,
-          category:categories(id, name, color, icon)
-        )
-      `)
-      .eq('course_id', courseId)
-      .order('position', { ascending: true });
-    
-    if (error) throw error;
-    return data;
+    try {
+      const response = await fetch(`/api/courses/${courseId}/methods`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch course methods');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching course methods:', error);
+      throw error;
+    }
   },
 
   async addMethodToCourse(courseId: string, methodId: string, options: { position: number }) {
-    const { data, error } = await supabase
-      .from('course_methods')
-      .insert({
-        course_id: courseId,
-        method_id: methodId,
-        position: options.position
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+    try {
+      const response = await fetch(`/api/courses/${courseId}/methods`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          methodIds: [methodId]
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add method to course');
+      }
+
+      const data = await response.json();
+      return data[0]; // Return first item since we only added one
+    } catch (error) {
+      console.error('Error adding method to course:', error);
+      throw error;
+    }
   },
 
   async removeMethodFromCourse(relationId: string) {
-    const { error } = await supabase
-      .from('course_methods')
-      .delete()
-      .eq('id', relationId);
-    
-    if (error) throw error;
+    try {
+      const response = await fetch(`/api/course-methods/${relationId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to remove method from course');
+      }
+    } catch (error) {
+      console.error('Error removing method from course:', error);
+      throw error;
+    }
   },
 
-  // Lesson relationship methods
+  // Lesson relationship methods - use API routes
   async getLessonMethods(lessonId: string) {
-    const { data, error } = await supabase
-      .from('lesson_methods')
-      .select(`
-        id,
-        position,
-        method:methods(
-          id,
-          name,
-          description,
-          tags,
-          category:categories(id, name, color, icon)
-        )
-      `)
-      .eq('lesson_id', lessonId)
-      .order('position', { ascending: true });
-    
-    if (error) throw error;
-    return data;
+    try {
+      const response = await fetch(`/api/lessons/${lessonId}/methods`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch lesson methods');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching lesson methods:', error);
+      throw error;
+    }
   },
 
   async addMethodToLesson(lessonId: string, methodId: string, options: { position: number }) {
-    const { data, error } = await supabase
-      .from('lesson_methods')
-      .insert({
-        lesson_id: lessonId,
-        method_id: methodId,
-        position: options.position
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+    try {
+      const response = await fetch(`/api/lessons/${lessonId}/methods`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          methodId,
+          position: options.position
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add method to lesson');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error adding method to lesson:', error);
+      throw error;
+    }
   },
 
   async removeMethodFromLesson(relationId: string) {
-    const { error } = await supabase
-      .from('lesson_methods')
-      .delete()
-      .eq('id', relationId);
+    // Similar workaround as tasks - need to get lesson_id first
+    console.warn('removeMethodFromLesson needs lessonId - using workaround');
     
-    if (error) throw error;
+    const { data: relation } = await supabase
+      .from('lesson_methods')
+      .select('lesson_id')
+      .eq('id', relationId)
+      .single();
+    
+    if (!relation) throw new Error('Relation not found');
+    
+    try {
+      const response = await fetch(`/api/lessons/${relation.lesson_id}/methods?relationId=${relationId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to remove method from lesson');
+      }
+    } catch (error) {
+      console.error('Error removing method from lesson:', error);
+      throw error;
+    }
   },
 
   // Get method with its belonging relationships
@@ -319,5 +430,45 @@ export const methodService = {
       .eq('method_id', methodId);
     
     if (error) throw error;
+  },
+
+  // Get optimized admin methods list - lightweight for performance
+  async getAdminMethodsList(filters: MethodFilters & { page?: number; perPage?: number } = {}): Promise<PaginatedResponse<Method>> {
+    try {
+      console.log('[MethodService] Getting admin methods list with filters:', filters);
+      const startTime = Date.now();
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (filters.search) params.append('search', filters.search);
+      if (filters.categoryId) params.append('category_id', filters.categoryId);
+      params.append('page', String(filters.page || 1));
+      params.append('perPage', String(filters.perPage || 20));
+      
+      // Use optimized admin-list endpoint
+      const response = await fetch(`/api/methods/admin-list?${params.toString()}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Admin methods list API error:', error);
+        throw new Error(error.error || 'Failed to fetch admin methods list');
+      }
+      
+      const result = await response.json();
+      const endTime = Date.now();
+      
+      console.log(`[MethodService] Admin methods list loaded in ${endTime - startTime}ms (API: ${result.loadTime}ms)`);
+      
+      return result;
+    } catch (error) {
+      console.error('Error fetching admin methods list:', error);
+      throw error;
+    }
   },
 };

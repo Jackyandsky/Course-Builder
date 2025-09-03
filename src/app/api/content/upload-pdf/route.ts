@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import type { Database } from '@/types/database';
 import { cookies } from 'next/headers';
 import { contentService } from '@/lib/supabase/content';
 
@@ -40,9 +41,9 @@ const getRawPdfHandler = async () => {
 };
 
 export async function POST(request: NextRequest) {
-  console.log('[API] PDF upload POST endpoint called');
+
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = createRouteHandlerClient<Database>({ cookies });
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -55,33 +56,19 @@ export async function POST(request: NextRequest) {
     const category = formData.get('category') as string || 'content';
     const bookIds = formData.get('bookIds') as string; // comma-separated book IDs
     
-    console.log('[API] Received form data:', {
-      fileName: file?.name,
-      fileSize: file?.size,
-      fileType: file?.type,
-      category: category,
-      bookIds: bookIds
-    });
-    
+
     if (!file || !file.name.endsWith('.pdf')) {
       return NextResponse.json({ error: 'Please provide a valid PDF file' }, { status: 400 });
     }
 
     // Extract content from PDF
-    console.log('[API] Starting PDF content extraction...');
-    
+
     // Use raw PDF handler to store the PDF data as-is
     const RawPdfHandler = await getRawPdfHandler();
     const extractedContent = await RawPdfHandler.extractContent(file);
-    console.log('[API] Extracted content:', {
-      title: extractedContent.title,
-      contentLength: extractedContent.content.length,
-      pageCount: extractedContent.pageCount,
-      metadata: extractedContent.metadata
-    });
-    
+
     // Get proprietary product categories to find the category ID
-    console.log('[API] Fetching proprietary product categories...');
+
     const categories = await contentService.getProprietaryProductCategories();
     console.log('[API] Available categories:', categories.map(c => ({ id: c.id, name: c.name })));
     
@@ -92,8 +79,7 @@ export async function POST(request: NextRequest) {
       categorySlug = RawPdfHandler.suggestCategory(extractedContent);
     }
     
-    console.log('[API] Category slug to match:', categorySlug);
-    
+
     // Find the category by matching the slug
     const matchedCategory = categories.find(
       cat => cat.name.toLowerCase().replace(/\s+/g, '-') === categorySlug
@@ -101,7 +87,7 @@ export async function POST(request: NextRequest) {
     
     if (matchedCategory) {
       categoryId = matchedCategory.id;
-      console.log('[API] Matched category:', { id: categoryId, name: matchedCategory.name });
+
     } else {
       console.warn('[API] No matching category found for slug:', categorySlug);
     }
@@ -118,7 +104,7 @@ export async function POST(request: NextRequest) {
     }
     
     if (counter > 1) {
-      console.log(`[API] Title was duplicate, renamed to: ${finalTitle}`);
+
     }
 
     // Prepare content data
@@ -140,12 +126,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Insert into content table
-    console.log('[API] Inserting content data:', {
-      name: contentData.name,
-      category_id: contentData.category_id,
-      user_id: contentData.user_id,
-      status: contentData.status,
-      metadataKeys: Object.keys(contentData.metadata)
+
     });
     
     const { data: content, error: contentError } = await supabase
@@ -165,7 +146,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to save content' }, { status: 500 });
     }
     
-    console.log('[API] Content inserted successfully:', { id: content.id, name: content.name });
 
     // Link to books if specified
     if (bookIds && content) {
@@ -199,7 +179,7 @@ export async function POST(request: NextRequest) {
       }
     };
     
-    console.log('[API] Sending success response:', responseData);
+
     return NextResponse.json(responseData);
 
   } catch (error) {
@@ -214,9 +194,9 @@ export async function POST(request: NextRequest) {
 
 // Batch upload endpoint
 export async function PUT(request: NextRequest) {
-  console.log('[API] PDF batch upload PUT endpoint called');
+
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = createRouteHandlerClient<Database>({ cookies });
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();

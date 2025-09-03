@@ -12,6 +12,7 @@ export interface SearchBoxProps extends Omit<InputHTMLAttributes<HTMLInputElemen
   fullWidth?: boolean;
   showClearButton?: boolean;
   debounceDelay?: number;
+  initialValue?: string;
 }
 
 const sizeClasses = {
@@ -51,13 +52,30 @@ export const SearchBox = forwardRef<HTMLInputElement, SearchBoxProps>(
       className,
       value: controlledValue,
       onChange,
+      initialValue = '',
       ...props
     },
     ref
   ) => {
-    const [internalValue, setInternalValue] = useState('');
+    const [internalValue, setInternalValue] = useState(initialValue);
     const value = controlledValue !== undefined ? controlledValue : internalValue;
     const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+    
+    // Update internal value when initialValue changes
+    React.useEffect(() => {
+      if (controlledValue === undefined) {
+        setInternalValue(initialValue);
+      }
+    }, [initialValue, controlledValue]);
+    
+    // Cleanup timer on unmount
+    React.useEffect(() => {
+      return () => {
+        if (debounceTimer) {
+          clearTimeout(debounceTimer);
+        }
+      };
+    }, [debounceTimer]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = e.target.value;

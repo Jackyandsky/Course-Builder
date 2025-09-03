@@ -237,17 +237,15 @@ export default function CoursesClient({ initialCourses }: { initialCourses: Cour
 // Course Card Component
 function CourseCard({ course }: { course: Course }) {
   const difficultyColors: Record<string, string> = {
-    'beginner': 'bg-green-100 text-green-800',
-    'intermediate': 'bg-yellow-100 text-yellow-800',
-    'advanced': 'bg-orange-100 text-orange-800',
-    'expert': 'bg-red-100 text-red-800',
+    'basic': 'bg-green-100 text-green-800',
+    'standard': 'bg-yellow-100 text-yellow-800',
+    'premium': 'bg-purple-100 text-purple-800',
   };
 
   const difficultyLabels: Record<string, string> = {
-    'beginner': 'Level 1',
-    'intermediate': 'Level 2',
-    'advanced': 'Level 3',
-    'expert': 'Level 4',
+    'basic': 'Basic',
+    'standard': 'Standard',
+    'premium': 'Premium',
   };
   
   return (

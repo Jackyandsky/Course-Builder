@@ -1,4 +1,4 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { getMiddlewareSupabaseClient } from '@/lib/supabase/middleware-helper';
 import type { 
   Schedule, 
   Lesson, 
@@ -11,7 +11,7 @@ import type {
 } from '@/types/schedule';
 
 export class ScheduleService {
-  private supabase = createClientComponentClient();
+  private supabase = getMiddlewareSupabaseClient();
 
   // Schedule CRUD operations
   async getSchedules(filters?: { 

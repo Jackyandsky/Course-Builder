@@ -13,17 +13,15 @@ import { courseService } from '@/lib/supabase/courses';
 import { Badge, Card, Spinner, RichTextDisplay } from '@/components/ui';
 
 const difficultyColors = {
-  beginner: 'bg-green-100 text-green-800',
-  intermediate: 'bg-yellow-100 text-yellow-800',
-  advanced: 'bg-orange-100 text-orange-800',
-  expert: 'bg-red-100 text-red-800',
+  basic: 'bg-green-100 text-green-800',
+  standard: 'bg-yellow-100 text-yellow-800',
+  premium: 'bg-purple-100 text-purple-800',
 } as const;
 
 const difficultyLabels = {
-  beginner: 'Level 1',
-  intermediate: 'Level 2',
-  advanced: 'Level 3',
-  expert: 'Level 4',
+  basic: 'Basic',
+  standard: 'Standard',
+  premium: 'Premium',
 } as const;
 
 export default function CourseDetailPage() {
@@ -74,8 +72,8 @@ export default function CourseDetailPage() {
   };
 
   const handleEnroll = () => {
-    // This would typically handle enrollment logic
-    router.push(`/courses/${courseId}/enroll`);
+    // Redirect to enrollment page with course ID
+    router.push(`/enroll?courseId=${courseId}`);
   };
 
   if (loading) {
@@ -146,12 +144,26 @@ export default function CourseDetailPage() {
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">{course.title}</h1>
+                  
                   <div className="flex items-center gap-3 mt-2">
                     <Badge 
                       className={`${difficultyColors[course.difficulty]} border-0`}
                     >
                       {difficultyLabels[course.difficulty]}
                     </Badge>
+                    
+                    {/* Price Display */}
+                    <span className="text-sm font-medium text-gray-700">
+                      ${course.price?.toLocaleString() || '7,000'} {course.currency || 'CAD'}
+                    </span>
+                    {course.is_free && (
+                      <Badge className="bg-green-100 text-green-800 border-0 text-xs">Free</Badge>
+                    )}
+                    {course.discount_percentage && course.discount_percentage > 0 && (
+                      <Badge className="bg-orange-100 text-orange-800 border-0 text-xs">
+                        {course.discount_percentage}% OFF
+                      </Badge>
+                    )}
                     {course.category && (
                       <span className="text-sm text-gray-600">
                         {course.category.name}

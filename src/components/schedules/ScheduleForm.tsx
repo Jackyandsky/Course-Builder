@@ -18,6 +18,7 @@ import { Save, Calendar, Clock, BookOpen } from 'lucide-react';
 interface ScheduleFormProps {
   schedule?: Schedule;
   onSuccess?: () => void;
+  courseId?: string | null;
 }
 
 const RECURRENCE_TYPES: { value: RecurrenceType; label: string }[] = [
@@ -51,13 +52,13 @@ const TIMEZONES = [
   { value: 'Australia/Sydney', label: 'Sydney' },
 ];
 
-export function ScheduleForm({ schedule, onSuccess }: ScheduleFormProps) {
+export function ScheduleForm({ schedule, onSuccess, courseId }: ScheduleFormProps) {
   const router = useRouter();
   const isEditing = !!schedule;
   const [loading, setLoading] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [formData, setFormData] = useState({
-    course_id: schedule?.course_id || '',
+    course_id: schedule?.course_id || courseId || '',
     name: schedule?.name || '',
     description: schedule?.description || '',
     start_date: schedule?.start_date || new Date().toISOString().split('T')[0],
@@ -118,7 +119,12 @@ export function ScheduleForm({ schedule, onSuccess }: ScheduleFormProps) {
       if (onSuccess) {
         onSuccess();
       } else {
-        router.push('/schedules');
+        // If we have a courseId, redirect back to the course page
+        if (courseId) {
+          router.push(`/admin/courses/${courseId}`);
+        } else {
+          router.push('/admin/schedules');
+        }
         router.refresh();
       }
     } catch (error: any) {
@@ -371,7 +377,7 @@ export function ScheduleForm({ schedule, onSuccess }: ScheduleFormProps) {
         </div>
       </div>
       <div className="flex justify-end space-x-4 mt-6">
-          <Button type="button" variant="outline" onClick={() => router.push('/schedules')}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={() => router.push(courseId ? `/admin/courses/${courseId}` : '/admin/schedules')}>Cancel</Button>
           <Button type="submit" loading={loading} leftIcon={<Save className="h-4 w-4" />}>
             {isEditing ? 'Update Schedule' : 'Create Schedule'}
           </Button>

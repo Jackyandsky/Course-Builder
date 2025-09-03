@@ -35,8 +35,15 @@ export function GenericContentForm({ initialData, categoryName, categoryId }: Ge
     book_ids: string[];
     is_public: boolean;
     featured: boolean;
+    show_on_menu: boolean;
+    menu_order: number;
     status: string;
     content_data: ContentData;
+    price: number;
+    currency: string;
+    discount_percentage: number;
+    sale_price: number | null;
+    is_free: boolean;
   }>({
     name: initialData?.name || '',
     content: initialData?.content || '',
@@ -46,8 +53,15 @@ export function GenericContentForm({ initialData, categoryName, categoryId }: Ge
               (initialData?.book_id ? [initialData.book_id] : []),
     is_public: initialData?.is_public || false,
     featured: initialData?.featured || false,
+    show_on_menu: initialData?.show_on_menu || false,
+    menu_order: initialData?.menu_order || 0,
     status: initialData?.status || 'active',
     content_data: initialData?.content_data || { type: categorySlug } as ContentData,
+    price: initialData?.price || 50.00,
+    currency: initialData?.currency || 'CAD',
+    discount_percentage: initialData?.discount_percentage || 0,
+    sale_price: initialData?.sale_price || null,
+    is_free: initialData?.is_free || false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [newTag, setNewTag] = useState('');
@@ -106,6 +120,11 @@ export function GenericContentForm({ initialData, categoryName, categoryId }: Ge
         content_data: contentData,
         category_id: categoryId,
         book_ids: formData.book_ids, // Use book_ids for multiple books
+        price: formData.price,
+        currency: formData.currency,
+        discount_percentage: formData.discount_percentage,
+        sale_price: formData.sale_price,
+        is_free: formData.is_free,
       };
       
       if (isEditing) {
@@ -240,7 +259,7 @@ export function GenericContentForm({ initialData, categoryName, categoryId }: Ge
       <div className="mb-8">
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => router.back()}
           leftIcon={<ArrowLeft className="h-4 w-4" />}
@@ -317,9 +336,122 @@ export function GenericContentForm({ initialData, categoryName, categoryId }: Ge
                         Featured content
                       </span>
                     </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.show_on_menu}
+                        onChange={(e) => setFormData({ ...formData, show_on_menu: e.target.checked })}
+                        className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        Show in header navigation dropdown
+                      </span>
+                    </label>
                   </div>
+                  {formData.show_on_menu && (
+                    <div className="mt-2">
+                      <Input
+                        label="Menu Order"
+                        type="number"
+                        value={formData.menu_order}
+                        onChange={(e) => setFormData({ ...formData, menu_order: parseInt(e.target.value) || 0 })}
+                        placeholder="0"
+                        min="0"
+                        className="w-32"
+                        helperText="Lower numbers appear first in the dropdown"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
+            </div>
+          </Card.Content>
+        </Card>
+
+        <Card>
+          <Card.Header><h2 className="text-lg font-semibold">Pricing</h2></Card.Header>
+          <Card.Content>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 mb-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_free}
+                    onChange={(e) => setFormData({ ...formData, is_free: e.target.checked })}
+                    className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Free Product
+                  </span>
+                </label>
+              </div>
+              
+              {!formData.is_free && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Price
+                      </label>
+                      <div className="flex gap-2">
+                        <Select
+                          value={formData.currency}
+                          onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                          className="w-24"
+                        >
+                          <option value="CAD">CAD</option>
+                          <option value="USD">USD</option>
+                        </Select>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={formData.price}
+                          onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                          placeholder="0.00"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Discount (%)
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={formData.discount_percentage}
+                        onChange={(e) => {
+                          const discount = parseInt(e.target.value) || 0;
+                          const salePrice = discount > 0 
+                            ? formData.price * (1 - discount / 100) 
+                            : null;
+                          setFormData({ 
+                            ...formData, 
+                            discount_percentage: discount,
+                            sale_price: salePrice ? parseFloat(salePrice.toFixed(2)) : null
+                          });
+                        }}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                  
+                  {formData.discount_percentage > 0 && (
+                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <p className="text-sm text-green-800 dark:text-green-200">
+                        Sale Price: {formData.currency === 'CAD' ? 'CA$' : '$'}
+                        {formData.sale_price?.toFixed(2)} 
+                        <span className="text-gray-600 dark:text-gray-400 ml-2">
+                          (Original: {formData.currency === 'CAD' ? 'CA$' : '$'}{formData.price.toFixed(2)})
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </Card.Content>
         </Card>
@@ -343,7 +475,7 @@ export function GenericContentForm({ initialData, categoryName, categoryId }: Ge
                         </div>
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => handleRemoveBook(book.id)}
                         >

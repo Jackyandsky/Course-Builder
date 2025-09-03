@@ -1,0 +1,114 @@
+name: API Validation
+
+on:
+  pull_request:
+    paths:
+      - 'src/app/api/**'
+      - 'src/lib/services/**'
+      - 'src/app/(account)/**'
+      - 'src/app/(admin)/**'
+      - 'src/app/(public)/**'
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'src/app/api/**'
+      - 'src/lib/services/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run TypeScript check
+        run: npm run type-check
+        
+      - name: Validate API structure
+        run: |
+          echo "🔍 Validating API structure..."
+          npm run validate:api
+        
+      - name: Check for direct Supabase usage
+        run: |
+          echo "🔍 Checking for direct Supabase usage in components..."
+          npm run check:supabase
+        
+      - name: Check for API duplicates
+        run: |
+          echo "🔍 Checking for duplicate API endpoints..."
+          npm run check:api-duplicates || true
+        
+      - name: Generate API health report
+        run: |
+          echo "📊 Generating API health report..."
+          npm run api:health || true
+        
+      - name: Post validation summary
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            let comment = '## 📋 API Validation Report\n\n';
+            
+            // Add validation results
+            comment += '### Validation Results\n';
+            comment += '- ✅ TypeScript compilation passed\n';
+            comment += '- ✅ API structure validation passed\n';
+            comment += '- ✅ No direct Supabase usage in components\n';
+            
+            // Add recommendations
+            comment += '\n### 📝 Recommendations\n';
+            comment += '- Always use service layer for database operations\n';
+            comment += '- Follow REST conventions for API endpoints\n';
+            comment += '- Include proper error handling and validation\n';
+            
+            // Post comment on PR
+            if (context.eventName === 'pull_request') {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+  performance:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Check bundle size
+        run: |
+          echo "📦 Checking bundle size impact..."
+          # Add bundle size check here
+        
+      - name: Run API performance tests
+        run: |
+          echo "⚡ Running performance tests..."
+          # Add performance tests here

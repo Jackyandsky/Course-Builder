@@ -213,7 +213,7 @@ export function ObjectiveSelector({
                   
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => handleRemoveObjective(courseObjective.id, courseObjective.objective_id)}
                     disabled={disabled}

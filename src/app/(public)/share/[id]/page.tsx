@@ -11,17 +11,15 @@ import { courseService } from '@/lib/supabase/courses';
 import { Badge, Card, Spinner, RichTextDisplay } from '@/components/ui';
 
 const difficultyColors = {
-  beginner: 'bg-green-100 text-green-800',
-  intermediate: 'bg-yellow-100 text-yellow-800',
-  advanced: 'bg-orange-100 text-orange-800',
-  expert: 'bg-red-100 text-red-800',
+  basic: 'bg-green-100 text-green-800',
+  standard: 'bg-yellow-100 text-yellow-800',
+  premium: 'bg-purple-100 text-purple-800',
 } as const;
 
 const difficultyLabels = {
-  beginner: 'Level 1',
-  intermediate: 'Level 2',
-  advanced: 'Level 3',
-  expert: 'Level 4',
+  basic: 'Basic',
+  standard: 'Standard',
+  premium: 'Premium',
 } as const;
 
 export default function CourseSharePage() {

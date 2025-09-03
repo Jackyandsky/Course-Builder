@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Book } from 'lucide-react';
 
 interface ProductCardProps {
   id: string;
@@ -10,6 +9,10 @@ interface ProductCardProps {
   author?: string;
   description?: string;
   price?: number;
+  currency?: string;
+  discount_percentage?: number;
+  sale_price?: number;
+  is_free?: boolean;
   imageUrl?: string;
   type: 'library' | 'store';
   category?: string;
@@ -21,6 +24,10 @@ export default function ProductCard({
   author,
   description,
   price,
+  currency = 'CAD',
+  discount_percentage,
+  sale_price,
+  is_free,
   imageUrl,
   type,
   category
@@ -31,7 +38,7 @@ export default function ProductCard({
     <Link href={productUrl} className="group">
       <div className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden h-full border border-gray-200">
         {/* Image or Placeholder - Reduced height */}
-        <div className="aspect-[4/3] relative bg-gray-50">
+        <div className="aspect-[4/3] relative bg-gray-50 overflow-hidden">
           {imageUrl ? (
             <Image
               src={imageUrl}
@@ -42,7 +49,6 @@ export default function ProductCard({
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-slate-50 to-slate-100">
-              <Book className="w-12 h-12 text-slate-400 mb-3" />
               <h3 className="text-base font-semibold text-slate-800 text-center line-clamp-2 px-2">
                 {title}
               </h3>
@@ -80,11 +86,29 @@ export default function ProductCard({
             </p>
           )}
           
-          {price !== undefined && (
+          {(price !== undefined || is_free) && (
             <div className="mt-3 flex items-center justify-between">
-              <span className="text-lg font-bold text-gray-900">
-                ${price.toFixed(2)}
-              </span>
+              <div className="flex items-center gap-2">
+                {is_free ? (
+                  <span className="text-lg font-bold text-green-600">FREE</span>
+                ) : discount_percentage && discount_percentage > 0 ? (
+                  <>
+                    <span className="text-lg font-bold text-gray-900">
+                      {currency === 'CAD' ? 'CA$' : '$'}{(sale_price || price || 0).toFixed(2)}
+                    </span>
+                    <span className="text-sm text-gray-500 line-through">
+                      {currency === 'CAD' ? 'CA$' : '$'}{(price || 0).toFixed(2)}
+                    </span>
+                    <span className="text-xs font-medium text-red-600 bg-red-100 px-1.5 py-0.5 rounded">
+                      -{discount_percentage}%
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-lg font-bold text-gray-900">
+                    {currency === 'CAD' ? 'CA$' : '$'}{(price || 0).toFixed(2)}
+                  </span>
+                )}
+              </div>
               <span className="text-sm text-blue-600 group-hover:text-blue-700">
                 View Details →
               </span>

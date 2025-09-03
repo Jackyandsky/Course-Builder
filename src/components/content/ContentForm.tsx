@@ -37,6 +37,10 @@ export function ContentForm({ initialData, categoryId, categoryName, categorySlu
     price: initialData?.content_data?.price || '',
     duration: initialData?.content_data?.duration || '',
     level: initialData?.content_data?.level || '',
+    show_on_menu: initialData?.show_on_menu || false,
+    show_on_homepage: initialData?.show_on_homepage || false,
+    menu_order: initialData?.menu_order || 0,
+    homepage_order: initialData?.homepage_order || 0,
   });
 
   const isEditing = !!initialData;
@@ -91,6 +95,10 @@ export function ContentForm({ initialData, categoryId, categoryName, categorySlu
         featured: formData.featured,
         status: formData.status as 'active' | 'draft' | 'archived',
         tags: formData.tags,
+        show_on_menu: formData.show_on_menu,
+        show_on_homepage: formData.show_on_homepage,
+        menu_order: formData.menu_order,
+        homepage_order: formData.homepage_order,
         content_data: {
           type: categoryName.toLowerCase().slice(0, -1) as any,
           usage_instructions: formData.usage_instructions.trim(),
@@ -263,6 +271,62 @@ export function ContentForm({ initialData, categoryId, categoryName, categorySlu
         </Card.Content>
       </Card>
 
+      {/* Visibility Settings */}
+      <Card>
+        <Card.Header>
+          <Card.Title>Visibility Settings</Card.Title>
+        </Card.Header>
+        <Card.Content className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="show_on_menu"
+                checked={formData.show_on_menu}
+                onChange={(e) => setFormData({ ...formData, show_on_menu: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="show_on_menu" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Show in Navigation Menu
+              </label>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="show_on_homepage"
+                checked={formData.show_on_homepage}
+                onChange={(e) => setFormData({ ...formData, show_on_homepage: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="show_on_homepage" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Show on Homepage
+              </label>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              type="number"
+              label="Menu Order"
+              value={formData.menu_order}
+              onChange={(e) => setFormData({ ...formData, menu_order: parseInt(e.target.value) || 0 })}
+              helperText="Lower numbers appear first in menu"
+              disabled={!formData.show_on_menu}
+            />
+            
+            <Input
+              type="number"
+              label="Homepage Order"
+              value={formData.homepage_order}
+              onChange={(e) => setFormData({ ...formData, homepage_order: parseInt(e.target.value) || 0 })}
+              helperText="Lower numbers appear first on homepage"
+              disabled={!formData.show_on_homepage}
+            />
+          </div>
+        </Card.Content>
+      </Card>
+
       <Card>
         <Card.Header>
           <Card.Title>Settings</Card.Title>
@@ -282,14 +346,14 @@ export function ContentForm({ initialData, categoryId, categoryName, categorySlu
             <Checkbox
               id="is_public"
               checked={formData.is_public}
-              onChange={(e) => setFormData({ ...formData, is_public: e.target.checked })}
+              onChange={(checked) => setFormData({ ...formData, is_public: checked })}
               label="Make this content public"
             />
             
             <Checkbox
               id="featured"
               checked={formData.featured}
-              onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+              onChange={(checked) => setFormData({ ...formData, featured: checked })}
               label="Feature this content"
             />
           </div>
