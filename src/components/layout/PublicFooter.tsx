@@ -1,18 +1,22 @@
 import Link from 'next/link';
 
 export default function PublicFooter() {
+
   return (
     <footer className="bg-[#f5f5f7] py-10 px-5 mt-[30px] text-[11px] text-[#6e6e73]">
-      <div className="max-w-[980px] mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <div className="max-w-[1200px] mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-8 mb-8">
           {/* Courses */}
           <div>
             <h4 className="text-[#1d1d1f] font-medium text-[13px] mb-3">Courses</h4>
             <ul className="space-y-2">
-              <li><Link href="/admin/courses?category=reading-writing" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Reading & Writing</Link></li>
-              <li><Link href="/admin/courses?category=close-reading" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Close Reading</Link></li>
-              <li><Link href="/admin/courses?category=systematic-writing" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Systematic Writing</Link></li>
-              <li><Link href="/admin/courses?category=test-prep" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Test Preparation</Link></li>
+              <li><Link href="/courses?category=reading-writing" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Reading & Writing</Link></li>
+              <li><Link href="/courses?category=close-reading" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Close Reading</Link></li>
+              <li><Link href="/courses?category=systematic-writing" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Systematic Writing</Link></li>
+              <li><Link href="/courses?category=test-preparation" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Test Preparation</Link></li>
+              <li><Link href="/courses?category=literature-analysis" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Literature Analysis</Link></li>
+              <li><Link href="/courses?category=creative-writing" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Creative Writing</Link></li>
+              <li><Link href="/courses?category=advanced-reading" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Advanced Reading</Link></li>
             </ul>
           </div>
 
@@ -20,9 +24,8 @@ export default function PublicFooter() {
           <div>
             <h4 className="text-[#1d1d1f] font-medium text-[13px] mb-3">Library</h4>
             <ul className="space-y-2">
-              <li><Link href="/library?category=Virtual%20Library" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Virtual Library</Link></li>
-              <li><Link href="/library?category=Physical%20Library" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Physical Library</Link></li>
-              <li><Link href="/library" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Browse All Books</Link></li>
+              <li><Link href="/library?type=virtual" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Virtual Library</Link></li>
+              <li><Link href="/library?type=physical" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Physical Library</Link></li>
             </ul>
           </div>
 
@@ -37,14 +40,21 @@ export default function PublicFooter() {
             </ul>
           </div>
 
+          {/* Bookings */}
+          <div>
+            <h4 className="text-[#1d1d1f] font-medium text-[13px] mb-3">Bookings</h4>
+            <ul className="space-y-2">
+              <li><Link href="/booking/diagnosis" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Diagnostic Assessment</Link></li>
+              <li><Link href="/booking/progress-review" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Progress Review</Link></li>
+            </ul>
+          </div>
+
           {/* Support */}
           <div>
             <h4 className="text-[#1d1d1f] font-medium text-[13px] mb-3">Support</h4>
             <ul className="space-y-2">
-              <li><Link href="/booking/diagnosis" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Book Diagnosis</Link></li>
-              <li><Link href="/booking/progress-review" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Progress Review</Link></li>
-              <li><Link href="#about" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">About Us</Link></li>
-              <li><Link href="/contact" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Contact</Link></li>
+              <li><Link href="/support/faq" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Q&A</Link></li>
+              <li><Link href="/support/achievement" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Achievement</Link></li>
             </ul>
           </div>
         </div>

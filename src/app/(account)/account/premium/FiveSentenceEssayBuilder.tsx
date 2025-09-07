@@ -4,11 +4,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Textarea } from '@/components/ui/Textarea';
+import { DraftNameModal } from '@/components/modals/DraftNameModal';
 import { 
   Copy, RefreshCw, Save, Wand2, BookOpen, 
   TrendingUp, Award, AlertCircle, ChevronDown, ChevronUp,
   Edit3, Check, FileText, Layers, CheckCircle2, Circle,
-  Trash2, Search, X
+  Trash2, Search, X, Eye, EyeOff
 } from 'lucide-react';
 
 interface ParagraphPart {
@@ -43,6 +44,7 @@ interface EssayDraft {
   id: string;
   title: string;
   timestamp: string;
+  is_published: boolean;
   essayParts: ParagraphPart[];
   selectedEssayTitle: string;
 }
@@ -54,12 +56,17 @@ interface FiveSentenceEssayBuilderProps {
 export const FiveSentenceEssayBuilder: React.FC<FiveSentenceEssayBuilderProps> = ({ onTitleChange }) => {
   const [selectedEssayTitle, setSelectedEssayTitle] = useState<string>('');
   const [drafts, setDrafts] = useState<EssayDraft[]>([]);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
   const [showDraftSelector, setShowDraftSelector] = useState(false);
   const [draftSearchTerm, setDraftSearchTerm] = useState('');
   const [saveDraftMessage, setSaveDraftMessage] = useState('');
   const [showExampleSelector, setShowExampleSelector] = useState(false);
   const [exampleSearchTerm, setExampleSearchTerm] = useState('');
   const [essayExamples, setEssayExamples] = useState<any[]>([]);
+  const [showDraftNameModal, setShowDraftNameModal] = useState(false);
+  const [draftNameModalDefault, setDraftNameModalDefault] = useState('');
+  const [isUpdatingDraft, setIsUpdatingDraft] = useState(false);
+  const [currentDraftTitle, setCurrentDraftTitle] = useState<string>('');
   const [essayParts, setEssayParts] = useState<ParagraphPart[]>([
     {
       type: 'introduction',
@@ -113,27 +120,16 @@ export const FiveSentenceEssayBuilder: React.FC<FiveSentenceEssayBuilderProps> =
   const draftSelectorRef = useRef<HTMLDivElement>(null);
   const exampleSelectorRef = useRef<HTMLDivElement>(null);
 
-  // Load drafts from localStorage and essay examples on mount
+  // Load drafts from Supabase and essay examples on mount
   useEffect(() => {
-    // Load drafts
-    const savedDrafts = localStorage.getItem('essayBuilderDrafts');
-    if (savedDrafts) {
-      try {
-        const parsedDrafts = JSON.parse(savedDrafts);
-        setDrafts(parsedDrafts);
-      } catch (error) {
-        console.error('Error loading drafts:', error);
-      }
-    }
-    
-    // Load essay examples
+    loadDrafts();
     loadEssayExamples();
   }, []);
 
   // Load available essay examples
   const loadEssayExamples = async () => {
     try {
-      const response = await fetch('/api/essays');
+      const response = await fetch('/api/essays?published=true');
       if (response.ok) {
         const data = await response.json();
         // API returns array directly, not an object with essays property
@@ -142,6 +138,27 @@ export const FiveSentenceEssayBuilder: React.FC<FiveSentenceEssayBuilderProps> =
     } catch (error) {
       console.error('Error loading essay examples:', error);
       setEssayExamples([]);
+    }
+  };
+
+  // Load user's drafts from Supabase
+  const loadDrafts = async () => {
+    try {
+      const response = await fetch('/api/essays/drafts');
+      if (response.ok) {
+        const data = await response.json();
+        setDrafts(Array.isArray(data) ? data.map(draft => ({
+          id: draft.id,
+          title: draft.content_text,
+          timestamp: new Date(draft.updated_at || draft.created_at).toLocaleString(),
+          is_published: draft.is_published,
+          selectedEssayTitle: draft.metadata?.selectedEssayTitle || '',
+          essayParts: [] // Will be loaded when needed
+        })) : []);
+      }
+    } catch (error) {
+      console.error('Error loading drafts:', error);
+      setDrafts([]);
     }
   };
 
@@ -310,6 +327,12 @@ export const FiveSentenceEssayBuilder: React.FC<FiveSentenceEssayBuilderProps> =
     })));
     setEssayScore(null);
     setShowEvaluation(false);
+    setCurrentDraftId(null); // Clear current draft when starting new
+    setCurrentDraftTitle(''); // Clear current draft title
+    setSelectedEssayTitle('');
+    if (onTitleChange) {
+      onTitleChange(''); // Clear the parent modal title
+    }
   };
 
   const getFullEssay = () => {
@@ -438,7 +461,7 @@ export const FiveSentenceEssayBuilder: React.FC<FiveSentenceEssayBuilderProps> =
     setTimeout(() => setCopiedNotification(false), 2000);
   };
 
-  const saveDraft = () => {
+  const initiateSaveDraft = () => {
     // Check if we have at least one paragraph with content
     const hasContent = essayParts.some(part => 
       Object.values(part.sentences).some(s => s.trim())
@@ -450,56 +473,186 @@ export const FiveSentenceEssayBuilder: React.FC<FiveSentenceEssayBuilderProps> =
       return;
     }
     
-    // Check if we already have 5 drafts
-    if (drafts.length >= 5) {
-      setSaveDraftMessage('Maximum 5 drafts allowed. Please delete an existing draft first.');
-      setTimeout(() => setSaveDraftMessage(''), 3000);
-      return;
+    // Determine if we're updating or creating new
+    if (currentDraftId) {
+      const currentDraft = drafts.find(d => d.id === currentDraftId);
+      setDraftNameModalDefault(currentDraft?.title || '');
+      setIsUpdatingDraft(true);
+    } else {
+      const defaultName = selectedEssayTitle 
+        ? `draft_${selectedEssayTitle}` 
+        : 'draft_';
+      setDraftNameModalDefault(defaultName);
+      setIsUpdatingDraft(false);
     }
     
-    // Create timestamp
-    const now = new Date();
-    const timestamp = now.toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 15);
-    const draftNumber = drafts.length + 1;
+    setShowDraftNameModal(true);
+  };
+
+  const saveDraft = async (draftName: string) => {
+    try {
+      const draftData = {
+        title: draftName,
+        selectedEssayTitle,
+        essayParts: JSON.parse(JSON.stringify(essayParts)), // Deep copy
+        is_published: false
+      };
+      
+      let response;
+      
+      if (currentDraftId && isUpdatingDraft) {
+        // Update existing draft
+        response = await fetch('/api/essays/drafts', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: currentDraftId,
+            ...draftData
+          })
+        });
+      } else {
+        // Create new draft
+        response = await fetch('/api/essays/drafts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(draftData)
+        });
+      }
+      
+      if (response.ok) {
+        const result = await response.json();
+        
+        if (currentDraftId && isUpdatingDraft) {
+          setSaveDraftMessage(`Draft "${draftName}" updated successfully!`);
+          setCurrentDraftTitle(draftName); // Update the current title
+          // Update the parent modal title
+          if (onTitleChange) {
+            onTitleChange(draftName);
+          }
+        } else {
+          setSaveDraftMessage(`Draft "${draftName}" saved successfully!`);
+          setCurrentDraftId(result.id);
+          setCurrentDraftTitle(draftName); // Set the current title for new drafts
+          // Update the parent modal title
+          if (onTitleChange) {
+            onTitleChange(draftName);
+          }
+        }
+        
+        // Reload drafts list
+        loadDrafts();
+      } else {
+        const error = await response.json();
+        setSaveDraftMessage(`Error: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      setSaveDraftMessage('Error saving draft. Please try again.');
+    }
     
-    // Create draft object with clear 'draft_' prefix in title
-    const draftTitle = selectedEssayTitle 
-      ? `draft_${selectedEssayTitle}` 
-      : `draft_${draftNumber}_untitled`;
-    
-    const newDraft: EssayDraft = {
-      id: `draft_${draftNumber}_${timestamp}`,
-      title: draftTitle,
-      timestamp: now.toLocaleString(),
-      essayParts: JSON.parse(JSON.stringify(essayParts)), // Deep copy
-      selectedEssayTitle
-    };
-    
-    // Save to state and localStorage
-    const updatedDrafts = [...drafts, newDraft];
-    setDrafts(updatedDrafts);
-    localStorage.setItem('essayBuilderDrafts', JSON.stringify(updatedDrafts));
-    
-    setSaveDraftMessage(`Draft saved successfully as "${draftTitle}"`);
     setTimeout(() => setSaveDraftMessage(''), 3000);
   };
 
-  const loadDraft = (draft: EssayDraft) => {
-    setEssayParts(JSON.parse(JSON.stringify(draft.essayParts))); // Deep copy
-    setSelectedEssayTitle(draft.selectedEssayTitle);
-    if (onTitleChange && draft.selectedEssayTitle) {
-      onTitleChange(draft.selectedEssayTitle);
+  const loadDraft = async (draft: EssayDraft) => {
+    try {
+      // Load full draft content from Supabase
+      const response = await fetch(`/api/essays/drafts/${draft.id}`);
+      if (response.ok) {
+        const fullDraft = await response.json();
+        setEssayParts(JSON.parse(JSON.stringify(fullDraft.essayParts))); // Deep copy
+        setSelectedEssayTitle(fullDraft.selectedEssayTitle);
+        setCurrentDraftId(fullDraft.id);
+        setCurrentDraftTitle(fullDraft.title); // Set the current draft title
+        
+        // Pass the draft title to the parent modal instead of selectedEssayTitle
+        if (onTitleChange) {
+          onTitleChange(fullDraft.title);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading draft:', error);
+      setSaveDraftMessage('Error loading draft. Please try again.');
+      setTimeout(() => setSaveDraftMessage(''), 3000);
     }
+    
     setShowDraftSelector(false);
     setDraftSearchTerm('');
   };
 
-  const deleteDraft = (draftId: string, event: React.MouseEvent) => {
+  const deleteDraft = async (draftId: string, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent triggering loadDraft
     
-    const updatedDrafts = drafts.filter(d => d.id !== draftId);
-    setDrafts(updatedDrafts);
-    localStorage.setItem('essayBuilderDrafts', JSON.stringify(updatedDrafts));
+    try {
+      const response = await fetch(`/api/essays/drafts/${draftId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        // Remove from local state
+        setDrafts(drafts.filter(d => d.id !== draftId));
+        
+        // If we're currently editing this draft, clear the current draft
+        if (currentDraftId === draftId) {
+          setCurrentDraftId(null);
+          setCurrentDraftTitle('');
+          // Clear the parent modal title
+          if (onTitleChange) {
+            onTitleChange('');
+          }
+        }
+        
+        setSaveDraftMessage('Draft deleted successfully');
+        setTimeout(() => setSaveDraftMessage(''), 3000);
+      } else {
+        const error = await response.json();
+        setSaveDraftMessage(`Error deleting draft: ${error.error}`);
+        setTimeout(() => setSaveDraftMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error deleting draft:', error);
+      setSaveDraftMessage('Error deleting draft. Please try again.');
+      setTimeout(() => setSaveDraftMessage(''), 3000);
+    }
+  };
+
+  const togglePublishStatus = async (draftId: string, currentStatus: boolean, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent triggering loadDraft
+    
+    try {
+      const response = await fetch(`/api/essays/drafts/${draftId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          is_published: !currentStatus
+        })
+      });
+      
+      if (response.ok) {
+        // Update local state
+        setDrafts(drafts.map(draft => 
+          draft.id === draftId 
+            ? { ...draft, is_published: !currentStatus }
+            : draft
+        ));
+        
+        setSaveDraftMessage(`Draft ${!currentStatus ? 'published' : 'unpublished'} successfully`);
+        setTimeout(() => setSaveDraftMessage(''), 3000);
+      } else {
+        const error = await response.json();
+        setSaveDraftMessage(`Error: ${error.error}`);
+        setTimeout(() => setSaveDraftMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error toggling publish status:', error);
+      setSaveDraftMessage('Error updating publish status. Please try again.');
+      setTimeout(() => setSaveDraftMessage(''), 3000);
+    }
   };
 
   const getFilteredDrafts = () => {
@@ -543,6 +696,8 @@ export const FiveSentenceEssayBuilder: React.FC<FiveSentenceEssayBuilderProps> =
         }
         
         setSelectedEssayTitle(finalTitle);
+        setCurrentDraftId(null); // Clear current draft when loading example
+        setCurrentDraftTitle(''); // Clear current draft title
         if (onTitleChange && finalTitle) {
           onTitleChange(finalTitle);
         }
@@ -681,9 +836,16 @@ export const FiveSentenceEssayBuilder: React.FC<FiveSentenceEssayBuilderProps> =
         {/* Current Part Builder */}
         <div className="space-y-4">
           <div className="flex items-center justify-between relative">
-            <h3 className="font-semibold text-lg">
-              Building: {currentPart.label}
-            </h3>
+            <div>
+              <h3 className="font-semibold text-lg">
+                Building: {currentPart.label}
+              </h3>
+              {currentDraftTitle && (
+                <p className="text-sm text-gray-600 mt-1">
+                  Editing: {currentDraftTitle}
+                </p>
+              )}
+            </div>
             <div className="flex gap-3 items-center">
               {/* Draft Selector */}
               <div className="relative" ref={draftSelectorRef}>
@@ -726,18 +888,41 @@ export const FiveSentenceEssayBuilder: React.FC<FiveSentenceEssayBuilderProps> =
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
-                                <div className="font-medium text-sm">{draft.title}</div>
-                                <div className="text-xs text-gray-500 mt-1">{draft.timestamp}</div>
-                                <div className="text-xs text-gray-400 mt-1">
-                                  {draft.essayParts.filter(p => p.isComplete).length}/5 paragraphs complete
+                                <div className="flex items-center gap-2">
+                                  <div className="font-medium text-sm">{draft.title}</div>
+                                  {currentDraftId === draft.id && (
+                                    <Badge className="text-xs bg-gray-100 text-gray-700">Current</Badge>
+                                  )}
+                                  {draft.is_published && (
+                                    <Badge className="text-xs bg-gray-100 text-gray-700">Published</Badge>
+                                  )}
                                 </div>
+                                <div className="text-xs text-gray-500 mt-1">{draft.timestamp}</div>
                               </div>
-                              <button
-                                onClick={(e) => deleteDraft(draft.id, e)}
-                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-50 rounded"
-                              >
-                                <Trash2 className="h-4 w-4 text-red-500" />
-                              </button>
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={(e) => togglePublishStatus(draft.id, draft.is_published, e)}
+                                  className={`p-1 rounded ${
+                                    draft.is_published 
+                                      ? 'hover:bg-gray-100 text-gray-600' 
+                                      : 'hover:bg-gray-100 text-gray-400'
+                                  }`}
+                                  title={draft.is_published ? 'Unpublish' : 'Publish'}
+                                >
+                                  {draft.is_published ? (
+                                    <Eye className="h-4 w-4" />
+                                  ) : (
+                                    <EyeOff className="h-4 w-4" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={(e) => deleteDraft(draft.id, e)}
+                                  className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))
@@ -912,11 +1097,11 @@ export const FiveSentenceEssayBuilder: React.FC<FiveSentenceEssayBuilderProps> =
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={saveDraft}
+                  onClick={initiateSaveDraft}
                   className="flex items-center gap-2"
                 >
                   <Save className="h-4 w-4" />
-                  Save Draft
+                  {currentDraftId ? 'Update Draft' : 'Save Draft'}
                 </Button>
               </div>
             </div>
@@ -1197,6 +1382,15 @@ export const FiveSentenceEssayBuilder: React.FC<FiveSentenceEssayBuilderProps> =
           </div>
         </div>
       </div>
+
+      {/* Draft Name Modal */}
+      <DraftNameModal
+        isOpen={showDraftNameModal}
+        onClose={() => setShowDraftNameModal(false)}
+        onSave={saveDraft}
+        defaultName={draftNameModalDefault}
+        isUpdating={isUpdatingDraft}
+      />
     </div>
   );
 };

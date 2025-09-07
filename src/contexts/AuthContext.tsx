@@ -10,14 +10,16 @@ import {
   isJWTExpired,
   shouldRefreshSession 
 } from '@/lib/auth/jwt-validator';
+import { authStateManager } from '@/lib/auth/auth-state-manager';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   userProfile: UserProfile | null;
   loading: boolean;
-  signUp: (email: string, password: string, metadata?: any) => Promise<{ user: User | null; error: any }>;
+  signUp: (email: string, password: string, metadata?: any, redirectTo?: string) => Promise<{ user: User | null; error: any }>;
   signIn: (email: string, password: string) => Promise<{ user: User | null; error: any }>;
+  signInWithMagicLink: (email: string, metadata?: any, redirectTo?: string) => Promise<{ success: boolean; error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
   refreshSession: () => Promise<void>;
@@ -30,12 +32,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isClient, setIsClient] = useState(false);
   const checkingRef = useRef(false);
   const lastCheckTime = useRef<number>(0);
   const initialCheckDone = useRef(false);
+  const invalidTokenDetected = useRef(false); // Prevent refresh attempts after invalid token
+
+  // Hydration-safe client check
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Check session on mount and set up polling
   useEffect(() => {
+    if (!isClient) return; // Wait for hydration
+    
     let mounted = true;
 
     const checkInitialSession = async () => {
@@ -146,13 +157,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       clearInterval(interval);
     };
-  }, []);
+  }, [isClient]); // Add isClient dependency
 
   const checkSession = async () => {
-    // Prevent concurrent checks and rate limiting (increased to 3 seconds)
+    // Check with global auth state manager first
+    if (authStateManager && !authStateManager.canRefreshToken()) {
+      console.log('[AuthContext] Auth state manager blocking refresh attempt');
+      setLoading(false);
+      // Clear local state if tokens are invalid
+      setUser(null);
+      setSession(null);
+      setUserProfile(null);
+      return;
+    }
+    
+    // If we've detected an invalid token locally, don't attempt any more refreshes
+    if (invalidTokenDetected.current) {
+      console.log('[AuthContext] Invalid token detected locally, skipping refresh attempt');
+      setLoading(false);
+      return;
+    }
+    
+    // Prevent concurrent checks and rate limiting (increased to 5 seconds)
     const now = Date.now();
-    if (checkingRef.current || (now - lastCheckTime.current < 3000)) {
-      // If already checking or checked within last 3 seconds
+    if (checkingRef.current || (now - lastCheckTime.current < 5000)) {
+      // If already checking or checked within last 5 seconds
       setLoading(false);
       return;
     }
@@ -174,7 +203,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             credentials: 'include',
             signal: controller.signal,
             cache: 'no-store',
+            headers: {
+              'X-Client-Version': '1.0', // Version tracking for debugging
+            },
           });
+          
+          // Check for invalid token header from middleware
+          if (response.headers.get('X-Auth-Invalid') === 'true') {
+            console.log('[AuthContext] Invalid auth detected via header');
+            if (authStateManager) {
+              authStateManager.reportInvalidToken();
+            }
+            invalidTokenDetected.current = true;
+          }
           
           clearTimeout(timeoutId);
           
@@ -198,21 +239,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         
+        // Check if refresh token was invalid and cleared
+        if (data.refreshTokenInvalid) {
+          console.log('[AuthContext] Refresh token was invalid, clearing local session');
+          invalidTokenDetected.current = true; // Set flag to prevent future attempts
+          
+          // Report to global auth state manager
+          if (authStateManager) {
+            authStateManager.reportInvalidToken(data.user?.id);
+          }
+          
+          clearCachedSession();
+          setUser(null);
+          setSession(null);
+          setUserProfile(null);
+          setLoading(false);
+          
+          // Clear all auth cookies to prevent any further attempts
+          document.cookie = 'sb-access-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          document.cookie = 'sb-refresh-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          document.cookie = 'sb-auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          
+          return;
+        }
+        
         console.log('[AuthContext] Session response:', { 
           hasUser: !!data.user, 
           hasSession: !!data.session,
-          userEmail: data.user?.email 
+          userEmail: data.user?.email,
+          fromCache: data.fromCache || data.cached,
         });
         
         // Cache the session data for fast access
         if (data.user && data.session?.access_token) {
           cacheSession(data);
+          // Report successful refresh to auth state manager
+          if (authStateManager) {
+            authStateManager.reportTokenRefreshed(data.user.id);
+          }
         }
         
         // Always update state with the response
         setUser(data.user);
         setSession(data.session);
         setUserProfile(data.userProfile);
+      } else if (response.status === 429) {
+        // Rate limited - use cached data if available
+        console.log('[AuthContext] Rate limited, using cached data');
+        const cached = getCachedSession(60000); // Accept cache up to 1 minute old
+        if (cached?.user) {
+          setUser(cached.user);
+          setSession(cached.session as Session);
+          setUserProfile(cached.userProfile);
+        }
       } else if (response.status === 401) {
         console.log('[AuthContext] 401 - Clearing session');
         // Clear cache on auth failure
@@ -252,7 +331,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await checkSession();
   };
 
-  const signUp = async (email: string, password: string, metadata?: any) => {
+  const signUp = async (email: string, password: string, metadata?: any, redirectTo?: string) => {
     setLoading(true);
     try {
       const response = await fetch('/api/auth/signup', {
@@ -260,7 +339,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password, metadata }),
+        body: JSON.stringify({ email, password, metadata, redirectTo }),
         credentials: 'include',
       });
 
@@ -275,6 +354,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       return { user: null, error: 'Network error' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signInWithMagicLink = async (email: string, metadata?: any, redirectTo?: string) => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, metadata, redirectTo }),
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return { success: true, error: null };
+      } else {
+        return { success: false, error: data.error };
+      }
+    } catch (error) {
+      return { success: false, error: 'Network error' };
     } finally {
       setLoading(false);
     }
@@ -360,6 +465,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     signUp,
     signIn,
+    signInWithMagicLink,
     signOut,
     resetPassword,
     refreshSession,

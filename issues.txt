@@ -306,3 +306,18 @@ and we should adjust the logic about the task submission creation, for now when 
   2. Add service layer where missing
   3. Ensure all APIs use createRouteHandlerClient
   4. Add proper error handling to all endpoints
+
+  when user want to enroll a course from the /courses page , they will leading to the page /enroll,
+  at this page we have three packages. the packages like a collection of services, including title, description,
+  recommand level and services list, and also need price for this package, now in this page we have statistic three
+  packages. now we should create a table in our supabase which allow us to store and edit the packages, only nessesory
+  fileds needed, make it simple, effecient. the package is used as a complement of the course , when user want to 
+  purchase a course they must take a package which determine what services they can take based on this course.
+  the other important function the package act is it can determine the way of payment, there are two ways provided,
+  1. is purchase directly like other products such as books or products decoders lex and so on. 2. is like current leading
+  to a costom page leading user to fill the preset form and eventually to a booking page. the sepacial field of the 
+  package is the service list, it should come with order, so I suggest to use jsonp to mark it. others compelement you can 
+  brainstorm and give reasonable idea. the entry of /packages will locate at the  /admin/courses, because no other senario.
+
+  when user choose the draft to explore the title of the modal should reflect the title of the draft selected
+  

@@ -83,7 +83,19 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { amount, reason } = body;
+    const { amount, reason, action } = body;
+    
+    // Determine if this is a refund or cancellation
+    const isRefund = action === 'refund' || (!action && (amount || reason));
+    const actionType = isRefund ? 'refund' : 'cancel';
+
+    // Validate input
+    if (!reason || reason.trim() === '') {
+      const errorMsg = isRefund ? 'Refund reason is required' : 'Cancellation reason is required';
+      return NextResponse.json({ error: errorMsg }, { status: 400 });
+    }
+
+    console.log(`Processing ${actionType} for order ${params.id}: amount=${amount}, reason=${reason}`);
 
     // Get order
     const { data: order, error: orderError } = await supabase
@@ -96,36 +108,66 @@ export async function POST(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Process refund (integrate with payment provider)
+    // Process refund/cancellation (integrate with payment provider)
     // This is a placeholder - you would integrate with Stripe/PayPal etc.
-    const refundData = {
+    const actionData = {
       order_id: params.id,
-      amount: amount || order.total_amount,
+      amount: isRefund ? (amount || order.total_amount) : 0,
       reason,
       processed_by: user.id,
-      processed_at: new Date().toISOString()
+      processed_at: new Date().toISOString(),
+      action_type: actionType
     };
 
     // Note: refunds table doesn't exist in current schema
     // For now, we'll just update the order status
 
-    // Update order status
-    await supabase
+    // Update order status (only update existing columns)
+    const newStatus = isRefund ? 'refunded' : 'cancelled';
+    const notesPrefix = isRefund ? 'REFUND' : 'CANCELLED';
+    const notesSuffix = isRefund ? ` - Amount: $${amount || order.total_amount}` : '';
+    
+    const { error: updateError } = await supabase
       .from('orders')
       .update({ 
-        status: 'refunded',
-        refund_amount: amount || order.total_amount,
-        refund_reason: reason,
+        status: newStatus,
+        notes: `${notesPrefix}: ${reason}${notesSuffix}`,
         updated_at: new Date().toISOString()
       })
       .eq('id', params.id);
 
+    if (updateError) {
+      console.error('Error updating order:', updateError);
+      return NextResponse.json({ error: 'Failed to update order status' }, { status: 500 });
+    }
+
+    // Remove/deactivate enrollments created from this order
+    const enrollmentNotes = `Access revoked - Order ${order.order_number} ${actionType}ed: ${reason}`;
+    const { error: enrollmentError } = await supabase
+      .from('enrollments')
+      .update({ 
+        is_active: false,
+        status: 'cancelled',
+        notes: enrollmentNotes
+      })
+      .eq('user_id', order.user_id)
+      .contains('metadata', { order_id: params.id });
+
+    if (enrollmentError) {
+      console.error(`Error deactivating enrollments for ${actionType}:`, enrollmentError);
+      // Don't fail the action, but log the error
+    } else {
+      console.log(`Deactivated enrollments for ${actionType}ed order ${params.id}`);
+    }
+
+    console.log(`Successfully processed ${actionType} for order ${params.id}`);
+
     // Note: order_status_logs table doesn't exist in current schema
 
-    return NextResponse.json({ success: true, refund: refundData });
+    return NextResponse.json({ success: true, action: actionData });
 
   } catch (error) {
-    console.error('Error processing refund:', error);
+    console.error('Error processing order action:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

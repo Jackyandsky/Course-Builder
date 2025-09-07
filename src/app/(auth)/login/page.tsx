@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { LoginForm } from '@/components/auth/LoginForm';
+import { MagicLinkForm } from '@/components/auth/MagicLinkForm';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function AuthPage() {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [authMode, setAuthMode] = useState<'magic-link' | 'password' | 'signup'>('password');
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, userProfile, loading } = useAuth();
@@ -21,13 +22,9 @@ export default function AuthPage() {
         // Respect the redirect parameter
         router.push(redirectTo);
       } else {
-        // Default behavior: redirect based on role
-        const isAdminOrTeacher = userProfile?.role === 'admin' || userProfile?.role === 'teacher';
-        if (isAdminOrTeacher) {
-          router.push('/admin');
-        } else {
-          router.push('/account');
-        }
+        // Always redirect to account page after login/registration
+        // Users can navigate to admin from there if they have permissions
+        router.push('/account');
       }
     }
   }, [user, userProfile, loading, router, searchParams]);
@@ -38,30 +35,42 @@ export default function AuthPage() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-primary-600 mb-2">
-            Course Builder
+            IGPS
           </h1>
-          <p className="text-gray-600">
+          {/* <p className="text-gray-600">
             Modular Course Design & Management Platform
-          </p>
+          </p> */}
         </div>
         
-        <LoginForm 
-          isSignUp={isSignUp}
-          onToggleMode={() => setIsSignUp(!isSignUp)}
-        />
+        {/* Show magic link form by default */}
+        {authMode === 'magic-link' ? (
+          <MagicLinkForm 
+            onToggleMode={() => setAuthMode('password')}
+            showPasswordOption={true}
+          />
+        ) : authMode === 'password' ? (
+          <LoginForm 
+            isSignUp={false}
+            onToggleMode={() => setAuthMode('signup')}
+          />
+        ) : (
+          <LoginForm 
+            isSignUp={true}
+            onToggleMode={() => setAuthMode('password')}
+          />
+        )}
         
-        <div className="text-center text-sm text-gray-500">
-          <p>
-            By continuing, you agree to our{' '}
-            <a href="/terms" className="text-primary-600 hover:text-primary-700">
-              Terms of Service
-            </a>{' '}
-            and{' '}
-            <a href="/privacy" className="text-primary-600 hover:text-primary-700">
-              Privacy Policy
-            </a>
-          </p>
-        </div>
+        {/* Show different options based on current mode */}
+        {authMode === 'password' && (
+          <div className="text-center space-y-2">
+            <button
+              onClick={() => setAuthMode('magic-link')}
+              className="text-primary-600 hover:text-primary-700 text-sm font-medium block w-full"
+            >
+              ← Back to magic link sign in
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

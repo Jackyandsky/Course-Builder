@@ -6,8 +6,10 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
-import { Menu, X, ShoppingCart, User, BookOpen } from 'lucide-react';
+import { useMembership } from '@/hooks/useMembership';
+import { Menu, X, ShoppingCart, User } from 'lucide-react';
 import MiniCart from '@/components/cart/MiniCart';
+import { MembershipAvatarBadge } from '@/components/ui/MembershipBadge';
 
 interface MenuItem {
   id: string;
@@ -51,6 +53,7 @@ interface NavigationItem {
 export default function PublicHeader() {
   const { user } = useAuth();
   const { totalItems } = useCart();
+  const { membership } = useMembership();
   const [scrolled, setScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -264,6 +267,11 @@ export default function PublicHeader() {
       name: 'About',
       href: '/about',
       hasDropdown: false
+    },
+    {
+      name: 'Support',
+      href: '/support',
+      hasDropdown: false
     }
   ];
 
@@ -300,7 +308,7 @@ export default function PublicHeader() {
             </Link>
 
             {/* Desktop Navigation */}
-            <ul className="hidden lg:flex items-center gap-8 list-none m-0 p-0">
+            <ul className="hidden lg:flex items-center gap-6 list-none m-0 p-0">
               {navigationItems.map((item) => (
                 <li 
                   key={item.name}
@@ -339,22 +347,14 @@ export default function PublicHeader() {
                 )}
               </button>
               {user ? (
-                <>
-                  <Link 
-                    href="/account/library"
-                    className="p-1.5 hover:bg-gray-100/50 rounded-full transition-colors"
-                    title="My Library"
-                  >
-                    <BookOpen className="h-[15px] w-[15px] text-[#1d1d1f]/80" />
-                  </Link>
-                  <Link 
-                    href="/account"
-                    className="p-1.5 hover:bg-gray-100/50 rounded-full transition-colors"
-                    title="My Account"
-                  >
-                    <User className="h-[15px] w-[15px] text-[#1d1d1f]/80" />
-                  </Link>
-                </>
+                <Link 
+                  href="/account"
+                  className="relative p-1.5 hover:bg-gray-100/50 rounded-full transition-colors"
+                  title="My Account"
+                >
+                  <User className="h-[15px] w-[15px] text-[#1d1d1f]/80" />
+                  {membership && <MembershipAvatarBadge level={membership.level} />}
+                </Link>
               ) : (
                 <Link 
                   href="/login"
@@ -384,7 +384,7 @@ export default function PublicHeader() {
           item.hasDropdown && activeDropdown === item.name && (
             <div 
               key={`${item.name}-dropdown`}
-              className={item.name === 'Courses' ? "absolute top-full left-0 right-0 bg-white border-t border-gray-200/50 max-h-[80vh] overflow-y-auto" : "absolute top-full left-0 right-0 bg-white border-t border-gray-200/50"}
+              className={item.name === 'Courses' ? "absolute top-full left-0 right-0 bg-white border-t border-gray-200/50 max-h-[53vh] overflow-y-auto" : "absolute top-full left-0 right-0 bg-white border-t border-gray-200/50"}
               style={{
                 animation: 'dropdownFadeIn 0.32s cubic-bezier(0.4, 0, 0.6, 1)',
               }}
@@ -627,26 +627,15 @@ export default function PublicHeader() {
               
               {/* User-specific links when logged in */}
               {user && (
-                <>
-                  <li>
-                    <Link
-                      href="/account/library"
-                      className="block text-lg font-medium text-gray-900 py-2"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      My Library
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/account"
-                      className="block text-lg font-medium text-gray-900 py-2"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      My Account
-                    </Link>
-                  </li>
-                </>
+                <li>
+                  <Link
+                    href="/account"
+                    className="block text-lg font-medium text-gray-900 py-2"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    My Account
+                  </Link>
+                </li>
               )}
               
               {/* Sign In link when not logged in */}

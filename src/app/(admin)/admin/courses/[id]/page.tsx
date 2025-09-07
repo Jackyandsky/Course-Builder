@@ -97,12 +97,14 @@ export default function CourseDetailPage() {
       console.log(`[CourseDetail] Loading complete course data for ${courseId}`);
       const startTime = Date.now();
       
-      // Load ALL course data in one request
-      const response = await fetch(`/api/courses/${courseId}/complete`, {
+      // Load ALL course data in one request with cache-busting
+      const cacheBuster = Date.now();
+      const response = await fetch(`/api/courses/${courseId}/complete?t=${cacheBuster}`, {
         method: 'GET',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
         },
       });
       

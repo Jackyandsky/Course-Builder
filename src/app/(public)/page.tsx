@@ -53,13 +53,24 @@ const cacheCourses = (courses: any[]): void => {
   }
 };
 
+// Difficulty level mapping for display
+const DIFFICULTY_DISPLAY: Record<string, string> = {
+  'basic': 'Foundation',
+  'standard': 'Middle School',
+  'premium': 'Advanced',
+  // Fallback for any unmapped values
+  'Middle School': 'Middle School',
+  'High School': 'High School',
+  'Advanced': 'Advanced'
+};
+
 // Static fallback courses (always available)
 const STATIC_COURSES = [
   {
     id: 'static-1',
     title: 'L8-9 Reading & Writing',
     name: 'L8-9 Reading & Writing',
-    difficulty: 'Middle School',
+    difficulty: 'standard', // Use actual enum value
     duration_hours: null,
     description: 'Dive into classic and contemporary works while developing structured writing skills through our 5/5/5 methodology. This foundational course for students in levels 7-9 is designed to significantly enhance critical reading abilities, analytical thinking, and sophisticated essay writing skills.',
     course_objectives: []
@@ -68,7 +79,7 @@ const STATIC_COURSES = [
     id: 'static-2',
     title: 'Advanced Literature Analysis',
     name: 'Advanced Literature Analysis',
-    difficulty: 'High School',
+    difficulty: 'premium', // Use actual enum value
     duration_hours: null,
     description: 'Critical analysis of complex literary works focusing on themes, character development, and historical context through essay-based assessments. This advanced course prepares students for college-level literary analysis through intensive reading and writing practice.',
     course_objectives: []
@@ -77,7 +88,7 @@ const STATIC_COURSES = [
     id: 'static-3',
     title: 'Shakespeare Studies',
     name: 'Shakespeare Studies',
-    difficulty: 'Advanced',
+    difficulty: 'premium', // Use actual enum value
     duration_hours: null,
     description: 'Specialized exploration of Shakespearean works with focus on language analysis, thematic development, and historical context. Students will delve into the rich world of Shakespeare\'s plays and sonnets, examining the intricacies of Elizabethan language.',
     course_objectives: []
@@ -196,20 +207,40 @@ export default function HomePage() {
     }
   };
 
+  // Helper function to get display difficulty
+  const getDifficultyDisplay = (difficulty: string | undefined): string => {
+    if (!difficulty) return 'Foundation';
+    return DIFFICULTY_DISPLAY[difficulty] || difficulty;
+  };
+
+  // Helper function to get difficulty level text for description
+  const getDifficultyLevel = (difficulty: string | undefined): string => {
+    if (!difficulty) return 'foundation';
+    const mapping: Record<string, string> = {
+      'basic': 'foundation',
+      'standard': 'intermediate',
+      'premium': 'advanced'
+    };
+    return mapping[difficulty] || 'foundation';
+  };
+
   // Course display component with proper error boundaries
   const renderCourseCard = (course: any, index: number) => {
     try {
+      const displayDifficulty = getDifficultyDisplay(course.difficulty);
+      const difficultyLevel = getDifficultyLevel(course.difficulty);
+      
       return (
         <div key={course.id} className="bg-white rounded-[16px] border border-[#e5e5e7] p-6 hover:shadow-xl transition-all duration-300 flex flex-col" style={{ minHeight: '420px' }}>
           <div className="mb-3">
             <span className="inline-block text-[11px] font-semibold text-[#86868b] uppercase tracking-wider mb-2">
-              {course.difficulty || 'Middle School'}
+              {displayDifficulty}
             </span>
             <h3 className="text-[19px] font-bold text-[var(--igps-landing-text-color)] mb-2 leading-[1.2]">
               {course.title || course.name}
             </h3>
             <p className="text-[13px] text-[#86868b]">
-              {course.duration_hours ? `${course.duration_hours} hours` : '30-week'} comprehensive {course.difficulty?.toLowerCase() || 'foundation'} course
+              {course.duration_hours ? `${course.duration_hours} hours` : '30-week'} comprehensive {difficultyLevel} course
             </p>
           </div>
           

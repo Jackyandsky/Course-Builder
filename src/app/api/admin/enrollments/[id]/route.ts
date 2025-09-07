@@ -3,23 +3,14 @@ import { requireAdminAuth } from '@/lib/api/auth-helpers';
 
 export async function GET(
   request: NextRequest,
-  {
-  try { params }: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
-  const auth = await requireAdminAuth();
-  if (auth.error) return auth.error;
-  
-  const { supabase 
-  } catch (error) {
-    console.error('Error in GET:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }} = auth;
-  const { id } = params;
-  
   try {
+    const auth = await requireAdminAuth();
+    if (auth.error) return auth.error;
+    
+    const { supabase } = auth;
+    const { id } = params;
     const { data: enrollment, error } = await supabase
       .from('enrollments')
       .select(`
@@ -132,23 +123,14 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  {
-  try { params }: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
-  const auth = await requireAdminAuth();
-  if (auth.error) return auth.error;
-  
-  const { supabase 
-  } catch (error) {
-    console.error('Error in PATCH:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }} = auth;
-  const { id } = params;
-  
   try {
+    const auth = await requireAdminAuth();
+    if (auth.error) return auth.error;
+    
+    const { supabase } = auth;
+    const { id } = params;
     const body = await request.json();
     const updates: any = {};
     
@@ -206,23 +188,14 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  {
-  try { params }: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
-  const auth = await requireAdminAuth();
-  if (auth.error) return auth.error;
-  
-  const { supabase 
-  } catch (error) {
-    console.error('Error in DELETE:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }} = auth;
-  const { id } = params;
-  
   try {
+    const auth = await requireAdminAuth();
+    if (auth.error) return auth.error;
+    
+    const { supabase } = auth;
+    const { id } = params;
     const { error } = await supabase
       .from('enrollments')
       .delete()

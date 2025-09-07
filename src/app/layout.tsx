@@ -4,7 +4,13 @@ import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { CartProvider } from '@/contexts/CartContext';
 import { GlobalModalProvider } from '@/contexts/GlobalModalContext';
+import { ToastProvider } from '@/contexts/ToastContext';
 import { GlobalModalContainer } from '@/components/modals/GlobalModalContainer';
+
+// Import auth debug utilities in development
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  import('@/lib/auth/auth-debug');
+}
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -28,16 +34,18 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body className={`${inter.className} h-full antialiased`}>
-        <AuthProvider>
-          <CartProvider>
-            <GlobalModalProvider>
-              <div id="root" className="min-h-full">
-                {children}
-              </div>
-              <GlobalModalContainer />
-            </GlobalModalProvider>
-          </CartProvider>
-        </AuthProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <CartProvider>
+              <GlobalModalProvider>
+                <div id="root" className="min-h-full">
+                  {children}
+                </div>
+                <GlobalModalContainer />
+              </GlobalModalProvider>
+            </CartProvider>
+          </AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   );

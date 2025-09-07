@@ -31,7 +31,7 @@ interface Order {
 
 function CheckoutSuccessContent() {
   const { user } = useAuth();
-  const { clearCart } = useCart();
+  const { clearCart, refreshCart } = useCart();
   const searchParams = useSearchParams();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -83,9 +83,16 @@ function CheckoutSuccessContent() {
 
         setOrder(data.order);
         
-        // Clear the cart on successful payment
+        // Ensure cart is cleared after successful payment
         if (data.order?.payment_status === 'completed') {
-          await clearCart();
+          // First refresh to sync with server state (server cleared cart during verification)
+          await refreshCart();
+          // If cart still has items, clear it explicitly
+          try {
+            await clearCart();
+          } catch (cartError) {
+            console.debug('Cart already cleared or error clearing:', cartError);
+          }
         }
       } catch (err) {
         console.error('Payment verification error:', err);
@@ -235,13 +242,13 @@ function CheckoutSuccessContent() {
             <div className="w-full">
               <h3 className="text-lg font-semibold text-blue-900 mb-2">Access Your Purchases</h3>
               <p className="text-blue-800 mb-4">
-                Your purchased items are now available in your account. You can access them anytime from your library.
+                Your purchased items are now available in your account. You can manage your courses and packages from your account dashboard.
               </p>
               <div className="flex gap-4">
-                <Link href="/account/library" className="inline-block">
+                <Link href="/account" className="inline-block">
                   <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 inline-flex items-center transition-colors">
                     <Package className="h-4 w-4 mr-2" />
-                    View Library
+                    View Account
                   </button>
                 </Link>
                 <Link href="/account/orders" className="inline-block">

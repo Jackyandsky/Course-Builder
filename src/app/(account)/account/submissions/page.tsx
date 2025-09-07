@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -10,7 +10,7 @@ import {
   Search, Filter, Calendar, Clock,
   CheckCircle, AlertCircle, XCircle, Edit,
   File, Image, Video, Music, Paperclip, RefreshCw,
-  ChevronDown, ChevronUp
+  ChevronDown, ChevronUp, BookOpen
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -150,23 +150,23 @@ const SubmissionCard = React.memo(({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <Card className={`p-5 transition-all ${
-      submission.status === 'revision_requested' ? 'border-yellow-300 bg-yellow-50/50' : ''
+    <div className={`border rounded-lg p-3 transition-all ${
+      submission.status === 'revision_requested' ? 'border-yellow-300 bg-yellow-50/50' : 'border-gray-200 hover:border-gray-300'
     }`}>
       {/* Header - Always visible */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3 flex-1">
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex items-center gap-2 flex-1">
           {getStatusIcon(submission.status)}
           <h3 className="text-base font-semibold text-gray-900">{submission.title}</h3>
           {getStatusBadge(submission.status)}
           {submission.media_required && (
             <Badge variant="info" size="sm">
               <Paperclip className="h-3 w-3 mr-1" />
-              Files Required
+              Files
             </Badge>
           )}
           {submission.score !== undefined && submission.max_points && (
-            <span className="text-sm font-bold text-gray-700">
+            <span className="text-xs font-bold text-gray-700">
               {submission.score}/{submission.max_points} ({Math.round((submission.score / submission.max_points) * 100)}%)
             </span>
           )}
@@ -194,14 +194,14 @@ const SubmissionCard = React.memo(({
       </div>
       
       {/* Basic Info - Always visible */}
-      <div className="mb-3">
+      <div className="mb-2">
         {submission.assignment && (
-          <p className="text-sm text-gray-600 mb-2">{submission.assignment}</p>
+          <p className="text-sm text-gray-600 mb-1">{submission.assignment}</p>
         )}
         <div className="text-sm text-gray-700">
           <span className="font-medium">{submission.course}</span>
           {submission.lessonTitle && (
-            <span className="text-gray-500 ml-3">
+            <span className="text-gray-500 ml-2">
               Session {submission.lessonNumber}: {submission.lessonTitle}
             </span>
           )}
@@ -216,12 +216,12 @@ const SubmissionCard = React.memo(({
         >
           {expanded ? (
             <>
-              <ChevronUp className="h-4 w-4" />
+              <ChevronUp className="h-3 w-3" />
               Hide Details
             </>
           ) : (
             <>
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown className="h-3 w-3" />
               Show Details
             </>
           )}
@@ -230,11 +230,11 @@ const SubmissionCard = React.memo(({
       
       {/* Expandable Details - Lazy loaded */}
       {expanded && (
-        <div className="mt-4 space-y-4">
+        <div className="mt-3 space-y-3">
           {/* Student Submission */}
           {(submission.submission_text || submission.files?.length) && (
-            <div className="border-l-2 border-blue-400 pl-4">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="border-l-2 border-blue-400 pl-3">
+              <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs font-semibold text-gray-600">STUDENT SUBMISSION</span>
                 <span className="text-xs text-gray-500">
                   {formatDate(submission.submitted_at || submission.created_at)}
@@ -242,23 +242,23 @@ const SubmissionCard = React.memo(({
               </div>
               
               {submission.submission_text && (
-                <div className="bg-white border border-gray-200 rounded-lg p-3 mb-2">
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                <div className="bg-white border border-gray-200 rounded p-2 mb-2">
+                  <p className="text-xs text-gray-700 whitespace-pre-wrap">
                     {submission.submission_text}
                   </p>
                 </div>
               )}
               
               {submission.files?.length > 0 && (
-                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                <div className="bg-gray-50 rounded p-2 border border-gray-200">
                   {submission.files.map((file, idx) => (
-                    <div key={idx} className="flex items-center gap-2 py-1">
+                    <div key={idx} className="flex items-center gap-2 py-0.5">
                       {getFileIcon(file.category)}
                       <a
                         href={`/api/account/submissions/${submission.id}/download?fileIndex=${idx}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:underline"
+                        className="text-xs text-blue-600 hover:underline"
                       >
                         {file.name}
                       </a>
@@ -274,8 +274,8 @@ const SubmissionCard = React.memo(({
           
           {/* Reviewer Feedback */}
           {submission.review_notes && (
-            <div className="border-l-2 border-green-400 pl-4">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="border-l-2 border-green-400 pl-3">
+              <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs font-semibold text-gray-600">REVIEWER FEEDBACK</span>
                 {submission.reviewed_at && (
                   <span className="text-xs text-gray-500">
@@ -284,18 +284,18 @@ const SubmissionCard = React.memo(({
                 )}
               </div>
               
-              <div className={`border rounded-lg p-3 ${
+              <div className={`border rounded p-2 ${
                 submission.status === 'approved' ? 'bg-green-50 border-green-200' :
                 submission.status === 'revision_requested' ? 'bg-yellow-50 border-yellow-200' :
                 'bg-red-50 border-red-200'
               }`}>
-                <p className="text-sm text-gray-700">{submission.review_notes}</p>
+                <p className="text-xs text-gray-700">{submission.review_notes}</p>
               </div>
             </div>
           )}
         </div>
       )}
-    </Card>
+    </div>
   );
 });
 
@@ -321,6 +321,12 @@ export default function SubmissionsPage() {
   const [editFiles, setEditFiles] = useState<{ [submissionId: string]: File[] }>({});
   const [uploading, setUploading] = useState<string | null>(null);
   
+  // Course filter state
+  const [showCourseFilter, setShowCourseFilter] = useState(false);
+  const [courseSearchTerm, setCourseSearchTerm] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
+  const courseFilterRef = useRef<HTMLDivElement>(null);
+  
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -330,19 +336,22 @@ export default function SubmissionsPage() {
   const fetchSubmissions = useCallback(async (forceRefresh = false) => {
     try {
       const cacheKey = `submissions-${filterStatus}`;
-      const cached = sessionStorage.getItem(cacheKey);
-      const cacheTime = sessionStorage.getItem(`${cacheKey}-time`);
       const now = Date.now();
       
-      // Use cache if less than 30 seconds old
-      if (!forceRefresh && cached && cacheTime) {
-        const age = now - parseInt(cacheTime);
-        if (age < 30000) {
-          const cachedData = JSON.parse(cached);
-          setSubmissions(cachedData.submissions);
-          setStats(cachedData.stats);
-          setLoading(false);
-          return;
+      // Use cache if less than 30 seconds old (SSR safe)
+      if (!forceRefresh && typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+        const cached = sessionStorage.getItem(cacheKey);
+        const cacheTime = sessionStorage.getItem(`${cacheKey}-time`);
+        
+        if (cached && cacheTime) {
+          const age = now - parseInt(cacheTime);
+          if (age < 30000) {
+            const cachedData = JSON.parse(cached);
+            setSubmissions(cachedData.submissions);
+            setStats(cachedData.stats);
+            setLoading(false);
+            return;
+          }
         }
       }
       
@@ -381,12 +390,14 @@ export default function SubmissionsPage() {
         avgScore: null
       });
       
-      // Cache results
-      sessionStorage.setItem(cacheKey, JSON.stringify({
-        submissions: filteredData,
-        stats: data.stats
-      }));
-      sessionStorage.setItem(`${cacheKey}-time`, now.toString());
+      // Cache results (SSR safe)
+      if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+          submissions: filteredData,
+          stats: data.stats
+        }));
+        sessionStorage.setItem(`${cacheKey}-time`, now.toString());
+      }
     } catch (error) {
       console.error('Error fetching submissions:', error);
       setSubmissions([]);
@@ -409,10 +420,30 @@ export default function SubmissionsPage() {
     }, 300);
     return () => clearTimeout(timer);
   }, [searchTerm]);
+  
+  // Handle click outside course filter dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (courseFilterRef.current && !courseFilterRef.current.contains(event.target as Node)) {
+        setShowCourseFilter(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Filter and paginate submissions
   const filteredSubmissions = useMemo(() => {
     return submissions.filter(submission => {
+      // Course filter
+      if (selectedCourse && submission.course !== selectedCourse) {
+        return false;
+      }
+      
+      // Search filter
       if (debouncedSearchTerm === '') return true;
       const search = debouncedSearchTerm.toLowerCase();
       return (
@@ -422,7 +453,7 @@ export default function SubmissionsPage() {
         (submission.lessonTitle?.toLowerCase().includes(search) ?? false)
       );
     });
-  }, [submissions, debouncedSearchTerm]);
+  }, [submissions, debouncedSearchTerm, selectedCourse]);
 
   // Calculate pagination
   useEffect(() => {
@@ -438,6 +469,27 @@ export default function SubmissionsPage() {
     const end = start + itemsPerPage;
     return filteredSubmissions.slice(start, end);
   }, [filteredSubmissions, currentPage, itemsPerPage]);
+  
+  // Get unique courses for filter dropdown
+  const uniqueCourses = useMemo(() => {
+    const courses = new Set<string>();
+    submissions.forEach(sub => {
+      if (sub.course) {
+        courses.add(sub.course);
+      }
+    });
+    return Array.from(courses).sort();
+  }, [submissions]);
+  
+  // Get filtered courses for dropdown search
+  const getFilteredCourses = useCallback(() => {
+    if (!courseSearchTerm) return uniqueCourses;
+    
+    const searchLower = courseSearchTerm.toLowerCase();
+    return uniqueCourses.filter(course => 
+      course.toLowerCase().includes(searchLower)
+    );
+  }, [uniqueCourses, courseSearchTerm]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -571,97 +623,209 @@ export default function SubmissionsPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-gray-500" />
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as FilterType)}
-              className="border border-gray-300 rounded-lg px-4 py-2 pr-10 min-w-[180px] focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="needs_action">🔔 Needs Action</option>
-              <option value="all">All Submissions</option>
-              <option value="pending">📝 Draft</option>
-              <option value="submitted">Submitted</option>
-              <option value="revision_requested">⚠️ Revision</option>
-              <option value="approved">✅ Approved</option>
-              <option value="rejected">❌ Rejected</option>
-            </select>
+            {/* Course Filter Button */}
+            <div className="relative" ref={courseFilterRef}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowCourseFilter(!showCourseFilter)}
+                className="flex items-center gap-2"
+              >
+                <BookOpen className="h-4 w-4" />
+                {selectedCourse || 'All Courses'}
+                <ChevronDown className={`h-3 w-3 transition-transform ${showCourseFilter ? 'rotate-180' : ''}`} />
+              </Button>
+              
+              {showCourseFilter && (
+                <div className="absolute top-full mt-2 left-0 w-80 bg-white rounded-lg shadow-lg border z-50">
+                  <div className="p-3 border-b">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search courses..."
+                        value={courseSearchTerm}
+                        onChange={(e) => setCourseSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="max-h-60 overflow-y-auto">
+                    <div
+                      onClick={() => {
+                        setSelectedCourse(null);
+                        setShowCourseFilter(false);
+                        setCourseSearchTerm('');
+                      }}
+                      className="p-3 hover:bg-gray-50 cursor-pointer border-b text-sm font-medium"
+                    >
+                      All Courses
+                    </div>
+                    {getFilteredCourses().length === 0 ? (
+                      <div className="p-4 text-center text-gray-500 text-sm">
+                        No courses match your search
+                      </div>
+                    ) : (
+                      getFilteredCourses().map(course => (
+                        <div
+                          key={course}
+                          onClick={() => {
+                            setSelectedCourse(course);
+                            setShowCourseFilter(false);
+                            setCourseSearchTerm('');
+                          }}
+                          className={`p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 ${
+                            selectedCourse === course ? 'bg-blue-50' : ''
+                          }`}
+                        >
+                          <div className="text-sm font-medium">{course}</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {submissions.filter(s => s.course === course).length} submissions
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total</p>
-              <p className="text-2xl font-semibold">{stats.total}</p>
-            </div>
-            <FileText className="h-5 w-5 text-gray-400" />
-          </div>
-        </Card>
-        
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Draft</p>
-              <p className="text-2xl font-semibold">{stats.pending}</p>
-            </div>
-            <Edit className="h-5 w-5 text-gray-400" />
-          </div>
-        </Card>
-        
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Submitted</p>
-              <p className="text-2xl font-semibold text-blue-600">{stats.submitted}</p>
-            </div>
-            <Upload className="h-5 w-5 text-blue-400" />
-          </div>
-        </Card>
-        
-        <Card className="p-4 border-yellow-200 bg-yellow-50">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-yellow-700">Revision</p>
-              <p className="text-2xl font-semibold text-yellow-700">{stats.revision_requested}</p>
-            </div>
-            <RefreshCw className="h-5 w-5 text-yellow-600" />
-          </div>
-        </Card>
-        
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Approved</p>
-              <p className="text-2xl font-semibold text-green-600">{stats.approved}</p>
-            </div>
-            <CheckCircle className="h-5 w-5 text-green-400" />
-          </div>
-        </Card>
+      {/* Active Filters Display */}
+      {(selectedCourse || filterStatus !== 'needs_action') && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-gray-500">Active filters:</span>
+          {selectedCourse && (
+            <Badge 
+              variant="info" 
+              className="cursor-pointer hover:bg-blue-200"
+              onClick={() => setSelectedCourse(null)}
+            >
+              Course: {selectedCourse} ×
+            </Badge>
+          )}
+          {filterStatus !== 'needs_action' && (
+            <Badge 
+              variant="secondary"
+              className="cursor-pointer hover:bg-gray-200"
+              onClick={() => setFilterStatus('needs_action')}
+            >
+              Status: {filterStatus === 'all' ? 'All Submissions' : 
+                       filterStatus === 'pending' ? 'Draft' :
+                       filterStatus === 'submitted' ? 'Submitted' :
+                       filterStatus === 'approved' ? 'Approved' :
+                       filterStatus === 'rejected' ? 'Rejected' :
+                       filterStatus === 'revision_requested' ? 'Revision' :
+                       filterStatus} ×
+            </Badge>
+          )}
+          <button
+            onClick={() => {
+              setSelectedCourse(null);
+              setFilterStatus('needs_action');
+            }}
+            className="text-xs text-gray-400 hover:text-gray-600 underline"
+          >
+            Clear all filters
+          </button>
+        </div>
+      )}
 
-        <Card className="p-4">
+      {/* Stats Grid - Flattened Clickable Status Filters */}
+      <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
+        <div 
+          className={`p-3 border rounded-lg cursor-pointer transition-all hover:border-gray-300 ${filterStatus === 'all' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}
+          onClick={() => setFilterStatus('all')}
+        >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Rejected</p>
-              <p className="text-2xl font-semibold text-red-600">{stats.rejected}</p>
+              <p className="text-xs text-gray-500">Total</p>
+              <p className="text-xl font-semibold">{stats.total}</p>
             </div>
-            <XCircle className="h-5 w-5 text-red-400" />
+            <FileText className="h-4 w-4 text-gray-400" />
           </div>
-        </Card>
+        </div>
         
-        <Card className="p-4">
+        <div 
+          className={`p-3 border rounded-lg cursor-pointer transition-all hover:border-gray-300 ${filterStatus === 'pending' ? 'border-gray-500 bg-gray-50' : 'border-gray-200 hover:bg-gray-50'}`}
+          onClick={() => setFilterStatus('pending')}
+        >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Avg Score</p>
-              <p className="text-2xl font-semibold">
+              <p className="text-xs text-gray-500">Draft</p>
+              <p className="text-xl font-semibold">{stats.pending}</p>
+            </div>
+            <Edit className="h-4 w-4 text-gray-400" />
+          </div>
+        </div>
+        
+        <div 
+          className={`p-3 border rounded-lg cursor-pointer transition-all hover:border-gray-300 ${filterStatus === 'submitted' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}
+          onClick={() => setFilterStatus('submitted')}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-500">Submitted</p>
+              <p className="text-xl font-semibold text-blue-600">{stats.submitted}</p>
+            </div>
+            <Upload className="h-4 w-4 text-blue-400" />
+          </div>
+        </div>
+        
+        <div 
+          className={`p-3 border rounded-lg cursor-pointer transition-all hover:border-gray-300 ${filterStatus === 'revision_requested' ? 'border-yellow-500 bg-yellow-50' : 'border-yellow-200 bg-yellow-50 hover:bg-yellow-100'}`}
+          onClick={() => setFilterStatus('revision_requested')}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-yellow-700">Revision</p>
+              <p className="text-xl font-semibold text-yellow-700">{stats.revision_requested}</p>
+            </div>
+            <RefreshCw className="h-4 w-4 text-yellow-600" />
+          </div>
+        </div>
+        
+        <div 
+          className={`p-3 border rounded-lg cursor-pointer transition-all hover:border-gray-300 ${filterStatus === 'approved' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:bg-gray-50'}`}
+          onClick={() => setFilterStatus('approved')}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-500">Approved</p>
+              <p className="text-xl font-semibold text-green-600">{stats.approved}</p>
+            </div>
+            <CheckCircle className="h-4 w-4 text-green-400" />
+          </div>
+        </div>
+
+        <div 
+          className={`p-3 border rounded-lg cursor-pointer transition-all hover:border-gray-300 ${filterStatus === 'rejected' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:bg-gray-50'}`}
+          onClick={() => setFilterStatus('rejected')}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-500">Rejected</p>
+              <p className="text-xl font-semibold text-red-600">{stats.rejected}</p>
+            </div>
+            <XCircle className="h-4 w-4 text-red-400" />
+          </div>
+        </div>
+        
+        <div className="p-3 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-500">Avg Score</p>
+              <p className="text-xl font-semibold">
                 {stats.avgScore !== null ? `${stats.avgScore}%` : '--'}
               </p>
             </div>
-            <CheckCircle className="h-5 w-5 text-gray-400" />
+            <CheckCircle className="h-4 w-4 text-gray-400" />
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* Submissions List */}

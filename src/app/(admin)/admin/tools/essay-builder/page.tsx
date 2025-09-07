@@ -13,7 +13,8 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   CheckCircleIcon,
-  XCircleIcon
+  XCircleIcon,
+  AcademicCapIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -334,6 +335,12 @@ export default function EssayBuilderPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Link href="/admin/tools/essay-builder/review">
+              <Button variant="outline" className="flex items-center gap-2">
+                <AcademicCapIcon className="h-4 w-4" />
+                Review Student Essays
+              </Button>
+            </Link>
             <Link href="/admin/tools/essay-builder/new">
               <Button className="flex items-center gap-2">
                 <PlusIcon className="h-4 w-4" />

@@ -26,7 +26,8 @@ import {
   ClockIcon,
   BookOpenIcon,
   FolderIcon,
-  ShareIcon
+  ShareIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { SocialMediaInput, SocialMediaData } from '@/components/ui/SocialMediaInput';
 
@@ -58,9 +59,215 @@ interface TabConfig {
 const tabs: TabConfig[] = [
   { id: 'overview', label: 'Overview', icon: UserIcon },
   { id: 'academic', label: 'Academic', icon: AcademicCapIcon },
-  { id: 'notes', label: 'Notes & Communication', icon: ChatBubbleLeftRightIcon },
-  { id: 'analytics', label: 'Analytics', icon: ChartBarIcon },
+  // { id: 'notes', label: 'Notes & Communication', icon: ChatBubbleLeftRightIcon },
+  // { id: 'analytics', label: 'Analytics', icon: ChartBarIcon },
 ];
+
+// Profile Panel Component - moved from header
+function ProfilePanel({ userProfile }: { userProfile: any }) {
+  return (
+    <div className="mt-3 px-4">
+      <div className="border border-gray-200 rounded-lg p-4">
+        {/* Profile Info Section */}
+        <div className="flex items-start space-x-4 mb-4">
+          {/* Profile Image */}
+          <div className="flex-shrink-0">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center">
+              {userProfile.avatar_url ? (
+                <img 
+                  src={userProfile.avatar_url} 
+                  alt={userProfile.full_name}
+                  className="w-full h-full rounded-full object-cover"
+                />
+              ) : (
+                <span className="text-xl font-bold text-primary-600">
+                  {userProfile.first_name?.[0]}{userProfile.last_name?.[0]}
+                </span>
+              )}
+            </div>
+            {userProfile.verified_at && (
+              <CheckCircleIcon className="absolute -bottom-1 -right-1 h-5 w-5 text-green-500 bg-white rounded-full" />
+            )}
+          </div>
+        </div>
+
+          {/* Basic Info */}
+          <div className="min-w-0">
+              <h2 className="text-xl font-bold text-gray-900">{userProfile.full_name}</h2>
+              <p className="text-gray-600 text-sm mt-0.5">{userProfile.email}</p>
+              <div className="flex items-center space-x-2 mt-2">
+                <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  userProfile.role === 'admin' ? 'bg-red-100 text-red-700' :
+                  userProfile.role === 'teacher' ? 'bg-green-100 text-green-700' :
+                  userProfile.role === 'parent' ? 'bg-purple-100 text-purple-700' :
+                  'bg-blue-100 text-blue-700'
+                }`}>
+                  {userProfile.role.charAt(0).toUpperCase() + userProfile.role.slice(1)}
+                </span>
+                <div className="flex items-center space-x-1">
+                  {userProfile.verified_at ? (
+                    <>
+                      <CheckCircleIcon className="h-3.5 w-3.5 text-green-500" />
+                      <span className="text-xs text-green-600">Verified</span>
+                    </>
+                  ) : (
+                    <>
+                      <ClockIcon className="h-3.5 w-3.5 text-yellow-500" />
+                      <span className="text-xs text-yellow-600">Pending</span>
+                    </>
+                  )}
+                </div>
+              </div>
+          </div>
+        </div>
+
+        {/* Stats Row at Bottom */}
+        <div className="grid grid-cols-4 gap-3 pt-3 border-t border-gray-100">
+          <div className="text-center p-2">
+            <div className="text-xs text-gray-500">Member Since</div>
+            <div className="font-semibold text-gray-900 text-sm">
+              {new Date(userProfile.created_at).toLocaleDateString('en-US', { 
+                month: 'short', 
+                year: 'numeric' 
+              })}
+            </div>
+          </div>
+          <div className="text-center p-2">
+            <div className="text-xs text-gray-500">Grade Level</div>
+            <div className="font-semibold text-gray-900 text-sm">
+              {userProfile.grade_level || 'N/A'}
+            </div>
+          </div>
+          <div className="text-center p-2">
+            <div className="text-xs text-gray-500">Phone</div>
+            <div className="font-semibold text-gray-900 text-xs">
+              {userProfile.phone || 'N/A'}
+            </div>
+          </div>
+          <div className="text-center p-2">
+            <div className="text-xs text-gray-500">Status</div>
+            <div className="font-semibold text-green-600 text-sm">Active</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Collapsible Recent Activity Component
+function CollapsibleRecentActivity({ activities, loadingActivities }: { activities: any[], loadingActivities: boolean }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <Card>
+      <div className="p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold">Recent Activity</h3>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="p-1 hover:bg-gray-100 rounded transition-colors"
+          >
+            <ChevronDownIcon
+              className={`h-5 w-5 text-gray-500 transform transition-transform ${
+                isExpanded ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+        </div>
+        
+        {isExpanded && (
+          <div className="mt-3">
+            {loadingActivities ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+              </div>
+            ) : activities.length > 0 ? (
+              <div className="space-y-4">
+                {activities.slice(0, 10).map((activity) => {
+                  let IconComponent = UserIcon;
+                  let bgColor = 'bg-gray-100';
+                  let iconColor = 'text-gray-600';
+                  
+                  switch (activity.type) {
+                    case 'booking':
+                    case 'booking_status':
+                      IconComponent = CalendarIcon;
+                      bgColor = activity.type === 'booking' ? 'bg-blue-100' : 
+                               activity.metadata?.status === 'confirmed' ? 'bg-green-100' : 'bg-red-100';
+                      iconColor = activity.type === 'booking' ? 'text-blue-600' : 
+                                 activity.metadata?.status === 'confirmed' ? 'text-green-600' : 'text-red-600';
+                      break;
+                    case 'course_enrollment':
+                      IconComponent = BookOpenIcon;
+                      bgColor = 'bg-purple-100';
+                      iconColor = 'text-purple-600';
+                      break;
+                    case 'course_completion':
+                      IconComponent = CheckCircleIcon;
+                      bgColor = 'bg-green-100';
+                      iconColor = 'text-green-600';
+                      break;
+                    case 'purchase':
+                      IconComponent = FolderIcon;
+                      bgColor = 'bg-yellow-100';
+                      iconColor = 'text-yellow-600';
+                      break;
+                    case 'task_submission':
+                      IconComponent = ClipboardDocumentListIcon;
+                      bgColor = 'bg-indigo-100';
+                      iconColor = 'text-indigo-600';
+                      break;
+                    case 'profile_update':
+                      IconComponent = UserIcon;
+                      bgColor = 'bg-gray-100';
+                      iconColor = 'text-gray-600';
+                      break;
+                  }
+                  
+                  const timeAgo = (timestamp: string) => {
+                    const now = new Date();
+                    const then = new Date(timestamp);
+                    const diff = now.getTime() - then.getTime();
+                    const seconds = Math.floor(diff / 1000);
+                    const minutes = Math.floor(seconds / 60);
+                    const hours = Math.floor(minutes / 60);
+                    const days = Math.floor(hours / 24);
+                    const weeks = Math.floor(days / 7);
+                    const months = Math.floor(days / 30);
+                    
+                    if (months > 0) return `${months} month${months > 1 ? 's' : ''} ago`;
+                    if (weeks > 0) return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+                    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+                    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+                    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+                    return 'Just now';
+                  };
+                  
+                  return (
+                    <div key={activity.id} className="flex items-start space-x-3">
+                      <div className={`flex-shrink-0 w-8 h-8 rounded-full ${bgColor} flex items-center justify-center`}>
+                        <IconComponent className={`w-4 h-4 ${iconColor}`} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-gray-900">{activity.description}</p>
+                        <p className="text-xs text-gray-500">{timeAgo(activity.created_at)}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-gray-500 text-center py-8">
+                No recent activity found
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
 
 export default function UserDetailPage() {
   const params = useParams();
@@ -103,6 +310,8 @@ export default function UserDetailPage() {
 
   const handleSaveProfile = async () => {
     try {
+      console.log('Saving profile with data:', editedProfile);
+      
       const response = await fetch(`/api/admin/users/${userId}`, {
         method: 'PUT',
         headers: {
@@ -112,13 +321,20 @@ export default function UserDetailPage() {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Server error response:', errorData);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorData.error || 'Unknown error'}`);
       }
+      
+      const result = await response.json();
+      console.log('Profile updated successfully:', result);
       
       await fetchUserProfile();
       setIsEditing(false);
     } catch (error) {
       console.error('Error updating profile:', error);
+      // You could add a toast notification here to show the user the error
+      alert(`Failed to save profile: ${error.message}`);
     }
   };
 
@@ -173,148 +389,56 @@ export default function UserDetailPage() {
         </div>
       </div>
 
-      <div className="flex">
-        {/* Left Sidebar - User Info Card */}
-        <div className="w-80 bg-white border-r h-screen sticky top-0 p-6">
-          <div className="text-center">
-            {/* Avatar */}
-            <div className="relative inline-block">
-              <div className="w-32 h-32 rounded-full bg-primary-100 flex items-center justify-center mx-auto mb-4">
-                {userProfile.avatar_url ? (
-                  <img 
-                    src={userProfile.avatar_url} 
-                    alt={userProfile.full_name}
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="text-4xl font-bold text-primary-600">
-                    {userProfile.first_name?.[0]}{userProfile.last_name?.[0]}
-                  </span>
-                )}
-              </div>
-              {userProfile.verified_at && (
-                <CheckCircleIcon className="absolute bottom-2 right-2 h-8 w-8 text-green-500 bg-white rounded-full" />
-              )}
-            </div>
-
-            {/* Name and Role */}
-            <h2 className="text-xl font-bold text-gray-900">{userProfile.full_name}</h2>
-            <p className="text-gray-500">{userProfile.email}</p>
-            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium mt-2 ${
-              userProfile.role === 'admin' ? 'bg-red-100 text-red-700' :
-              userProfile.role === 'teacher' ? 'bg-green-100 text-green-700' :
-              userProfile.role === 'parent' ? 'bg-purple-100 text-purple-700' :
-              'bg-blue-100 text-blue-700'
-            }`}>
-              {userProfile.role.charAt(0).toUpperCase() + userProfile.role.slice(1)}
-            </span>
+      {/* Simple Header */}
+      <div className="bg-white rounded-lg shadow-sm mb-4">
+        <div className="border-b border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-900">User Details</h1>
           </div>
-
-          {/* Quick Stats */}
-          <div className="mt-6 space-y-4">
-            <div className="flex justify-between items-center py-2 border-b">
-              <span className="text-gray-500">Member Since</span>
-              <span className="font-medium">
-                {new Date(userProfile.created_at).toLocaleDateString()}
-              </span>
-            </div>
-            {userProfile.grade_level && (
-              <div className="flex justify-between items-center py-2 border-b">
-                <span className="text-gray-500">Grade Level</span>
-                <span className="font-medium">{userProfile.grade_level}</span>
-              </div>
-            )}
-            {userProfile.phone && (
-              <div className="flex justify-between items-center py-2 border-b">
-                <span className="text-gray-500">Phone</span>
-                <span className="font-medium">{userProfile.phone}</span>
-              </div>
-            )}
-            {userProfile.social_media && Object.keys(userProfile.social_media).length > 0 && (
-              <div className="py-2 border-b">
-                <span className="text-gray-500 block mb-2">Social Media</span>
-                <div className="space-y-1 text-sm">
-                  {userProfile.social_media.teams && (
-                    <div className="text-gray-700">Teams: {userProfile.social_media.teams}</div>
-                  )}
-                  {userProfile.social_media.wechat && (
-                    <div className="text-gray-700">WeChat: {userProfile.social_media.wechat}</div>
-                  )}
-                  {userProfile.social_media.whatsapp && (
-                    <div className="text-gray-700">WhatsApp: {userProfile.social_media.whatsapp}</div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Quick Actions */}
-          {canEdit && (
-            <div className="mt-6 space-y-2">
-              <Button variant="outline" size="sm" className="w-full justify-start">
-                <EnvelopeIcon className="h-4 w-4 mr-2" />
-                Send Message
-              </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start">
-                <CalendarIcon className="h-4 w-4 mr-2" />
-                Schedule Meeting
-              </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start">
-                <PencilIcon className="h-4 w-4 mr-2" />
-                Add Note
-              </Button>
-            </div>
-          )}
+          
+          {/* Profile Panel - moved here to replace Academic Stats */}
+          <ProfilePanel userProfile={userProfile} />
         </div>
 
-        {/* Right Content Area */}
-        <div className="flex-1">
-          {/* Tabs */}
-          <div className="bg-white border-b">
-            <div className="px-6">
-              <nav className="flex space-x-8">
-                {tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                        activeTab === tab.id
-                          ? 'border-primary-500 text-primary-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }`}
-                    >
-                      <Icon className="h-5 w-5" />
-                      <span>{tab.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-          </div>
+        {/* Tabs */}
+        <div className="px-4">
+          <nav className="flex space-x-6">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                    activeTab === tab.id
+                      ? 'border-primary-500 text-primary-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
 
-          {/* Tab Content */}
-          <div className="p-6">
-            {activeTab === 'overview' && (
-              <OverviewTab 
-                userProfile={userProfile}
-                isEditing={isEditing}
-                editedProfile={editedProfile}
-                setEditedProfile={setEditedProfile}
-                canEdit={canEdit}
-              />
-            )}
-            {activeTab === 'academic' && (
-              <AcademicTab userProfile={userProfile} canEdit={canEdit} />
-            )}
-            {activeTab === 'notes' && (
-              <NotesTab userProfile={userProfile} canEdit={canEdit} />
-            )}
-            {activeTab === 'analytics' && (
-              <AnalyticsTab userProfile={userProfile} />
-            )}
-          </div>
+      {/* Tab Content */}
+      <div className="bg-white rounded-lg shadow-sm">
+        <div className="p-4">
+          {activeTab === 'overview' && (
+            <OverviewTab 
+              userProfile={userProfile}
+              isEditing={isEditing}
+              editedProfile={editedProfile}
+              setEditedProfile={setEditedProfile}
+              canEdit={canEdit}
+            />
+          )}
+          {activeTab === 'academic' && (
+            <AcademicTab userProfile={userProfile} canEdit={canEdit} />
+          )}
         </div>
       </div>
     </div>
@@ -413,74 +537,38 @@ function OverviewTab({ userProfile, isEditing, editedProfile, setEditedProfile, 
   };
 
   return (
-    <div className="space-y-6">
-      {/* Account Status & Role Management */}
-      <Card>
-        <div className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Account Status & Role</h3>
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Current Role
-              </label>
-              {canChangeRole && isEditing ? (
-                <select
-                  value={editedProfile.role || userProfile.role}
-                  onChange={(e) => handleRoleChange(e.target.value)}
-                  disabled={savingRole}
-                  className="w-full px-3 py-2 border rounded-md"
-                >
-                  <option value="student">Student</option>
-                  <option value="parent">Parent</option>
-                  <option value="teacher">Teacher</option>
-                  <option value="admin">Administrator</option>
-                </select>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                    userProfile.role === 'admin' ? 'bg-red-100 text-red-700' :
-                    userProfile.role === 'teacher' ? 'bg-green-100 text-green-700' :
-                    userProfile.role === 'parent' ? 'bg-purple-100 text-purple-700' :
-                    'bg-blue-100 text-blue-700'
-                  }`}>
-                    {userProfile.role.charAt(0).toUpperCase() + userProfile.role.slice(1)}
-                  </span>
-                  {!canChangeRole && canEdit && (
-                    <span className="text-xs text-gray-500">(Contact admin to change role)</span>
-                  )}
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Account Status
-              </label>
-              <div className="flex items-center space-x-2">
-                {userProfile.verified_at ? (
-                  <>
-                    <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                    <span className="text-green-700">Verified</span>
-                  </>
+    <div className="space-y-4">
+      {/* Account Settings and Social Media in one row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Account Settings Card */}
+        <Card>
+          <div className="p-4">
+            <h3 className="text-base font-semibold mb-3">Account Settings</h3>
+          <div className="grid grid-cols-2 gap-4">
+            {canChangeRole && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Change Role
+                </label>
+                {isEditing ? (
+                  <select
+                    value={editedProfile.role || userProfile.role}
+                    onChange={(e) => handleRoleChange(e.target.value)}
+                    disabled={savingRole}
+                    className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="student">Student</option>
+                    <option value="parent">Parent</option>
+                    <option value="teacher">Teacher</option>
+                    <option value="admin">Administrator</option>
+                  </select>
                 ) : (
-                  <>
-                    <ClockIcon className="h-5 w-5 text-yellow-500" />
-                    <span className="text-yellow-700">Pending Verification</span>
-                  </>
+                  <p className="text-gray-900">
+                    Current: {userProfile.role.charAt(0).toUpperCase() + userProfile.role.slice(1)}
+                  </p>
                 )}
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Account Created
-              </label>
-              <p className="text-gray-900">
-                {new Date(userProfile.created_at).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </p>
-            </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Last Login
@@ -540,75 +628,73 @@ function OverviewTab({ userProfile, isEditing, editedProfile, setEditedProfile, 
             )}
           </div>
         </div>
-      </Card>
+        </Card>
 
-      {/* Personal Information */}
-      <Card>
-        <div className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                First Name
-              </label>
-              {isEditing ? (
+        {/* Social Media Information Card */}
+        <Card>
+          <div className="p-4">
+            <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
+              <ShareIcon className="h-4 w-4 text-gray-600" />
+              Social Media Accounts
+            </h3>
+            <SocialMediaInput
+              value={isEditing ? (editedProfile.social_media || {}) : (userProfile.social_media || {})}
+              onChange={(value) => isEditing && setEditedProfile({...editedProfile, social_media: value})}
+              editing={isEditing}
+            />
+          </div>
+        </Card>
+      </div>
+
+      {/* Editable Personal Information - Non-redundant fields only */}
+      {isEditing && (
+        <Card>
+          <div className="p-4">
+            <h3 className="text-base font-semibold mb-3">Edit Personal Information</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  First Name
+                </label>
                 <input
                   type="text"
                   value={editedProfile.first_name || ''}
                   onChange={(e) => setEditedProfile({...editedProfile, first_name: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-              ) : (
-                <p className="text-gray-900">{userProfile.first_name || 'Not provided'}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Last Name
-              </label>
-              {isEditing ? (
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Last Name
+                </label>
                 <input
                   type="text"
                   value={editedProfile.last_name || ''}
                   onChange={(e) => setEditedProfile({...editedProfile, last_name: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-              ) : (
-                <p className="text-gray-900">{userProfile.last_name || 'Not provided'}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <p className="text-gray-900">{userProfile.email}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone
-              </label>
-              {isEditing ? (
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone
+                </label>
                 <input
                   type="tel"
                   value={editedProfile.phone || ''}
                   onChange={(e) => setEditedProfile({...editedProfile, phone: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-              ) : (
-                <p className="text-gray-900">{userProfile.phone || 'Not provided'}</p>
-              )}
-            </div>
-            {(userProfile.role === 'student' || editedProfile.role === 'student') && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Grade Level
-                  </label>
-                  {isEditing ? (
+              </div>
+              {(userProfile.role === 'student' || editedProfile.role === 'student') && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Grade Level
+                    </label>
                     <select
                       value={editedProfile.grade_level || ''}
                       onChange={(e) => setEditedProfile({...editedProfile, grade_level: e.target.value})}
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="">Select Grade</option>
                       {[...Array(12)].map((_, i) => (
@@ -617,190 +703,42 @@ function OverviewTab({ userProfile, isEditing, editedProfile, setEditedProfile, 
                         </option>
                       ))}
                     </select>
-                  ) : (
-                    <p className="text-gray-900">
-                      {userProfile.grade_level ? `Grade ${userProfile.grade_level}` : 'Not set'}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Date of Birth
-                  </label>
-                  {isEditing ? (
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Date of Birth
+                    </label>
                     <input
                       type="date"
                       value={editedProfile.date_of_birth || ''}
                       onChange={(e) => setEditedProfile({...editedProfile, date_of_birth: e.target.value})}
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
-                  ) : (
-                    <p className="text-gray-900">
-                      {userProfile.date_of_birth 
-                        ? new Date(userProfile.date_of_birth).toLocaleDateString()
-                        : 'Not provided'}
-                    </p>
-                  )}
-                </div>
-              </>
-            )}
-            {(userProfile.role === 'parent' || editedProfile.role === 'parent') && (
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Linked Children
-                </label>
-                <p className="text-gray-900">
-                  {/* This would show linked student accounts */}
-                  No linked children accounts
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </Card>
-
-      {/* Social Media Information */}
-      <Card>
-        <div className="p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <ShareIcon className="h-5 w-5 text-gray-600" />
-            Social Media Accounts
-          </h3>
-          <SocialMediaInput
-            value={isEditing ? (editedProfile.social_media || {}) : (userProfile.social_media || {})}
-            onChange={(value) => isEditing && setEditedProfile({...editedProfile, social_media: value})}
-            editing={isEditing}
-          />
-        </div>
-      </Card>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <div className="p-4 text-center">
-            <div className="text-2xl font-bold text-primary-600">{enrollmentCount}</div>
-            <div className="text-sm text-gray-500">Active Courses</div>
-          </div>
-        </Card>
-        <Card>
-          <div className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">{completedCourses}</div>
-            <div className="text-sm text-gray-500">Completed</div>
-          </div>
-        </Card>
-        <Card>
-          <div className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{averageScore}%</div>
-            <div className="text-sm text-gray-500">Avg Score</div>
-          </div>
-        </Card>
-        <Card>
-          <div className="p-4 text-center">
-            <div className="text-2xl font-bold text-purple-600">
-              {userProfile.role === 'student' ? 'Active' : 'N/A'}
-            </div>
-            <div className="text-sm text-gray-500">Status</div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Recent Activity */}
-      <Card>
-        <div className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
-          {loadingActivities ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
-            </div>
-          ) : activities.length > 0 ? (
-            <div className="space-y-4">
-              {activities.slice(0, 10).map((activity) => {
-                // Determine icon and color based on activity type
-                let IconComponent = UserIcon;
-                let bgColor = 'bg-gray-100';
-                let iconColor = 'text-gray-600';
-                
-                switch (activity.type) {
-                  case 'booking':
-                  case 'booking_status':
-                    IconComponent = CalendarIcon;
-                    bgColor = activity.type === 'booking' ? 'bg-blue-100' : 
-                             activity.metadata?.status === 'confirmed' ? 'bg-green-100' : 'bg-red-100';
-                    iconColor = activity.type === 'booking' ? 'text-blue-600' : 
-                               activity.metadata?.status === 'confirmed' ? 'text-green-600' : 'text-red-600';
-                    break;
-                  case 'course_enrollment':
-                    IconComponent = BookOpenIcon;
-                    bgColor = 'bg-purple-100';
-                    iconColor = 'text-purple-600';
-                    break;
-                  case 'course_completion':
-                    IconComponent = CheckCircleIcon;
-                    bgColor = 'bg-green-100';
-                    iconColor = 'text-green-600';
-                    break;
-                  case 'purchase':
-                    IconComponent = FolderIcon;
-                    bgColor = 'bg-yellow-100';
-                    iconColor = 'text-yellow-600';
-                    break;
-                  case 'task_submission':
-                    IconComponent = ClipboardDocumentListIcon;
-                    bgColor = 'bg-indigo-100';
-                    iconColor = 'text-indigo-600';
-                    break;
-                  case 'profile_update':
-                    IconComponent = UserIcon;
-                    bgColor = 'bg-gray-100';
-                    iconColor = 'text-gray-600';
-                    break;
-                }
-                
-                // Format the timestamp
-                const timeAgo = (timestamp: string) => {
-                  const now = new Date();
-                  const then = new Date(timestamp);
-                  const diff = now.getTime() - then.getTime();
-                  const seconds = Math.floor(diff / 1000);
-                  const minutes = Math.floor(seconds / 60);
-                  const hours = Math.floor(minutes / 60);
-                  const days = Math.floor(hours / 24);
-                  const weeks = Math.floor(days / 7);
-                  const months = Math.floor(days / 30);
-                  
-                  if (months > 0) return `${months} month${months > 1 ? 's' : ''} ago`;
-                  if (weeks > 0) return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
-                  if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
-                  if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-                  if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-                  return 'Just now';
-                };
-                
-                return (
-                  <div key={activity.id} className="flex items-start space-x-3">
-                    <div className="flex-shrink-0">
-                      <div className={`h-8 w-8 rounded-full ${bgColor} flex items-center justify-center`}>
-                        <IconComponent className={`h-4 w-4 ${iconColor}`} />
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-900">{activity.title}</p>
-                      {activity.description && (
-                        <p className="text-xs text-gray-600 mt-0.5">{activity.description}</p>
-                      )}
-                      <p className="text-xs text-gray-500 mt-1">{timeAgo(activity.timestamp)}</p>
-                    </div>
                   </div>
-                );
-              })}
+                </>
+              )}
+              {(userProfile.role === 'parent' || editedProfile.role === 'parent') && (
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Linked Children
+                  </label>
+                  <p className="text-gray-900">
+                    {/* This would show linked student accounts */}
+                    No linked children accounts
+                  </p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-sm text-gray-500">No recent activity found</p>
-            </div>
-          )}
-        </div>
-      </Card>
+          </div>
+        </Card>
+      )}
+
+
+      {/* Recent Activity - Collapsible */}
+      <CollapsibleRecentActivity 
+        activities={activities}
+        loadingActivities={loadingActivities}
+      />
     </div>
   );
 }
@@ -831,6 +769,7 @@ function LegacyAcademicTab({ userProfile, canEdit }: any) {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [courseSearchTerm, setCourseSearchTerm] = useState('');
   const [enrollmentStats, setEnrollmentStats] = useState({
     total: 0,
     completed: 0,
@@ -1044,33 +983,127 @@ function LegacyAcademicTab({ userProfile, canEdit }: any) {
       {/* Assign Course Modal */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-[80vh] overflow-hidden flex flex-col">
             <h3 className="text-lg font-semibold mb-4">Assign Course</h3>
+            
+            {/* Search Input */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Course
+                Search Courses
               </label>
-              <select
-                value={selectedCourseId}
-                onChange={(e) => setSelectedCourseId(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
-              >
-                <option value="">Choose a course...</option>
-                {availableCourses
-                  .filter(course => !enrollments.some(e => e.course_id === course.id))
-                  .map(course => (
-                    <option key={course.id} value={course.id}>
-                      {course.title} ({course.level}) - {course.instructor_name}
-                    </option>
-                  ))}
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search courses by title, instructor, or level..."
+                  value={courseSearchTerm}
+                  onChange={(e) => setCourseSearchTerm(e.target.value)}
+                  className="w-full px-3 py-2 pl-10 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
             </div>
-            <div className="flex justify-end space-x-3">
+
+            {/* Course List */}
+            <div className="mb-4 flex-1 overflow-hidden">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Available Courses ({availableCourses.filter(course => 
+                  !enrollments.some(e => e.course_id === course.id) &&
+                  (courseSearchTerm === '' || 
+                   course.title?.toLowerCase().includes(courseSearchTerm.toLowerCase()) ||
+                   course.instructor_name?.toLowerCase().includes(courseSearchTerm.toLowerCase()) ||
+                   course.level?.toLowerCase().includes(courseSearchTerm.toLowerCase()))
+                ).length})
+              </label>
+              
+              <div className="border rounded-md max-h-60 overflow-y-auto">
+                {availableCourses
+                  .filter(course => 
+                    !enrollments.some(e => e.course_id === course.id) &&
+                    (courseSearchTerm === '' || 
+                     course.title?.toLowerCase().includes(courseSearchTerm.toLowerCase()) ||
+                     course.instructor_name?.toLowerCase().includes(courseSearchTerm.toLowerCase()) ||
+                     course.level?.toLowerCase().includes(courseSearchTerm.toLowerCase()))
+                  )
+                  .map(course => (
+                    <div
+                      key={course.id}
+                      onClick={() => setSelectedCourseId(course.id)}
+                      className={`p-3 border-b last:border-b-0 cursor-pointer hover:bg-gray-50 transition-colors ${
+                        selectedCourseId === course.id ? 'bg-blue-50 border-blue-200' : ''
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{course.title}</h4>
+                          <div className="flex items-center gap-3 mt-1 text-sm text-gray-600">
+                            {course.instructor_name && (
+                              <span>👨‍🏫 {course.instructor_name}</span>
+                            )}
+                            {course.level && (
+                              <span className="px-2 py-1 bg-gray-100 rounded-full text-xs">
+                                {course.level}
+                              </span>
+                            )}
+                            {course.duration_hours && (
+                              <span>⏱️ {course.duration_hours}h</span>
+                            )}
+                          </div>
+                          {course.short_description && (
+                            <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                              {course.short_description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="ml-3">
+                          {selectedCourseId === course.id && (
+                            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                }
+                {availableCourses.filter(course => 
+                  !enrollments.some(e => e.course_id === course.id) &&
+                  (courseSearchTerm === '' || 
+                   course.title?.toLowerCase().includes(courseSearchTerm.toLowerCase()) ||
+                   course.instructor_name?.toLowerCase().includes(courseSearchTerm.toLowerCase()) ||
+                   course.level?.toLowerCase().includes(courseSearchTerm.toLowerCase()))
+                ).length === 0 && (
+                  <div className="p-8 text-center text-gray-500">
+                    <div className="mb-2">📚</div>
+                    {courseSearchTerm ? 'No courses found matching your search' : 'No available courses to assign'}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Selected Course Summary */}
+            {selectedCourseId && (
+              <div className="mb-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+                <p className="text-sm font-medium text-blue-800">Selected Course:</p>
+                <p className="text-sm text-blue-700">
+                  {availableCourses.find(c => c.id === selectedCourseId)?.title}
+                </p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-3 pt-4 border-t">
               <Button
                 variant="outline"
                 onClick={() => {
                   setShowAssignModal(false);
                   setSelectedCourseId('');
+                  setCourseSearchTerm('');
                 }}
               >
                 Cancel

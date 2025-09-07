@@ -64,6 +64,43 @@ export interface UpdateCourseData extends Partial<CreateCourseData> {
 }
 
 export const courseService = {
+  // Get public courses - no authentication required
+  async getPublicCourses(filters: CourseFilters = {}): Promise<Course[]> {
+    try {
+      console.log('Getting public courses with filters:', filters);
+      
+      // Build query params
+      const params = new URLSearchParams();
+      
+      if (filters.status) params.append('status', filters.status);
+      if (filters.difficulty) params.append('difficulty', filters.difficulty);
+      if (filters.categoryId) params.append('categoryId', filters.categoryId);
+      if (filters.search) params.append('search', filters.search);
+      params.append('limit', String(filters.perPage || 500));
+      
+      // Fetch from public API route (no auth required)
+      const response = await fetch(`/api/public/courses?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Public API error:', error);
+        throw new Error(error.error || 'Failed to fetch public courses');
+      }
+      
+      const data = await response.json();
+      console.log('Public courses fetched:', data.length || 0);
+      return data as Course[];
+    } catch (error) {
+      console.error('Error fetching public courses:', error);
+      throw error;
+    }
+  },
+
   // Get all courses with optional filters - uses server-side API
   async getCourses(filters: CourseFilters = {}, simple: boolean = false): Promise<Course[]> {
     try {

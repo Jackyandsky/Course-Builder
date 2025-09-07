@@ -130,8 +130,10 @@ export function CourseForm({ initialData }: CourseFormProps) {
           id: initialData.id,
           ...courseData,
         } as UpdateCourseData);
-        // Redirect to detail page after update
-        router.push(`/admin/courses/${initialData.id}`);
+        // Small delay to ensure database update completes before redirect
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Redirect to detail page after update with cache-busting timestamp
+        router.push(`/admin/courses/${initialData.id}?t=${Date.now()}`);
       } else {
         const newCourse = await courseService.createCourse(courseData as CreateCourseData);
         // Redirect to detail page of newly created course

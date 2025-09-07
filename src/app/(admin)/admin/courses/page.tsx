@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Plus, Search, Filter, BookOpen, Book, Clock, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Filter, BookOpen, Book, Clock, BarChart3, ChevronLeft, ChevronRight, Calendar, Target, Settings, CheckCircle, Package } from 'lucide-react';
 import { Course, CourseStatus, DifficultyLevel } from '@/types/database';
 import { courseService, CourseFilters, PaginatedResponse } from '@/lib/supabase/courses';
 import { Button, Card, Badge, SearchBox, FilterPanel, Spinner, Select } from '@/components/ui';
@@ -182,12 +182,75 @@ export default function CoursesPage() {
             Manage your courses and learning materials
           </p>
         </div>
-        <Button
-          onClick={() => router.push('/admin/courses/new')}
-          leftIcon={<Plus className="h-4 w-4" />}
-        >
-          Create Course
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {/* Course-related management buttons */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/admin/schedules')}
+              className="flex items-center gap-2"
+            >
+              <Calendar className="h-4 w-4" />
+              Schedules
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/admin/lessons')}
+              className="flex items-center gap-2"
+            >
+              <Clock className="h-4 w-4" />
+              Sessions
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/admin/tasks')}
+              className="flex items-center gap-2"
+            >
+              <CheckCircle className="h-4 w-4" />
+              Tasks
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/admin/objectives')}
+              className="flex items-center gap-2"
+            >
+              <Target className="h-4 w-4" />
+              Objectives
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/admin/methods')}
+              className="flex items-center gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Methods
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/admin/packages')}
+              className="flex items-center gap-2"
+            >
+              <Package className="h-4 w-4" />
+              Packages
+            </Button>
+          </div>
+          
+          {/* Main action */}
+          <div className="border-l border-gray-200 pl-2">
+            <Button
+              onClick={() => router.push('/admin/courses/new')}
+              leftIcon={<Plus className="h-4 w-4" />}
+            >
+              Create Course
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Stats */}

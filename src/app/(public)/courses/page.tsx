@@ -31,6 +31,7 @@ interface Course {
   course_books?: any[];
   course_objectives?: any[];
   schedules?: any[];
+  book_count?: number;
 }
 
 export default function CoursesPage() {
@@ -46,7 +47,7 @@ export default function CoursesPage() {
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
   const [selectedLevel, setSelectedLevel] = useState(searchParams.get('level') || 'all');
-  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'a-z');
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'most-content');
   const [currentPage, setCurrentPage] = useState(searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1);
   const [itemsPerPage, setItemsPerPage] = useState(searchParams.get('perPage') ? parseInt(searchParams.get('perPage')!) : 4);
 
@@ -68,7 +69,7 @@ export default function CoursesPage() {
     if (searchTerm) params.set('search', searchTerm);
     if (selectedCategory !== 'all') params.set('category', selectedCategory);
     if (selectedLevel !== 'all') params.set('level', selectedLevel);
-    if (sortBy !== 'a-z') params.set('sort', sortBy);
+    if (sortBy !== 'most-content') params.set('sort', sortBy);
     
     const queryString = params.toString();
     const url = queryString ? `${pathname}?${queryString}` : pathname;
@@ -81,10 +82,10 @@ export default function CoursesPage() {
       setLoading(true);
       setError(null);
       
-      // Load all published courses by setting a high perPage limit
-      const data = await courseService.getCourses({ 
+      // Load all public courses using the public API (no auth required)
+      const data = await courseService.getPublicCourses({ 
         status: 'published',
-        perPage: 100  // Load up to 100 courses to ensure we get them all
+        perPage: 500  // Load up to 500 courses to ensure we get them all
       });
       
       // Use actual data from the database
@@ -129,6 +130,11 @@ export default function CoursesPage() {
     // Sort
     filtered.sort((a, b) => {
       switch (sortBy) {
+        case 'most-content':
+          // Sort by book count first (descending), then by title (ascending)
+          const bookDiff = (b.book_count || 0) - (a.book_count || 0);
+          if (bookDiff !== 0) return bookDiff;
+          return a.title.localeCompare(b.title);
         case 'a-z':
           return a.title.localeCompare(b.title);
         case 'z-a':
@@ -266,6 +272,7 @@ export default function CoursesPage() {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-44 h-12"
               >
+                <option value="most-content">Most Content</option>
                 <option value="a-z">A-Z (Name)</option>
                 <option value="z-a">Z-A (Name)</option>
                 <option value="popular">Most Popular</option>

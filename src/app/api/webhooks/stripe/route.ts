@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { createClient } from '@/lib/supabase/config';
+import { createClient } from '@supabase/supabase-js';
 import { getStripe } from '@/lib/config/payment-config';
 import Stripe from 'stripe';
 
@@ -24,7 +24,10 @@ export async function POST(request: NextRequest) {
   }
 
   // Create Supabase admin client for webhook operations
-  const supabase = createClient(process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 
   try {
     // Handle the event
@@ -72,10 +75,10 @@ export async function POST(request: NextRequest) {
           user_id: userId,
           item_type: item.item_type,
           item_id: item.item_id,
-          item_title: item.item_title,
-          purchase_price: item.price,
           order_id: orderId,
-          purchased_at: new Date().toISOString()
+          purchase_date: new Date().toISOString(),
+          access_type: 'lifetime',
+          is_active: true
         }));
 
         const { error: purchaseError } = await supabase
@@ -97,6 +100,36 @@ export async function POST(request: NextRequest) {
 
         if (cartError) {
           console.error('Error clearing cart:', cartError);
+        }
+
+        // Create course enrollments for purchased courses
+        const courseItems = orderItems.filter(item => item.item_type === 'course');
+        if (courseItems.length > 0) {
+          const enrollmentItems = courseItems.map(item => ({
+            user_id: userId,
+            course_id: item.item_id,
+            enrolled_by: userId, // Self-enrolled via purchase
+            enrolled_at: new Date().toISOString(),
+            is_active: true,
+            status: 'active',
+            started_at: new Date().toISOString(),
+            notes: `Auto-enrolled via webhook for order ${orderId}`,
+            metadata: {
+              order_id: orderId,
+              purchase_method: 'stripe_webhook'
+            }
+          }));
+
+          const { error: enrollmentError } = await supabase
+            .from('enrollments')
+            .upsert(enrollmentItems, {
+              onConflict: 'user_id,course_id',
+              ignoreDuplicates: true
+            });
+
+          if (enrollmentError) {
+            console.error('Error creating course enrollments:', enrollmentError);
+          }
         }
 
 
@@ -121,6 +154,30 @@ export async function POST(request: NextRequest) {
 
           if (error) {
             console.error('Error updating expired order:', error);
+          }
+
+          // Get the order to find user_id
+          const { data: order } = await supabase
+            .from('orders')
+            .select('user_id, order_number')
+            .eq('id', orderId)
+            .single();
+
+          // Deactivate any enrollments created from this expired order
+          if (order) {
+            const { error: enrollmentError } = await supabase
+              .from('enrollments')
+              .update({ 
+                is_active: false,
+                status: 'cancelled',
+                notes: `Access revoked - Order ${order.order_number} expired`
+              })
+              .eq('user_id', order.user_id)
+              .contains('metadata', { order_id: orderId });
+
+            if (enrollmentError) {
+              console.error('Error deactivating enrollments for expired order:', enrollmentError);
+            }
           }
         }
         break;
@@ -153,6 +210,30 @@ export async function POST(request: NextRequest) {
 
         if (updateError) {
           console.error('Error updating failed order:', updateError);
+        }
+
+        // Get full order details for enrollment deactivation
+        const { data: fullOrder } = await supabase
+          .from('orders')
+          .select('user_id, order_number')
+          .eq('id', order.id)
+          .single();
+
+        // Deactivate any enrollments created from this failed order
+        if (fullOrder) {
+          const { error: enrollmentError } = await supabase
+            .from('enrollments')
+            .update({ 
+              is_active: false,
+              status: 'cancelled',
+              notes: `Access revoked - Order ${fullOrder.order_number} payment failed`
+            })
+            .eq('user_id', fullOrder.user_id)
+            .contains('metadata', { order_id: order.id });
+
+          if (enrollmentError) {
+            console.error('Error deactivating enrollments for failed order:', enrollmentError);
+          }
         }
         break;
       }

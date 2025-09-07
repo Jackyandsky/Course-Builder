@@ -237,7 +237,13 @@ export async function PUT(
       );
     }
 
-    return NextResponse.json(course);
+    // Add cache-busting headers to ensure fresh data after updates
+    const response = NextResponse.json(course);
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    
+    return response;
 
   } catch (error) {
     console.error('Error in PUT /api/courses/[id]:', error);

@@ -3,17 +3,58 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(req: NextRequest) {
+  // Get the pathname of the request
+  const { pathname } = req.nextUrl;
+  
+  // Skip middleware for static assets and API routes to reduce token refresh attempts
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/favicon.ico') ||
+    pathname.includes('.') // Skip files with extensions (images, css, js, etc.)
+  ) {
+    return NextResponse.next();
+  }
+  
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req, res });
 
   // Get the current session without forcing a refresh
-  // The Supabase client will automatically refresh if needed
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  // Get the pathname of the request
-  const { pathname } = req.nextUrl;
+  // Use a try-catch to handle invalid tokens gracefully
+  let session = null;
+  try {
+    // First check if we should even attempt to get session
+    // Check localStorage for invalid token state (server-side doesn't have access to auth manager)
+    const cookies = req.cookies.getAll();
+    const hasRefreshToken = cookies.some(c => c.name.includes('refresh-token'));
+    
+    if (!hasRefreshToken) {
+      // No refresh token, skip session check
+      session = null;
+    } else {
+      const result = await supabase.auth.getSession();
+      session = result.data?.session;
+      
+      // If there's an error, log it but continue
+      if (result.error) {
+        if (result.error.message?.includes('Invalid Refresh Token') || 
+            result.error.message?.includes('Refresh Token Not Found')) {
+          // Clear cookies if refresh token is invalid
+          console.log('[Middleware] Invalid refresh token detected, clearing cookies');
+          res.cookies.delete('sb-access-token');
+          res.cookies.delete('sb-refresh-token');
+          res.cookies.delete('sb-auth-token');
+          
+          // Set a header to signal invalid token to client
+          res.headers.set('X-Auth-Invalid', 'true');
+        }
+      }
+    }
+  } catch (error) {
+    // If getSession fails, treat as no session
+    console.error('[Middleware] Error getting session:', error);
+    session = null;
+  }
 
   // Define protected routes
   const isAdminRoute = pathname.startsWith('/(admin)') || pathname.startsWith('/admin');

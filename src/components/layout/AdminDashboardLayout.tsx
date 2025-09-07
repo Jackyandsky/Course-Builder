@@ -69,11 +69,6 @@ type NavigationItem = LinkNavigationItem | CategoryNavigationItem;
 const staticNavigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/admin', icon: HomeIcon },
   { name: 'Courses', href: '/admin/courses', icon: AcademicCapIcon },
-  { name: 'Schedules', href: '/admin/schedules', icon: CalendarIcon },
-  { name: 'Sessions', href: '/admin/lessons', icon: ClockIcon },
-  { name: 'Tasks', href: '/admin/tasks', icon: CheckCircleIcon },
-  { name: 'Objectives', href: '/admin/objectives', icon: DocumentTextIcon },
-  { name: 'Methods', href: '/admin/methods', icon: CogIcon },
   { name: 'Books', href: '/admin/books', icon: BookOpenIcon },
   { name: 'Vocabulary', href: '/admin/vocabulary', icon: LanguageIcon },
 ];

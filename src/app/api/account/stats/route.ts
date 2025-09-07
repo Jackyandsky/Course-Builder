@@ -18,11 +18,12 @@ export async function GET(request: NextRequest) {
 
     const userId = session.user.id;
 
-    // Fetch user enrollments (assigned courses)
+    // Fetch user enrollments (assigned courses) - only active ones count
     const { data: enrollments, error: enrollmentsError } = await supabase
       .from('enrollments')
       .select('*, course:courses(*)')
       .eq('user_id', userId)
+      .eq('is_active', true)  // Only count active enrollments
       .in('status', ['active', 'pending']);
 
     if (enrollmentsError) throw enrollmentsError;
@@ -55,10 +56,9 @@ export async function GET(request: NextRequest) {
     // Ignore table not found errors for orders
     if (ordersError && ordersError.code !== 'PGRST116') throw ordersError;
 
-    // Calculate stats
-    const enrolledCourseCount = enrollments?.length || 0;
-    const purchasedCourseCount = purchases?.filter(p => p.item_type === 'course').length || 0;
-    const totalCourseCount = enrolledCourseCount + purchasedCourseCount;
+    // Calculate stats - only count active enrollments (which represent accessible courses)
+    // Enrollments are created when courses are purchased, so we don't double-count
+    const totalCourseCount = enrollments?.length || 0;
     
     // Calculate library items (books + content)
     const bookCount = purchases?.filter(p => p.item_type === 'book').length || 0;
@@ -75,17 +75,17 @@ export async function GET(request: NextRequest) {
       s.status === 'approved' || s.status === 'completed' || s.status === 'reviewed'
     ).length || 0;
     
-    // Calculate completed courses from enrollments
+    // Calculate course progress from active enrollments only
     const completedCourses = enrollments?.filter(e => e.status === 'completed').length || 0;
     const inProgressCourses = enrollments?.filter(e => e.status === 'active').length || 0;
 
     const stats = {
-      courses: totalCourseCount,
+      courses: totalCourseCount,  // Only active enrollments (valid/accessible courses)
       orders: orders?.length || 0,
       totalSpent,
       content: libraryCount,  // Total library items (books + content)
-      completedCourses,  // Actual completed courses
-      inProgressCourses,
+      completedCourses,  // Completed courses from active enrollments
+      inProgressCourses,  // In-progress courses from active enrollments
       totalSubmissions,  // Total task submissions
       completedSubmissions  // Completed/approved submissions
     };

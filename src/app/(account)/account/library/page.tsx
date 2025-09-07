@@ -42,8 +42,13 @@ type FilterType = 'all' | 'content' | 'book';
 const CACHE_KEY = 'account_library_purchases';
 const CACHE_DURATION = 120000; // 2 minutes cache for library
 
-// Utility: Get cached data with TTL
+// Utility: Get cached data with TTL (SSR safe)
 const getCachedPurchases = (): LibraryItem[] | null => {
+  // Don't access sessionStorage during SSR
+  if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') {
+    return null;
+  }
+  
   try {
     const cached = sessionStorage.getItem(CACHE_KEY);
     if (!cached) return null;
@@ -62,8 +67,13 @@ const getCachedPurchases = (): LibraryItem[] | null => {
   }
 };
 
-// Utility: Save to cache
+// Utility: Save to cache (SSR safe)
 const setCachedPurchases = (purchases: LibraryItem[]) => {
+  // Don't access sessionStorage during SSR
+  if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') {
+    return;
+  }
+  
   try {
     sessionStorage.setItem(CACHE_KEY, JSON.stringify({
       data: purchases,
@@ -219,15 +229,13 @@ export default function MyLibraryPage() {
   // Memoized stats
   const stats = useMemo(() => ({
     total: purchases.length,
-    courses: purchases.filter(p => p.item_type === 'course').length,
     books: purchases.filter(p => p.item_type === 'book').length,
+    content: purchases.filter(p => p.item_type === 'content').length,
     active: purchases.filter(p => p.is_active).length
   }), [purchases]);
 
   const getItemIcon = (itemType: ItemType) => {
     switch (itemType) {
-      case 'course':
-        return <BookOpen className="h-5 w-5" />;
       case 'content':
         return <FileText className="h-5 w-5" />;
       case 'book':
@@ -262,8 +270,6 @@ export default function MyLibraryPage() {
 
   const getItemUrl = useCallback((purchase: LibraryItem) => {
     switch (purchase.item_type) {
-      case 'course':
-        return `/account/courses/${purchase.item_id}`;
       case 'content':
         return `/account/library/content/${purchase.item_id}`;
       case 'book':
@@ -365,7 +371,7 @@ export default function MyLibraryPage() {
               {loading && !hasCachedData ? (
                 <span className="animate-pulse">Loading library...</span>
               ) : (
-                <>Access all your purchased courses, books, and content</>
+                <>Access all your purchased books and study materials</>
               )}
             </p>
           </div>
@@ -464,10 +470,10 @@ export default function MyLibraryPage() {
           <Card className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Courses</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.courses}</p>
+                <p className="text-sm text-gray-500">Study Materials</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats.content}</p>
               </div>
-              <BookOpen className="h-5 w-5 text-gray-400" />
+              <FileText className="h-5 w-5 text-gray-400" />
             </div>
           </Card>
           
@@ -527,7 +533,7 @@ export default function MyLibraryPage() {
             <p className="text-sm text-gray-500 mb-4">
               {searchTerm || filterType !== 'all' 
                 ? 'Try adjusting your search or filter criteria'
-                : 'Purchase courses, books, or content to access them here'
+                : 'Purchase books or study materials to access them here'
               }
             </p>
             {!searchTerm && filterType === 'all' && (

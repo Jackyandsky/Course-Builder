@@ -38,7 +38,7 @@ export async function GET(request: Request) {
       .from('bookings')
       .select('booking_time, teacher_id')
       .eq('booking_date', date)
-      .in('status', ['pending', 'confirmed']); // Only active bookings
+      .not('status', 'in', '(cancelled,no_show)'); // Exclude cancelled and no-show bookings
     
     // If teacher ID is provided, filter by teacher
     if (teacherId) {

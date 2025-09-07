@@ -35,10 +35,10 @@ function ScheduleBookingContent() {
   
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
-  const [selectedTeacher, setSelectedTeacher] = useState<string>('');
   const [selectedContactMethod, setSelectedContactMethod] = useState<string>('');
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [availableTeachers, setAvailableTeachers] = useState<Teacher[]>([]);
+  const [lisaTang, setLisaTang] = useState<Teacher | null>(null);
+  // Fixed teacher ID for Lisa Tang - but contact info fetched dynamically
+  const LISA_TANG_ID = '85e9bd0f-ab98-4d0a-8975-c36e28200c02';
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -83,7 +83,7 @@ function ScheduleBookingContent() {
   
   const weekGroups = getWeekGroups();
 
-  // Fetch available time slots for selected date (all teachers)
+  // Fetch available time slots for selected date (checking existing bookings)
   const fetchAvailableSlots = async (date: string) => {
     if (!date) {
       setTimeSlots([]);
@@ -92,32 +92,36 @@ function ScheduleBookingContent() {
 
     setLoadingSlots(true);
     try {
-      // Fetch general availability for the date
-      const response = await fetch(`/api/bookings/availability?date=${date}`);
+      // Fetch availability for the specific date and Lisa Tang
+      const response = await fetch(`/api/bookings/availability?date=${date}&teacher_id=${LISA_TANG_ID}`);
       if (response.ok) {
         const data = await response.json();
-        // Default time slots with availability
-        const defaultSlots = [
-          '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM'
-        ];
         
-        // If API returns specific slots, use them; otherwise use defaults
-        if (data.slots && data.slots.length > 0) {
+        // If API returns specific slots with availability status, use them
+        if (data.slots && Array.isArray(data.slots)) {
           setTimeSlots(data.slots);
         } else {
-          // Create slots with general availability
-          setTimeSlots(defaultSlots.map(time => ({
-            time,
-            available: true
-          })));
+          // Fallback: default time slots, assume all available if no booking data
+          const defaultSlots = [
+            { time: '10:00 AM', available: true },
+            { time: '11:00 AM', available: true },
+            { time: '12:00 PM', available: true },
+            { time: '1:00 PM', available: true },
+            { time: '2:00 PM', available: true },
+            { time: '3:00 PM', available: true }
+          ];
+          setTimeSlots(defaultSlots);
         }
       } else {
-        // Default slots all available
+        console.warn('Failed to fetch availability, using default slots');
+        // Default slots all available on API error
         setTimeSlots([
           { time: '10:00 AM', available: true },
           { time: '11:00 AM', available: true },
           { time: '12:00 PM', available: true },
           { time: '1:00 PM', available: true },
+          { time: '2:00 PM', available: true },
+          { time: '3:00 PM', available: true }
         ]);
       }
     } catch (error) {
@@ -128,47 +132,52 @@ function ScheduleBookingContent() {
         { time: '11:00 AM', available: true },
         { time: '12:00 PM', available: true },
         { time: '1:00 PM', available: true },
+        { time: '2:00 PM', available: true },
+        { time: '3:00 PM', available: true }
       ]);
     } finally {
       setLoadingSlots(false);
     }
   };
 
-  // Fetch available teachers for selected date and time
-  const fetchAvailableTeachers = async (date: string, time: string) => {
-    if (!date || !time) {
-      setAvailableTeachers(teachers);
-      return;
-    }
-
+  // Fetch Lisa Tang's current contact information
+  const fetchLisaTangInfo = async () => {
     setLoadingTeachers(true);
     try {
-      // Check which teachers are available for this date/time
-      const response = await fetch(`/api/bookings/available-teachers?date=${date}&time=${encodeURIComponent(time)}`);
+      const response = await fetch('/api/users/teachers');
       if (response.ok) {
         const data = await response.json();
-        if (data.teachers && data.teachers.length > 0) {
-          setAvailableTeachers(data.teachers);
+        const lisaTangData = data.teachers?.find((teacher: Teacher) => teacher.id === LISA_TANG_ID);
+        if (lisaTangData) {
+          setLisaTang(lisaTangData);
         } else {
-          // If no specific availability data, assume all teachers are available
-          setAvailableTeachers(teachers);
+          console.warn('Lisa Tang not found in teachers list');
+          // Fallback if Lisa Tang is not found
+          setLisaTang({
+            id: LISA_TANG_ID,
+            email: 'contact@example.com',
+            full_name: 'Lisa Tang',
+            role: 'teacher'
+          });
         }
-      } else {
-        // On error, show all teachers
-        setAvailableTeachers(teachers);
       }
     } catch (error) {
-      console.error('Error fetching available teachers:', error);
-      // On error, show all teachers
-      setAvailableTeachers(teachers);
+      console.error('Error fetching Lisa Tang info:', error);
+      // Fallback on error
+      setLisaTang({
+        id: LISA_TANG_ID,
+        email: 'contact@example.com',
+        full_name: 'Lisa Tang',
+        role: 'teacher'
+      });
     } finally {
       setLoadingTeachers(false);
     }
   };
 
-  // Fetch teachers on component mount and load enrollment data if applicable
+  // Fetch Lisa Tang's info on component mount and load enrollment data if applicable
   useEffect(() => {
-    fetchTeachers();
+    fetchLisaTangInfo();
     
     // Load enrollment data if this is an enrollment booking
     if (bookingType === 'enrollment') {
@@ -206,48 +215,23 @@ function ScheduleBookingContent() {
       fetchAvailableSlots(selectedDate);
       // Reset selected time when date changes
       setSelectedTime('');
-      setSelectedTeacher('');
       setSelectedContactMethod('');
     } else {
       setTimeSlots([]);
     }
   }, [selectedDate]);
 
-  // Fetch available teachers when date and time are selected
+  // Reset contact method when date/time changes
   useEffect(() => {
     if (selectedDate && selectedTime) {
-      fetchAvailableTeachers(selectedDate, selectedTime);
-      // Reset teacher selection when time changes
-      setSelectedTeacher('');
+      // Reset contact method selection when time changes
       setSelectedContactMethod('');
-    } else {
-      setAvailableTeachers(teachers);
     }
-  }, [selectedDate, selectedTime, teachers]);
+  }, [selectedDate, selectedTime]);
 
-  const fetchTeachers = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/users/teachers');
-      if (response.ok) {
-        const data = await response.json();
-        setTeachers(data.teachers || []);
-      }
-    } catch (error) {
-      console.error('Error fetching teachers:', error);
-      setTeachers([
-        // Mock data for design purposes
-        { id: '1', email: 'teacher1@example.com', full_name: 'John Smith', role: 'teacher' },
-        { id: '2', email: 'teacher2@example.com', full_name: 'Jane Doe', role: 'teacher' },
-        { id: '3', email: 'admin@example.com', full_name: 'Admin User', role: 'admin' },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async () => {
-    if (!selectedDate || !selectedTime || !selectedTeacher || !selectedContactMethod) {
+    if (!selectedDate || !selectedTime || !selectedContactMethod || !lisaTang) {
       setError('Please select all required fields including contact method');
       return;
     }
@@ -269,9 +253,8 @@ function ScheduleBookingContent() {
         booking_type: bookingType,
         booking_date: selectedDate,
         booking_time: selectedTime,
-        teacher_id: selectedTeacher,
-        teacher_name: (availableTeachers.find(t => t.id === selectedTeacher) || teachers.find(t => t.id === selectedTeacher))?.full_name || 
-                      (availableTeachers.find(t => t.id === selectedTeacher) || teachers.find(t => t.id === selectedTeacher))?.email || '',
+        teacher_id: LISA_TANG_ID,
+        teacher_name: lisaTang?.full_name || lisaTang?.email || 'Lisa Tang',
         user_email: user?.email,
       };
 
@@ -329,20 +312,19 @@ function ScheduleBookingContent() {
             notes: enrollmentData.notes
           }),
           contact_details: (() => {
-            const teacherData = availableTeachers.find(t => t.id === selectedTeacher) || teachers.find(t => t.id === selectedTeacher);
-            if (!teacherData) return null;
+            if (!lisaTang) return null;
             
             switch (selectedContactMethod) {
               case 'phone':
-                return teacherData.phone;
+                return lisaTang.phone;
               case 'wechat':
-                return teacherData.social_media?.wechat;
+                return lisaTang.social_media?.wechat;
               case 'teams':
-                return teacherData.social_media?.teams;
+                return lisaTang.social_media?.teams;
               case 'whatsapp':
-                return teacherData.social_media?.whatsapp;
+                return lisaTang.social_media?.whatsapp;
               case 'telegram':
-                return teacherData.social_media?.telegram;
+                return lisaTang.social_media?.telegram;
               default:
                 return null;
             }
@@ -371,7 +353,7 @@ function ScheduleBookingContent() {
         grade: bookingPayload.grade,
         date: selectedDate,
         time: selectedTime,
-        teacherId: selectedTeacher,
+        teacherId: LISA_TANG_ID,
         teacherName: bookingPayload.teacher_name,
         userEmail: user?.email,
         createdAt: result.booking.created_at,
@@ -587,137 +569,116 @@ function ScheduleBookingContent() {
               )}
             </div>
 
-            {/* Teacher Selection */}
+            {/* Contact Method Selection */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <User className="h-5 w-5 text-blue-600" />
-                Select Teacher
+                <MessageCircle className="h-5 w-5 text-blue-600" />
+                Select Contact Method
                 {loadingTeachers && (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 ml-2"></div>
                 )}
               </h2>
               
-              {!selectedDate || !selectedTime ? (
+              {!selectedDate || !selectedTime || timeSlots.filter(slot => slot.available).length === 0 || !timeSlots.find(slot => slot.time === selectedTime && slot.available) ? (
                 <div className="text-center py-8">
-                  <User className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-600">Please select date and time first</p>
-                  <p className="text-sm text-gray-500 mt-1">Available teachers will be shown based on your selected schedule</p>
+                  <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-600">
+                    {!selectedDate || !selectedTime 
+                      ? 'Please select date and time first'
+                      : !timeSlots.find(slot => slot.time === selectedTime && slot.available)
+                      ? 'Selected time slot is not available'
+                      : 'No available time slots for the selected date'
+                    }
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {!selectedDate || !selectedTime
+                      ? 'Contact methods will be available after selecting your schedule'
+                      : !timeSlots.find(slot => slot.time === selectedTime && slot.available)
+                      ? 'Please select an available time slot'
+                      : 'Please choose a different date with available slots'
+                    }
+                  </p>
                 </div>
               ) : loadingTeachers ? (
                 <div className="text-center py-4">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-2 text-gray-600">Checking teacher availability...</p>
+                  <p className="mt-2 text-gray-600">Loading contact methods...</p>
                 </div>
-              ) : loading ? (
-                <div className="text-center py-4">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-2 text-gray-600">Loading teachers...</p>
-                </div>
-              ) : availableTeachers.length === 0 ? (
+              ) : !lisaTang ? (
                 <div className="text-center py-8">
-                  <User className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-600">No teachers available for this time slot</p>
-                  <p className="text-sm text-gray-500 mt-1">Please try a different date or time</p>
+                  <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-600">Contact information unavailable</p>
+                  <p className="text-sm text-gray-500 mt-1">Please try again later</p>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {availableTeachers.map((teacher) => {
-                    const isSelected = selectedTeacher === teacher.id;
-                    return (
-                      <button
-                        key={teacher.id}
-                        onClick={() => setSelectedTeacher(teacher.id)}
-                        className={`p-3 rounded-lg border-2 text-left transition-all ${
-                          isSelected
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 text-sm truncate">
-                              {teacher.full_name || teacher.email}
-                            </div>
-                            <div className="text-xs text-gray-500 truncate">{teacher.email}</div>
-                            <div className="text-xs text-gray-400 mt-1">
-                              {teacher.role === 'admin' ? 'Admin/Teacher' : 'Teacher'}
-                            </div>
-                          </div>
-                          {isSelected && (
-                            <Check className="h-4 w-4 text-blue-600 flex-shrink-0 ml-2" />
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              
-              {/* Contact Method Selection */}
-              {selectedTeacher && (() => {
-                const selectedTeacherData = availableTeachers.find(t => t.id === selectedTeacher) || teachers.find(t => t.id === selectedTeacher);
-                const hasSocialMedia = selectedTeacherData?.social_media && 
-                  Object.values(selectedTeacherData.social_media).some(value => value);
+              ) : (() => {
+                const hasSocialMedia = lisaTang?.social_media && 
+                  Object.values(lisaTang.social_media).some(value => value);
                 
-                if (!selectedTeacherData || (!hasSocialMedia && !selectedTeacherData.phone)) {
-                  return null;
+                if (!hasSocialMedia && !lisaTang.phone) {
+                  return (
+                    <div className="text-center py-8">
+                      <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-600">No contact methods available</p>
+                    </div>
+                  );
                 }
                 
                 // Build contact options array with WeChat first
                 const contactOptions = [];
                 
-                if (selectedTeacherData.social_media?.wechat) {
+                if (lisaTang.social_media?.wechat) {
                   contactOptions.push({
                     value: 'wechat',
                     label: 'WeChat',
-                    contact: selectedTeacherData.social_media.wechat,
+                    contact: lisaTang.social_media.wechat,
                     icon: MessageCircle
                   });
                 }
                 
-                if (selectedTeacherData.social_media?.teams) {
+                if (lisaTang.social_media?.teams) {
                   contactOptions.push({
                     value: 'teams',
                     label: 'Teams',
-                    contact: selectedTeacherData.social_media.teams,
+                    contact: lisaTang.social_media.teams,
                     icon: Users
                   });
                 }
                 
-                if (selectedTeacherData.phone) {
+                if (lisaTang.phone) {
                   contactOptions.push({
                     value: 'phone',
                     label: 'Phone',
-                    contact: selectedTeacherData.phone,
+                    contact: lisaTang.phone,
                     icon: Phone
                   });
                 }
                 
-                if (selectedTeacherData.social_media?.whatsapp) {
+                if (lisaTang.social_media?.whatsapp) {
                   contactOptions.push({
                     value: 'whatsapp',
                     label: 'WhatsApp',
-                    contact: selectedTeacherData.social_media.whatsapp,
+                    contact: lisaTang.social_media.whatsapp,
                     icon: Phone
                   });
                 }
                 
-                if (selectedTeacherData.social_media?.telegram) {
+                if (lisaTang.social_media?.telegram) {
                   contactOptions.push({
                     value: 'telegram',
                     label: 'Telegram',
-                    contact: selectedTeacherData.social_media.telegram,
+                    contact: lisaTang.social_media.telegram,
                     icon: Send
                   });
                 }
                 
                 return (
-                  <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <h3 className="text-sm font-semibold text-gray-800 mb-3">Select Contact Method</h3>
-                    <p className="text-xs text-gray-600 mb-3">
-                      Choose how you'd like the teacher to contact you after the session
-                    </p>
-                    <div className="flex flex-wrap gap-2">
+                  <div>
+                    <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-sm text-gray-700">
+                        Choose how you'd like to be contacted after the session
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       {contactOptions.map((option) => {
                         const Icon = option.icon;
                         const isSelected = selectedContactMethod === option.value;
@@ -725,19 +686,19 @@ function ScheduleBookingContent() {
                           <button
                             key={option.value}
                             onClick={() => setSelectedContactMethod(option.value)}
-                            className={`flex-1 min-w-0 p-2 rounded-lg border-2 text-center transition-all ${
+                            className={`p-3 rounded-lg border-2 text-center transition-all ${
                               isSelected
                                 ? 'border-blue-500 bg-blue-50'
                                 : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                             }`}
                           >
                             <div className="flex flex-col items-center gap-1">
-                              <Icon className={`h-4 w-4 ${isSelected ? 'text-blue-600' : 'text-gray-600'}`} />
-                              <div className={`text-xs font-medium ${isSelected ? 'text-blue-900' : 'text-gray-900'} truncate w-full`}>
+                              <Icon className={`h-5 w-5 ${isSelected ? 'text-blue-600' : 'text-gray-600'}`} />
+                              <div className={`text-sm font-medium ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
                                 {option.label}
                               </div>
                               {isSelected && (
-                                <Check className="h-3 w-3 text-blue-600" />
+                                <Check className="h-4 w-4 text-blue-600 mt-1" />
                               )}
                             </div>
                           </button>
@@ -816,14 +777,6 @@ function ScheduleBookingContent() {
                   <span className="font-medium">{selectedTime || 'Not selected'}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Teacher:</span>
-                  <span className="font-medium">
-                    {selectedTeacher 
-                      ? (availableTeachers.find(t => t.id === selectedTeacher) || teachers.find(t => t.id === selectedTeacher))?.full_name || 'Selected'
-                      : 'Not selected'}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Contact:</span>
                   <span className="font-medium">
                     {selectedContactMethod 
@@ -842,9 +795,9 @@ function ScheduleBookingContent() {
 
               <button
                 onClick={handleSubmit}
-                disabled={submitting || !selectedDate || !selectedTime || !selectedTeacher || !selectedContactMethod}
+                disabled={submitting || !selectedDate || !selectedTime || !selectedContactMethod || !lisaTang}
                 className={`w-full py-3 px-4 rounded-lg font-medium transition-all ${
-                  submitting || !selectedDate || !selectedTime || !selectedTeacher || !selectedContactMethod
+                  submitting || !selectedDate || !selectedTime || !selectedContactMethod || !lisaTang
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}

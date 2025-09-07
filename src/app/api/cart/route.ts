@@ -86,6 +86,21 @@ export async function GET(request: NextRequest) {
               slug = content.public_slug;
               productDetails = content;
             }
+          } else if (item.item_type === 'package') {
+            const { data: packageData } = await supabase
+              .from('packages')
+              .select('id, title, price, description, payment_type')
+              .eq('id', item.item_id)
+              .single();
+            
+            if (packageData) {
+              title = packageData.title || '';
+              price = typeof packageData.price === 'string' ? parseFloat(packageData.price) : (packageData.price || 0);
+              currency = 'CAD'; // Default currency for packages
+              thumbnail_url = null; // Packages don't have thumbnails
+              slug = packageData.id; // Use package ID as slug
+              productDetails = packageData;
+            }
           }
         } catch (productError) {
           console.error(`Error fetching ${item.item_type} details:`, productError);
@@ -133,12 +148,139 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'item_type and item_id are required' }, { status: 400 });
     }
 
-    if (!['course', 'book', 'content'].includes(item_type)) {
+    if (!['course', 'book', 'content', 'package'].includes(item_type)) {
       return NextResponse.json({ error: 'Invalid item_type' }, { status: 400 });
     }
 
     if (quantity <= 0) {
       return NextResponse.json({ error: 'Quantity must be greater than 0' }, { status: 400 });
+    }
+
+    // Check if user has already purchased this course
+    if (item_type === 'course') {
+      // Check in user_purchases table
+      const { data: existingPurchase, error: purchaseCheckError } = await supabase
+        .from('user_purchases')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('item_type', 'course')
+        .eq('item_id', item_id)
+        .eq('status', 'active')
+        .single();
+
+      if (existingPurchase) {
+        return NextResponse.json({ 
+          error: 'You have already purchased this course. It is available in your library.' 
+        }, { status: 400 });
+      }
+
+      // Also check in completed orders
+      const { data: completedOrders, error: orderCheckError } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          order_items!inner (
+            item_type,
+            item_id
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .eq('order_items.item_type', 'course')
+        .eq('order_items.item_id', item_id);
+
+      if (completedOrders && completedOrders.length > 0) {
+        return NextResponse.json({ 
+          error: 'You have already purchased this course. It is available in your library.' 
+        }, { status: 400 });
+      }
+
+      // Also get the course name for better error messages
+      const { data: course } = await supabase
+        .from('courses')
+        .select('title')
+        .eq('id', item_id)
+        .single();
+
+      if (existingPurchase || (completedOrders && completedOrders.length > 0)) {
+        const courseName = course?.title || 'this course';
+        return NextResponse.json({ 
+          error: `You have already purchased "${courseName}". It is available in your library.` 
+        }, { status: 400 });
+      }
+    }
+
+    // Check if user is trying to add a package when they already own associated courses
+    if (item_type === 'package') {
+      // Get package details to find associated courses
+      const { data: packageData } = await supabase
+        .from('packages')
+        .select('title')
+        .eq('id', item_id)
+        .single();
+
+      // Check if package is associated with courses via course_packages table
+      const { data: coursePackages } = await supabase
+        .from('course_packages')
+        .select('course_id')
+        .eq('package_id', item_id);
+
+      if (coursePackages && coursePackages.length > 0) {
+        const courseIds = coursePackages.map(cp => cp.course_id);
+
+        // Check if user already owns any of these courses
+        const { data: existingCoursePurchases } = await supabase
+          .from('user_purchases')
+          .select('item_id')
+          .eq('user_id', user.id)
+          .eq('item_type', 'course')
+          .in('item_id', courseIds)
+          .eq('status', 'active');
+
+        // Also check in completed orders
+        const { data: completedCourseOrders } = await supabase
+          .from('orders')
+          .select(`
+            id,
+            order_items!inner (
+              item_type,
+              item_id
+            )
+          `)
+          .eq('user_id', user.id)
+          .eq('status', 'completed')
+          .eq('order_items.item_type', 'course')
+          .in('order_items.item_id', courseIds);
+
+        const ownedCourseIds = new Set();
+        if (existingCoursePurchases) {
+          existingCoursePurchases.forEach(p => ownedCourseIds.add(p.item_id));
+        }
+        if (completedCourseOrders) {
+          completedCourseOrders.forEach(order => {
+            if (Array.isArray(order.order_items)) {
+              order.order_items.forEach((item: any) => {
+                ownedCourseIds.add(item.item_id);
+              });
+            }
+          });
+        }
+
+        if (ownedCourseIds.size > 0) {
+          // Get course names for the error message
+          const { data: ownedCourses } = await supabase
+            .from('courses')
+            .select('title')
+            .in('id', Array.from(ownedCourseIds));
+
+          const courseNames = ownedCourses?.map(c => c.title).join(', ') || 'courses';
+          const packageName = packageData?.title || 'this package';
+
+          return NextResponse.json({ 
+            error: `You already own the following course(s): ${courseNames}. You don't need to purchase "${packageName}" as you already have access to the included content.` 
+          }, { status: 400 });
+        }
+      }
     }
 
     // Check if item already exists in cart

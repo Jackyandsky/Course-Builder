@@ -106,6 +106,11 @@ export interface CachedSession {
  * Cache session data in sessionStorage with validation
  */
 export function cacheSession(sessionData: any): void {
+  // Don't access sessionStorage during SSR
+  if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') {
+    return;
+  }
+  
   try {
     const cacheData: CachedSession = {
       ...sessionData,
@@ -124,6 +129,11 @@ export function cacheSession(sessionData: any): void {
  * @param maxAge - Maximum cache age in milliseconds (default: 5 minutes)
  */
 export function getCachedSession(maxAge: number = 300000): CachedSession | null {
+  // Don't access sessionStorage during SSR
+  if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') {
+    return null;
+  }
+  
   try {
     const cached = sessionStorage.getItem('auth_session_cache');
     if (!cached) {
@@ -159,6 +169,11 @@ export function getCachedSession(maxAge: number = 300000): CachedSession | null 
  * Clear cached session
  */
 export function clearCachedSession(): void {
+  // Don't access sessionStorage during SSR
+  if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') {
+    return;
+  }
+  
   try {
     sessionStorage.removeItem('auth_session_cache');
   } catch (error) {

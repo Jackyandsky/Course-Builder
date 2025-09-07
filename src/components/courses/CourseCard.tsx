@@ -33,6 +33,18 @@ interface CourseCardProps {
   featured?: boolean;
 }
 
+// Difficulty level mapping for consistent display
+const DIFFICULTY_DISPLAY: Record<string, string> = {
+  'basic': 'Foundation',
+  'standard': 'Middle School',
+  'premium': 'Advanced',
+  // Fallback for any legacy values
+  'Middle School': 'Middle School',
+  'High School': 'High School',
+  'Advanced': 'Advanced',
+  'Foundation': 'Foundation'
+};
+
 // Price formatting helper
 function formatPrice(price: number = 0, currency: string = 'CAD'): string {
   return new Intl.NumberFormat('en-CA', {
@@ -73,7 +85,8 @@ function Tooltip({ children, content }: { children: React.ReactNode; content: Re
 export default function CourseCard({ course, featured = false }: CourseCardProps) {
   const courseTitle = course.title || course.name || 'Untitled Course';
   const courseCategory = typeof course.category === 'string' ? course.category : course.category?.name;
-  const courseDifficulty = course.difficulty || course.level;
+  const rawDifficulty = course.difficulty || course.level;
+  const courseDifficulty = rawDifficulty ? (DIFFICULTY_DISPLAY[rawDifficulty] || rawDifficulty) : null;
   
   // Get actual counts
   const bookCount = course.course_books?.length || 0;

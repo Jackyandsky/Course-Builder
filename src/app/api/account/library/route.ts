@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get all user purchases from the user_purchases table
+    // Get user purchases from the user_purchases table - exclude courses and packages
+    // Courses should only appear in /account/courses, packages determine membership level
     const { data: purchases, error: purchasesError } = await supabase
       .from('user_purchases')
       .select(`
@@ -27,6 +28,8 @@ export async function GET(request: NextRequest) {
       `)
       .eq('user_id', user.id)
       .eq('is_active', true) // Only show active purchases
+      .neq('item_type', 'course') // Exclude courses - they belong in /account/courses
+      .neq('item_type', 'package') // Exclude packages - they determine membership level only
       .order('purchased_at', { ascending: false });
 
     if (purchasesError) {
@@ -41,23 +44,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Group purchases by type to fetch in bulk
-    const courseIds = purchases.filter(p => p.item_type === 'course').map(p => p.item_id);
+    // Group purchases by type to fetch in bulk - only books and content now
     const bookIds = purchases.filter(p => p.item_type === 'book').map(p => p.item_id);
     const contentIds = purchases.filter(p => p.item_type === 'content').map(p => p.item_id);
 
     // Fetch all items in bulk for better performance
-    let courses = [];
     let books = [];
     let contents = [];
-
-    if (courseIds.length > 0) {
-      const { data: coursesData } = await supabase
-        .from('courses')
-        .select('id, title, description, short_description, thumbnail_url, difficulty, duration_hours, price, currency')
-        .in('id', courseIds);
-      courses = coursesData || [];
-    }
 
     if (bookIds.length > 0) {
       const { data: booksData } = await supabase
@@ -90,9 +83,8 @@ export async function GET(request: NextRequest) {
       }));
     }
 
-    // Create a map for quick lookup
+    // Create a map for quick lookup - only books and content
     const itemsMap = {
-      course: new Map(courses.map(item => [item.id, item])),
       book: new Map(books.map(item => [item.id, item])),
       content: new Map(contents.map(item => [item.id, item]))
     };

@@ -128,6 +128,14 @@ export async function POST(request: Request) {
 
       if (error) {
         console.error('Error creating enrollment booking:', error);
+        
+        // Handle unique constraint violation
+        if (error.code === '23505' && error.message.includes('bookings_active_timeslot_teacher_idx')) {
+          return NextResponse.json({ 
+            error: 'This time slot is already booked. Please refresh and choose another available time.' 
+          }, { status: 409 });
+        }
+        
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
 
@@ -189,14 +197,14 @@ export async function POST(request: Request) {
       metadata: metadata
     };
 
-    // Check if the time slot is already taken
+    // Check if the time slot is already taken (excluding cancelled and no-show bookings)
     const { data: existingBooking } = await supabase
       .from('bookings')
-      .select('id')
+      .select('id, status')
       .eq('booking_date', body.booking_date)
       .eq('booking_time', body.booking_time)
       .eq('teacher_id', body.teacher_id)
-      .in('status', ['pending', 'confirmed'])
+      .not('status', 'in', '(cancelled,no_show)')
       .single();
 
     if (existingBooking) {
@@ -214,6 +222,14 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('Error creating booking:', error);
+      
+      // Handle unique constraint violation
+      if (error.code === '23505' && error.message.includes('bookings_active_timeslot_teacher_idx')) {
+        return NextResponse.json({ 
+          error: 'This time slot is already booked. Please refresh and choose another available time.' 
+        }, { status: 409 });
+      }
+      
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

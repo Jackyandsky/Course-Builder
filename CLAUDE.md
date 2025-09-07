@@ -87,6 +87,29 @@ useEffect(() => {
 - Maintain consistent, minimalist design
 - Use existing Tailwind CSS patterns
 
+#### Color Design Principles
+- **Primary palette**: White, black, and grayscale (gray-50 to gray-900)
+- **Adjustable degrees**: Use Tailwind's numbered scale (50-900) for fine-tuning contrast
+- **Accent colors**: Only use colors (blue, green, red, etc.) when functionally necessary:
+  - Success states: green (success messages, confirmations)
+  - Error states: red (error messages, warnings)
+  - Information: blue (links, primary actions)
+  - Caution: yellow/amber (warnings, pending states)
+- **Implementation**: Prefer `gray-*`, `black`, `white` for most UI elements
+- **Example pattern**:
+  ```css
+  /* Primary UI */
+  bg-white, text-gray-900, border-gray-200
+  
+  /* Secondary UI */
+  bg-gray-50, text-gray-700, border-gray-300
+  
+  /* Only when needed */
+  text-green-600 (success)
+  text-red-600 (error)
+  text-blue-600 (links)
+  ```
+
 ### 5. Development Environment
 - **Development server**: Always running at https://builder.vanboss.work/
 - **DO NOT run `npm run dev` or `npm run build` unless explicitly requested**

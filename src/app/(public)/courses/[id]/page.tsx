@@ -5,12 +5,13 @@ import { useParams, useRouter } from 'next/navigation';
 import { 
   Book, Target, Clock, Calendar, Globe, 
   CheckCircle, Users, Settings, ArrowLeft,
-  Award, Share2, Heart, ShoppingCart
+  Award, Share2, Heart, ShoppingCart, BookOpen
 } from 'lucide-react';
 import Link from 'next/link';
 import { Course } from '@/types/database';
 import { courseService } from '@/lib/supabase/courses';
 import { Badge, Card, Spinner, RichTextDisplay } from '@/components/ui';
+import { useAuth } from '@/contexts/AuthContext';
 
 const difficultyColors = {
   basic: 'bg-green-100 text-green-800',
@@ -27,12 +28,15 @@ const difficultyLabels = {
 export default function CourseDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const courseId = params.id as string;
   
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isPurchased, setIsPurchased] = useState(false);
+  const [checkingPurchase, setCheckingPurchase] = useState(false);
 
   const loadCourse = useCallback(async () => {
     try {
@@ -60,6 +64,31 @@ export default function CourseDetailPage() {
       loadCourse();
     }
   }, [courseId, loadCourse]);
+
+  // Check if user has already purchased this course
+  useEffect(() => {
+    const checkPurchaseStatus = async () => {
+      if (!user || !courseId) {
+        setIsPurchased(false);
+        return;
+      }
+
+      try {
+        setCheckingPurchase(true);
+        const response = await fetch(`/api/courses/${courseId}/purchase-status`);
+        if (response.ok) {
+          const { purchased } = await response.json();
+          setIsPurchased(purchased);
+        }
+      } catch (error) {
+        console.error('Error checking purchase status:', error);
+      } finally {
+        setCheckingPurchase(false);
+      }
+    };
+
+    checkPurchaseStatus();
+  }, [user, courseId]);
 
   const handleShare = () => {
     if (navigator.share) {
@@ -209,13 +238,23 @@ export default function CourseDetailPage() {
               >
                 <Share2 className="h-5 w-5 text-gray-600" />
               </button>
-              <button
-                onClick={handleEnroll}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
-              >
-                <span>Enroll Now</span>
-                <ShoppingCart className="h-5 w-5" />
-              </button>
+              {isPurchased ? (
+                <Link href="/account/courses">
+                  <button className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2">
+                    <span>View in Library</span>
+                    <BookOpen className="h-5 w-5" />
+                  </button>
+                </Link>
+              ) : (
+                <button
+                  onClick={handleEnroll}
+                  disabled={checkingPurchase}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span>{checkingPurchase ? 'Checking...' : 'Enroll Now'}</span>
+                  <ShoppingCart className="h-5 w-5" />
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -532,19 +571,38 @@ export default function CourseDetailPage() {
         )}
 
         {/* Call to Action */}
-        <section className="bg-blue-50 rounded-lg p-8 text-center">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">Ready to Begin Your Learning Journey?</h3>
-          <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-            Join hundreds of students who have already transformed their literary skills through our comprehensive courses.
-          </p>
-          <button
-            onClick={handleEnroll}
-            className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg"
-          >
-            Enroll Now
-          </button>
-          <p className="text-sm text-gray-500 mt-4">30-day money-back guarantee</p>
-        </section>
+        {!isPurchased && (
+          <section className="bg-blue-50 rounded-lg p-8 text-center">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">Ready to Begin Your Learning Journey?</h3>
+            <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+              Join hundreds of students who have already transformed their literary skills through our comprehensive courses.
+            </p>
+            <button
+              onClick={handleEnroll}
+              disabled={checkingPurchase}
+              className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {checkingPurchase ? 'Checking...' : 'Enroll Now'}
+            </button>
+            <p className="text-sm text-gray-500 mt-4">30-day money-back guarantee</p>
+          </section>
+        )}
+
+        {/* Already Purchased Notice */}
+        {isPurchased && (
+          <section className="bg-green-50 rounded-lg p-8 text-center">
+            <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">You Own This Course!</h3>
+            <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+              You have already purchased this course. Access all course materials and lessons from your library.
+            </p>
+            <Link href="/account/courses">
+              <button className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-lg">
+                Go to My Courses
+              </button>
+            </Link>
+          </section>
+        )}
       </div>
     </div>
   );

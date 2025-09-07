@@ -208,7 +208,13 @@ export async function GET(
       loadTime: endTime - startTime
     };
     
-    return NextResponse.json(completeData);
+    // Add cache-busting headers to ensure fresh data
+    const response = NextResponse.json(completeData);
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    
+    return response;
   } catch (error) {
     console.error('Error in GET /api/courses/[id]/complete:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

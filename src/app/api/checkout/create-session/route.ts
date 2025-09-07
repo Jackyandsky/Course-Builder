@@ -47,6 +47,9 @@ export async function POST(request: NextRequest) {
         case 'content':
           tableName = 'content';
           break;
+        case 'package':
+          tableName = 'packages';
+          break;
         default:
           return NextResponse.json({ error: `Invalid item_type: ${item_type}` }, { status: 400 });
       }
@@ -59,6 +62,8 @@ export async function POST(request: NextRequest) {
         selectColumns = 'id, title, price, currency, is_free';
       } else if (tableName === 'books') {
         selectColumns = 'id, title, price, currency, is_free';
+      } else if (tableName === 'packages') {
+        selectColumns = 'id, title, price';
       }
 
       const { data: product, error } = await supabase
@@ -93,12 +98,153 @@ export async function POST(request: NextRequest) {
         ...item,
         title: productName,
         verified_price: productPrice,
-        verified_currency: product.currency || 'CAD'
+        verified_currency: product.currency || 'CAD' // Packages default to CAD
       });
     }
 
     if (validatedItems.length === 0) {
       return NextResponse.json({ error: 'No paid items in cart' }, { status: 400 });
+    }
+
+    // Check for duplicate course purchases
+    const courseItems = validatedItems.filter(item => item.item_type === 'course');
+    if (courseItems.length > 0) {
+      const courseIds = courseItems.map(item => item.item_id);
+      
+      // Check if user has already purchased any of these courses
+      const { data: existingPurchases, error: purchaseCheckError } = await supabase
+        .from('user_purchases')
+        .select('item_id, item_type')
+        .eq('user_id', user.id)
+        .eq('item_type', 'course')
+        .in('item_id', courseIds)
+        .eq('is_active', true);
+
+      if (purchaseCheckError) {
+        console.error('Error checking existing purchases:', purchaseCheckError);
+        return NextResponse.json({ error: 'Failed to validate purchase' }, { status: 500 });
+      }
+
+      if (existingPurchases && existingPurchases.length > 0) {
+        // Find which courses are already purchased
+        const purchasedCourseIds = existingPurchases.map(p => p.item_id);
+        const duplicateCourses = courseItems
+          .filter(item => purchasedCourseIds.includes(item.item_id))
+          .map(item => item.title);
+        
+        return NextResponse.json({ 
+          error: `You have already purchased the following course(s): ${duplicateCourses.join(', ')}. Please remove them from your cart.`,
+          duplicateCourses: duplicateCourses
+        }, { status: 400 });
+      }
+
+      // Also check in completed orders
+      const { data: completedOrders, error: orderCheckError } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          order_items!inner (
+            item_type,
+            item_id
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .eq('order_items.item_type', 'course')
+        .in('order_items.item_id', courseIds);
+
+      if (!orderCheckError && completedOrders && completedOrders.length > 0) {
+        // Extract course IDs from completed orders
+        const purchasedFromOrders = new Set<string>();
+        completedOrders.forEach(order => {
+          if (Array.isArray(order.order_items)) {
+            order.order_items.forEach((item: any) => {
+              if (courseIds.includes(item.item_id)) {
+                purchasedFromOrders.add(item.item_id);
+              }
+            });
+          }
+        });
+
+        if (purchasedFromOrders.size > 0) {
+          const duplicateCourses = courseItems
+            .filter(item => purchasedFromOrders.has(item.item_id))
+            .map(item => item.title);
+          
+          return NextResponse.json({ 
+            error: `You have already purchased the following course(s): ${duplicateCourses.join(', ')}. Please remove them from your cart.`,
+            duplicateCourses: duplicateCourses
+          }, { status: 400 });
+        }
+      }
+    }
+
+    // Check for package purchases when user already owns associated courses
+    const packageItems = validatedItems.filter(item => item.item_type === 'package');
+    if (packageItems.length > 0) {
+      for (const packageItem of packageItems) {
+        // Check if package is associated with courses
+        const { data: coursePackages } = await supabase
+          .from('course_packages')
+          .select('course_id')
+          .eq('package_id', packageItem.item_id);
+
+        if (coursePackages && coursePackages.length > 0) {
+          const courseIds = coursePackages.map(cp => cp.course_id);
+
+          // Check if user already owns any of these courses
+          const { data: existingCoursePurchases } = await supabase
+            .from('user_purchases')
+            .select('item_id')
+            .eq('user_id', user.id)
+            .eq('item_type', 'course')
+            .in('item_id', courseIds)
+            .eq('is_active', true);
+
+          // Also check in completed orders
+          const { data: completedCourseOrders } = await supabase
+            .from('orders')
+            .select(`
+              id,
+              order_items!inner (
+                item_type,
+                item_id
+              )
+            `)
+            .eq('user_id', user.id)
+            .eq('status', 'completed')
+            .eq('order_items.item_type', 'course')
+            .in('order_items.item_id', courseIds);
+
+          const ownedCourseIds = new Set();
+          if (existingCoursePurchases) {
+            existingCoursePurchases.forEach(p => ownedCourseIds.add(p.item_id));
+          }
+          if (completedCourseOrders) {
+            completedCourseOrders.forEach(order => {
+              if (Array.isArray(order.order_items)) {
+                order.order_items.forEach((item: any) => {
+                  ownedCourseIds.add(item.item_id);
+                });
+              }
+            });
+          }
+
+          if (ownedCourseIds.size > 0) {
+            // Get course names for the error message
+            const { data: ownedCourses } = await supabase
+              .from('courses')
+              .select('title')
+              .in('id', Array.from(ownedCourseIds));
+
+            const courseNames = ownedCourses?.map(c => c.title).join(', ') || 'courses';
+
+            return NextResponse.json({ 
+              error: `You already own the following course(s): ${courseNames}. You don't need to purchase "${packageItem.title}" as you already have access to the included content. Please remove it from your cart.` 
+            }, { status: 400 });
+          }
+        }
+      }
     }
 
     // Create order record

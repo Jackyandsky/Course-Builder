@@ -78,6 +78,7 @@ export default function AcademicProgress({ userId, canEdit, onEnrollmentUpdate }
   const [selectedScheduleId, setSelectedScheduleId] = useState('');
   const [selectedCourseSchedules, setSelectedCourseSchedules] = useState<any[]>([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
+  const [courseSearchTerm, setCourseSearchTerm] = useState('');
 
   // Form states for simple update
   const [updateForm, setUpdateForm] = useState({
@@ -126,12 +127,17 @@ export default function AcademicProgress({ userId, canEdit, onEnrollmentUpdate }
   const fetchAvailableCourses = async () => {
     try {
       // Use courseService to fetch courses directly
-      // First try to get published courses, then try all courses if none found
-      let courses = await courseService.getCourses({ status: 'published' });
+      // First try to get published courses with high limit, then try all courses if none found
+      let courses = await courseService.getCourses({ 
+        status: 'published', 
+        perPage: 500 // Set high limit to get all published courses
+      });
       
       if (courses.length === 0) {
         console.log('No published courses found, trying to fetch all courses...');
-        courses = await courseService.getCourses({});
+        courses = await courseService.getCourses({ 
+          perPage: 500 // Set high limit to get all courses
+        });
       }
       
       console.log('[AcademicProgress] Fetched courses (without schedules):', courses);
@@ -163,9 +169,9 @@ export default function AcademicProgress({ userId, canEdit, onEnrollmentUpdate }
       setAvailableCourses(mappedCourses);
     } catch (error) {
       console.error('Error fetching courses:', error);
-      // Try fallback to API endpoint
+      // Try fallback to API endpoint with high limit
       try {
-        const response = await fetch('/api/courses?includePrivate=true');
+        const response = await fetch('/api/courses?includePrivate=true&perPage=500&isAdmin=true');
         const data = await response.json();
         if (response.ok && data.courses) {
           const availableCoursesFiltered = data.courses.filter((c: Course) => 
@@ -457,26 +463,81 @@ export default function AcademicProgress({ userId, canEdit, onEnrollmentUpdate }
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Step 1: Select Course
                 </label>
-                <select
-                  value={selectedCourseId}
-                  onChange={(e) => {
-                    setSelectedCourseId(e.target.value);
-                    setSelectedScheduleId(''); // Reset schedule when course changes
-                    setSelectedCourseSchedules([]); // Clear schedules from previous course
-                  }}
-                  className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Choose a course...</option>
-                  {availableCourses.length > 0 ? (
-                    availableCourses.map(course => (
-                      <option key={course.id} value={course.id}>
-                        {course.title} {course.difficulty ? `(${course.difficulty})` : ''}
-                      </option>
-                    ))
+                
+                {/* Search Input */}
+                <div className="mb-3">
+                  <input
+                    type="text"
+                    placeholder="Search courses by title, instructor, or level..."
+                    value={courseSearchTerm}
+                    onChange={(e) => setCourseSearchTerm(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {/* Course Selection Grid */}
+                <div className="max-h-64 overflow-y-auto border rounded-md">
+                  {availableCourses.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">
+                      No courses available or all courses already assigned
+                    </div>
                   ) : (
-                    <option disabled>No courses available or all courses already assigned</option>
+                    <div className="divide-y">
+                      {availableCourses
+                        .filter(course => {
+                          const searchLower = courseSearchTerm.toLowerCase();
+                          return course.title?.toLowerCase().includes(searchLower) ||
+                                 course.instructor?.toLowerCase().includes(searchLower) ||
+                                 course.difficulty?.toLowerCase().includes(searchLower);
+                        })
+                        .map(course => (
+                          <div
+                            key={course.id}
+                            onClick={() => {
+                              setSelectedCourseId(course.id);
+                              setSelectedScheduleId(''); // Reset schedule when course changes
+                              setSelectedCourseSchedules([]); // Clear schedules from previous course
+                            }}
+                            className={`p-3 cursor-pointer transition-colors ${
+                              selectedCourseId === course.id 
+                                ? 'bg-blue-50 border-l-4 border-l-blue-500' 
+                                : 'hover:bg-gray-50'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-gray-900">
+                                  {course.title}
+                                  {selectedCourseId === course.id && (
+                                    <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                      Selected
+                                    </span>
+                                  )}
+                                </h4>
+                                <div className="mt-1 space-y-1">
+                                  {course.instructor && (
+                                    <p className="text-sm text-gray-600">
+                                      Instructor: {course.instructor}
+                                    </p>
+                                  )}
+                                  {course.difficulty && (
+                                    <p className="text-sm text-gray-600">
+                                      Level: {course.difficulty}
+                                    </p>
+                                  )}
+                                  {course.description && (
+                                    <p className="text-sm text-gray-500 line-clamp-2">
+                                      {course.description}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
                   )}
-                </select>
+                </div>
               </div>
 
               {/* Step 2: Select Schedule Group */}

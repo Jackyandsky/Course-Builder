@@ -6,7 +6,7 @@ import { useAuth } from './AuthContext';
 // Cart item interface
 export interface CartItem {
   id: string;
-  item_type: 'course' | 'book' | 'content';
+  item_type: 'course' | 'book' | 'content' | 'package';
   item_id: string;
   title: string;
   price: number;

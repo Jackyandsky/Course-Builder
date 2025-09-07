@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, Button, Badge, Textarea } from '@/components/ui';
+import { Card, Button, Badge, Textarea, Input } from '@/components/ui';
 import { 
   ArrowLeftIcon,
   UserIcon,
@@ -70,6 +70,7 @@ export default function OrderDetailsPage() {
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [refundAmount, setRefundAmount] = useState('');
   const [refundReason, setRefundReason] = useState('');
+  const [isRefundMode, setIsRefundMode] = useState(true); // true for refund, false for cancel
 
   useEffect(() => {
     if (params.id) {
@@ -121,23 +122,53 @@ export default function OrderDetailsPage() {
 
   const processRefund = async () => {
     try {
+      const actionType = isRefundMode ? 'refund' : 'cancel';
+      
+      // Validate inputs
+      if (!refundReason.trim()) {
+        alert(`Please enter a ${actionType} reason`);
+        return;
+      }
+
+      // Only validate refund amount for actual refunds
+      if (isRefundMode && refundAmount && (parseFloat(refundAmount) <= 0 || parseFloat(refundAmount) > order.total_amount)) {
+        alert('Please enter a valid refund amount');
+        return;
+      }
+
+      const requestBody: any = {
+        action: actionType,
+        reason: refundReason.trim()
+      };
+
+      // Only include amount for refunds
+      if (isRefundMode) {
+        requestBody.amount = refundAmount ? parseFloat(refundAmount) : order.total_amount;
+      }
+
       const response = await fetch(`/api/admin/orders/${params.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: parseFloat(refundAmount),
-          reason: refundReason
-        })
+        body: JSON.stringify(requestBody)
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to process refund');
+        throw new Error(data.error || `Failed to process ${actionType}`);
       }
 
+      // Success - close modal and refresh
       setShowRefundModal(false);
-      fetchOrderDetails();
+      setRefundAmount('');
+      setRefundReason('');
+      await fetchOrderDetails();
+      
+      // Show success message
+      alert(`${isRefundMode ? 'Refund' : 'Cancellation'} processed successfully`);
     } catch (error) {
-      console.error('Error processing refund:', error);
+      console.error(`Error processing ${isRefundMode ? 'refund' : 'cancellation'}:`, error);
+      alert(`Error processing ${isRefundMode ? 'refund' : 'cancellation'}: ${error.message}`);
     }
   };
 
@@ -428,22 +459,32 @@ export default function OrderDetailsPage() {
                     Mark as Completed
                   </Button>
                 )}
-                {(order.status === 'pending' || order.status === 'processing') && (
-                  <Button
-                    className="w-full"
-                    variant="outline"
-                    onClick={() => updateOrderStatus('cancelled')}
-                  >
-                    Cancel Order
-                  </Button>
-                )}
                 {order.status === 'completed' && (
                   <Button
                     className="w-full"
                     variant="outline"
-                    onClick={() => setShowRefundModal(true)}
+                    onClick={() => {
+                      setIsRefundMode(true);
+                      setRefundAmount('');
+                      setRefundReason('');
+                      setShowRefundModal(true);
+                    }}
                   >
                     Process Refund
+                  </Button>
+                )}
+                {(order.status === 'pending' || order.status === 'processing') && (
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={() => {
+                      setIsRefundMode(false);
+                      setRefundAmount('');
+                      setRefundReason('');
+                      setShowRefundModal(true);
+                    }}
+                  >
+                    Cancel Order
                   </Button>
                 )}
               </div>
@@ -452,36 +493,41 @@ export default function OrderDetailsPage() {
         </div>
       </div>
 
-      {/* Refund Modal */}
+      {/* Refund/Cancel Modal */}
       {showRefundModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md">
             <Card.Header>
-              <h3 className="text-lg font-semibold">Process Refund</h3>
+              <h3 className="text-lg font-semibold">
+                {isRefundMode ? 'Process Refund' : 'Cancel Order'}
+              </h3>
             </Card.Header>
             <Card.Content className="space-y-4">
+              {/* Only show refund amount field for actual refunds */}
+              {isRefundMode && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Refund Amount
+                  </label>
+                  <Input
+                    type="number"
+                    value={refundAmount}
+                    onChange={(e) => setRefundAmount(e.target.value)}
+                    placeholder={order.total_amount.toString()}
+                    max={order.total_amount}
+                    step="0.01"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Refund Amount
-                </label>
-                <Input
-                  type="number"
-                  value={refundAmount}
-                  onChange={(e) => setRefundAmount(e.target.value)}
-                  placeholder={order.total_amount.toString()}
-                  max={order.total_amount}
-                  step="0.01"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Reason
+                  {isRefundMode ? 'Refund Reason' : 'Cancellation Reason'}
                 </label>
                 <Textarea
                   value={refundReason}
                   onChange={(e) => setRefundReason(e.target.value)}
                   rows={3}
-                  placeholder="Enter refund reason..."
+                  placeholder={`Enter ${isRefundMode ? 'refund' : 'cancellation'} reason...`}
                   required
                 />
               </div>
@@ -499,7 +545,7 @@ export default function OrderDetailsPage() {
                   onClick={processRefund}
                   disabled={!refundReason}
                 >
-                  Process Refund
+                  {isRefundMode ? 'Process Refund' : 'Cancel Order'}
                 </Button>
               </div>
             </Card.Content>
