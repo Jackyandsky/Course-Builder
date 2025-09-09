@@ -19,7 +19,7 @@ interface PricingPlan {
   billing: string;
   description: string;
   buttonText: string;
-  buttonVariant: 'outline' | 'primary' | 'default';
+  buttonVariant: 'outline' | 'primary' | 'secondary';
   popular?: boolean;
   features: {
     name: string;
@@ -108,7 +108,7 @@ export default function PremiumPage() {
       billing: billingCycle === 'monthly' ? '/month' : '/year',
       description: 'For institutions and power users',
       buttonText: 'Contact Sales',
-      buttonVariant: 'default',
+      buttonVariant: 'secondary',
       features: [
         { name: 'Course Access', value: 'All + Premium', highlight: true },
         { name: 'All Pro features', value: true },
@@ -228,7 +228,7 @@ export default function PremiumPage() {
             }`}
           >
             Yearly
-            <Badge variant="success" size="xs" className="ml-2">Save 17%</Badge>
+            <Badge variant="success" size="sm" className="ml-2">Save 17%</Badge>
           </button>
         </div>
       </div>
@@ -315,7 +315,7 @@ export default function PremiumPage() {
                   <th className="text-center px-6 py-4 text-sm font-medium text-gray-900">
                     Pro
                     {pricingPlans[1].popular && (
-                      <Badge variant="primary" size="xs" className="ml-2">Popular</Badge>
+                      <Badge variant="primary" size="sm" className="ml-2">Popular</Badge>
                     )}
                   </th>
                   <th className="text-center px-6 py-4 text-sm font-medium text-gray-900">Max</th>

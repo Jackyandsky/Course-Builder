@@ -6,9 +6,11 @@ import { UserCircleIcon, ArrowRightOnRectangleIcon, Cog6ToothIcon } from '@heroi
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export function UserProfile() {
   const { user, signOut } = useAuth();
+  const pathname = usePathname();
 
   if (!user) return null;
 
@@ -62,14 +64,14 @@ export function UserProfile() {
             <Menu.Item>
               {({ active }) => (
                 <Link
-                  href="/account/settings"
+                  href={pathname.startsWith('/admin') ? '/admin/settings' : '/account/settings'}
                   className={cn(
                     'flex w-full items-center px-4 py-2 text-sm text-gray-700',
                     active && 'bg-gray-100'
                   )}
                 >
                   <Cog6ToothIcon className="h-5 w-5 mr-3 text-gray-400" />
-                  Account Settings
+                  {pathname.startsWith('/admin') ? 'Settings' : 'Account Settings'}
                 </Link>
               )}
             </Menu.Item>

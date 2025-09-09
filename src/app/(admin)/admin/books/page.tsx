@@ -67,7 +67,7 @@ export default function BooksPage() {
           return { ...savedFilters, page: 1 }; // Reset to page 1 for fresh visits
         }
       } catch (error) {
-        console.warn('Failed to parse saved filters:', error);
+        console.warn('Failed to parse saved filters:', error instanceof Error ? error.message : 'Unknown error');
       }
     }
 

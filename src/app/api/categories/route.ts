@@ -40,18 +40,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Skip expensive counts if requested (for faster sidebar loading)
+    // Skip expensive counts if requested (for faster loading)
     if (skipCounts) {
       const simplifiedData = (data || []).map(cat => ({
         ...cat,
         itemCount: 0,
         childCount: 0,
+        children: [],
         level: parentId === 'null' || parentId === null ? 0 : 1
       }));
       
       return NextResponse.json(simplifiedData, {
         headers: {
-          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
         },
       });
     }

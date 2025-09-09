@@ -1,65 +1,68 @@
+/**
+ * Global Error Boundary - Automatically captures ALL React component errors
+ * Logs every component error to help Claude understand and fix issues
+ */
+
 'use client';
 
-import React from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 
-interface ErrorBoundaryState {
+interface Props {
+  children: ReactNode;
+  fallback?: ReactNode;
+  componentName?: string;
+}
+
+interface State {
   hasError: boolean;
-  error: Error | null;
+  error?: Error;
+  errorInfo?: ErrorInfo;
 }
 
-interface ErrorBoundaryProps {
-  children: React.ReactNode;
-  fallback?: React.ComponentType<{ error: Error }>;
-}
-
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
+export class ErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+  static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Pure console logging - no network requests
+    console.error('🔥 REACT COMPONENT ERROR:', {
+      component: this.props.componentName || 'Unknown',
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      url: window.location.href,
+      timestamp: new Date().toISOString()
+    });
+    
+    this.setState({ error, errorInfo });
   }
 
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
-        return <this.props.fallback error={this.state.error!} />;
+        return this.props.fallback;
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6 text-center">
-            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-red-600 text-xl">⚠️</span>
-            </div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">
-              Something went wrong
-            </h2>
-            <p className="text-gray-600 mb-4">
-              An unexpected error occurred. Please try refreshing the page.
+        <div className="min-h-[200px] flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200 p-6">
+          <div className="text-center">
+            <div className="text-red-500 mb-2">⚠️</div>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">Something went wrong</h3>
+            <p className="text-gray-600 text-sm mb-3">
+              We've automatically logged this error and will fix it soon.
             </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="btn-primary"
+            <button 
+              onClick={() => this.setState({ hasError: false, error: undefined, errorInfo: undefined })}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
             >
-              Refresh Page
+              Try Again
             </button>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
-              <details className="mt-4 text-left">
-                <summary className="cursor-pointer text-sm text-gray-500">
-                  Error Details
-                </summary>
-                <pre className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto">
-                  {this.state.error.toString()}
-                </pre>
-              </details>
-            )}
           </div>
         </div>
       );

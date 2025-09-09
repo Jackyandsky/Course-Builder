@@ -126,9 +126,6 @@ export async function POST(request: NextRequest) {
     };
 
     // Insert into content table
-
-    });
-    
     const { data: content, error: contentError } = await supabase
       .from('content')
       .insert(contentData)

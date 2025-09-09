@@ -74,7 +74,8 @@ export default function CategoriesPage() {
     try {
       setInitialLoading(true);
       
-      const response = await fetch('/api/categories?parent_id=null');
+      // First fetch without counts for faster initial load
+      const response = await fetch('/api/categories?parent_id=null&skipCounts=true');
       const data = await response.json();
 
       if (!response.ok) {
@@ -83,14 +84,34 @@ export default function CategoriesPage() {
 
       setAllCategories(data);
       setCategories(data);
+      setInitialLoading(false);
+      setLoading(false);
+
+      // Then fetch with counts in background (non-blocking)
+      fetchCategoriesWithCounts();
     } catch (error) {
       console.error('Error fetching categories:', error);
       showMessage('error', 'Failed to load categories');
-    } finally {
       setInitialLoading(false);
       setLoading(false);
     }
   };
+
+  // Fetch categories with counts in background
+  const fetchCategoriesWithCounts = useCallback(async () => {
+    try {
+      const response = await fetch('/api/categories?parent_id=null');
+      const data = await response.json();
+
+      if (response.ok) {
+        setAllCategories(data);
+        setCategories(data);
+      }
+    } catch (error) {
+      // Silent fail for background count update
+      console.error('Error fetching category counts:', error);
+    }
+  }, []);
 
   // Client-side filtering function
   const filterCategories = useCallback(() => {
@@ -115,7 +136,8 @@ export default function CategoriesPage() {
 
   const fetchSubCategories = useCallback(async (parentId: string) => {
     try {
-      const response = await fetch(`/api/categories?parent_id=${parentId}`);
+      // Fetch without expensive counts first for faster load
+      const response = await fetch(`/api/categories?parent_id=${parentId}&skipCounts=true`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -125,6 +147,16 @@ export default function CategoriesPage() {
       setSubCategories(data);
       setTotalPages(Math.ceil(data.length / ITEMS_PER_PAGE));
       setCurrentPage(1);
+
+      // Fetch with full counts in background (non-blocking)
+      fetch(`/api/categories?parent_id=${parentId}`)
+        .then(res => res.json())
+        .then(fullData => {
+          if (Array.isArray(fullData)) {
+            setSubCategories(fullData);
+          }
+        })
+        .catch(err => console.error('Error fetching subcategory counts:', err));
     } catch (error) {
       console.error('Error fetching subcategories:', error);
       showMessage('error', 'Failed to load subcategories');

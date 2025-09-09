@@ -50,8 +50,8 @@ export default function CategoryPage() {
           categoryCache.set('content-categories', rootCategories);
           
           // Fetch all subcategories in parallel
-          allCats = [...rootCategories];
-          const subCategoryPromises = rootCategories.map(async (rootCat) => {
+          allCats = rootCategories ? [...rootCategories] : [];
+          const subCategoryPromises = rootCategories ? rootCategories.map(async (rootCat) => {
             try {
               const subResponse = await fetch(`/api/categories?parent_id=${rootCat.id}`);
               if (subResponse.ok) {
@@ -63,7 +63,7 @@ export default function CategoryPage() {
               console.warn('Failed to fetch subcategories for', rootCat.name);
             }
             return [];
-          });
+          }) : [];
           
           const subCategoryArrays = await Promise.all(subCategoryPromises);
           subCategoryArrays.forEach(subCats => {
@@ -128,7 +128,7 @@ export default function CategoryPage() {
 
   return (
     <Suspense fallback={<ContentPageSkeleton />}>
-      <GenericContentList categoryName={categoryName} categoryId={categoryId} />
+      <GenericContentList categoryName={categoryName} categoryId={categoryId || undefined} />
     </Suspense>
   );
 }

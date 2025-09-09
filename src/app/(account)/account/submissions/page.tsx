@@ -184,7 +184,7 @@ const SubmissionCard = React.memo(({
           
           {submission.status === 'revision_requested' && submission.task_id && (
             <Link href={`/tasks/${submission.task_id}/submit${submission.courseId || submission.lessonId ? '?' : ''}${submission.courseId ? `courseId=${submission.courseId}` : ''}${submission.courseId && submission.lessonId ? '&' : ''}${submission.lessonId ? `lessonId=${submission.lessonId}` : ''}`}>
-              <Button variant="warning" size="sm" className="animate-pulse">
+              <Button variant="secondary" size="sm" className="animate-pulse bg-yellow-500 hover:bg-yellow-600 text-white">
                 <RefreshCw className="h-3.5 w-3.5 mr-1" />
                 Revise
               </Button>
@@ -249,7 +249,7 @@ const SubmissionCard = React.memo(({
                 </div>
               )}
               
-              {submission.files?.length > 0 && (
+              {submission.files && submission.files.length > 0 && (
                 <div className="bg-gray-50 rounded p-2 border border-gray-200">
                   {submission.files.map((file, idx) => (
                     <div key={idx} className="flex items-center gap-2 py-0.5">

@@ -47,14 +47,10 @@ export async function POST(request: NextRequest) {
       fullName = `${actualData.first_name || ''} ${actualData.last_name || ''}`.trim();
     }
     
-    // Fallback: if still no full name, extract from email (avoid just "user" prefix)
-    if (!fullName && metadata.email) {
-      const emailLocal = metadata.email.split('@')[0];
-      // Only use email as fallback if it's not generic like "user"
-      if (emailLocal && emailLocal.length > 4 && !['user', 'test', 'admin'].includes(emailLocal.toLowerCase())) {
-        fullName = emailLocal.replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        console.log('Using email-based fallback full_name:', fullName);
-      }
+    // DON'T use email as fallback - if we don't have first/last names, leave full_name empty
+    // This prevents "user" showing up when email is user@example.com
+    if (!fullName) {
+      console.log('No full_name could be constructed from first_name/last_name - leaving empty');
     }
     
     console.log('Final constructed full_name:', fullName);
@@ -87,14 +83,16 @@ export async function POST(request: NextRequest) {
     // Create or update user profile
     const profileData = {
       email: metadata.email,
-      first_name: actualData.first_name,
-      last_name: actualData.last_name,
-      full_name: fullName,
+      first_name: actualData.first_name || null,  // Ensure null instead of undefined
+      last_name: actualData.last_name || null,    // Ensure null instead of undefined
+      full_name: fullName || null,                // Ensure null instead of undefined
       role: actualData.role || 'student',
       needs_verification: actualData.role && !['student', 'parent'].includes(actualData.role),
       verified_at: actualData.role && ['student', 'parent'].includes(actualData.role) ? new Date().toISOString() : null,
       metadata: actualData
     };
+    
+    console.log('Profile data being saved:', JSON.stringify(profileData, null, 2));
 
     let profileError;
     if (existingProfile) {

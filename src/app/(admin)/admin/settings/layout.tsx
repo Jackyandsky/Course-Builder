@@ -4,9 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  Settings, Tag, Layers, Users, Bell, Shield, 
-  Palette, Database, Globe, Archive, FolderTree,
-  FileText, Zap, Package, CreditCard
+  Settings, Tag, Globe, CreditCard
 } from 'lucide-react';
 
 const settingsSections = [
@@ -15,12 +13,6 @@ const settingsSections = [
     items: [
       { name: 'Categories', href: '/admin/settings/categories', icon: Tag, 
         description: 'Manage content categories and hierarchies' },
-      { name: 'Collections', href: '/admin/settings/collections', icon: Layers,
-        description: 'Organize content into collections' },
-      { name: 'Templates', href: '/admin/settings/templates', icon: Archive,
-        description: 'Manage reusable templates' },
-      { name: 'Taxonomies', href: '/admin/settings/taxonomies', icon: FolderTree,
-        description: 'Define custom taxonomies' },
     ]
   },
   {
@@ -30,23 +22,8 @@ const settingsSections = [
         description: 'General system settings' },
       { name: 'Payments', href: '/admin/settings/payments', icon: CreditCard,
         description: 'Stripe and payment configuration' },
-      { name: 'Features', href: '/admin/settings/features', icon: Zap,
-        description: 'Enable or disable features' },
       { name: 'Integrations', href: '/admin/settings/integrations', icon: Globe,
-        description: 'Third-party integrations' },
-      { name: 'API Keys', href: '/admin/settings/api', icon: Package,
-        description: 'Manage API keys and webhooks' },
-    ]
-  },
-  {
-    title: 'Data Management',
-    items: [
-      { name: 'Import/Export', href: '/admin/settings/data', icon: Database,
-        description: 'Import and export system data' },
-      { name: 'Backup', href: '/admin/settings/backup', icon: Shield,
-        description: 'Backup and restore data' },
-      { name: 'Logs', href: '/admin/settings/logs', icon: FileText,
-        description: 'System logs and activity' },
+        description: 'Third-party integrations and API keys' },
     ]
   }
 ];

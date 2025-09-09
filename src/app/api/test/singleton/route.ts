@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMiddlewareSupabaseClient, supabase } from '@/lib/supabase/middleware-helper';
+import { withLoggingSingle } from '@/lib/logger/api-route-wrapper';
 
-export async function GET(request: NextRequest) {
+export const GET = withLoggingSingle(async (request: NextRequest) => {
   try {
     // Test singleton behavior
     const client1 = getMiddlewareSupabaseClient();
@@ -47,4 +48,4 @@ export async function GET(request: NextRequest) {
       error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-}
+});

@@ -270,8 +270,22 @@ export default function PublicHeader() {
     },
     {
       name: 'Support',
-      href: '/support',
-      hasDropdown: false
+      href: '#',
+      hasDropdown: true,
+      dropdownContent: {
+        column1: {
+          title: 'Get Help',
+          items: [
+            { name: 'Q&A', href: '/support/faq' }
+          ]
+        },
+        column2: {
+          title: 'Achieve Excellence',
+          items: [
+            { name: 'Track Your Success', href: '/support/achievement' }
+          ]
+        }
+      }
     }
   ];
 
@@ -575,6 +589,8 @@ export default function PublicHeader() {
                                 className={
                                   item.name === 'Booking' 
                                     ? "text-[21px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] transition-colors block leading-[1.19048]"
+                                    : item.name === 'Support'
+                                    ? "text-[21px] font-semibold text-[#1d1d1f] hover:text-[#0066cc] transition-colors block leading-[1.19048]"
                                     : item.name === 'Courses'
                                     ? "text-[12px] font-bold text-[#1d1d1f] hover:text-[#0066cc] transition-colors block leading-[1.42859]"
                                     : "text-[12px] font-bold text-[#1d1d1f] hover:text-[#0066cc] transition-colors block leading-[1.42859]"
@@ -622,6 +638,23 @@ export default function PublicHeader() {
                   >
                     {item.name}
                   </Link>
+                  
+                  {/* Support sub-menu for mobile */}
+                  {item.name === 'Support' && item.dropdownContent && (
+                    <ul className="ml-4 mt-2 space-y-2">
+                      {item.dropdownContent.column1.items.map((subItem) => (
+                        <li key={subItem.href}>
+                          <Link
+                            href={subItem.href}
+                            className="block text-base text-gray-600 py-1"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            {subItem.name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </li>
               ))}
               

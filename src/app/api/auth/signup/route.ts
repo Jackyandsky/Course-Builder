@@ -16,17 +16,17 @@ export async function POST(request: NextRequest) {
 
     const supabase = createRouteHandlerClient<Database>({ cookies });
     
-    // Get the origin from the request
-    const origin = request.nextUrl.origin;
+    // Use the configured app URL if available, otherwise use request origin
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+    // Remove trailing slash to prevent double slashes
+    const appUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
     
-    // Build the email redirect URL that preserves the original redirect
-    let emailRedirectTo = origin;
+    // ALWAYS redirect to /auth/callback for email verification
+    // The callback will handle the final redirect to /account or custom location
+    let emailRedirectTo = `${appUrl}/auth/callback`;
     if (redirectTo) {
       // Encode the redirect parameter to pass it through the email verification
-      emailRedirectTo = `${origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
-    } else {
-      // Default redirect to login page after verification
-      emailRedirectTo = `${origin}/auth/callback`;
+      emailRedirectTo = `${appUrl}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
     }
     
     // Ensure full_name is properly set for display in auth
@@ -35,6 +35,9 @@ export async function POST(request: NextRequest) {
       processedMetadata.full_name = `${processedMetadata.first_name} ${processedMetadata.last_name}`.trim();
     }
 
+    console.log('Signup attempt for:', email);
+    console.log('Email redirect URL:', emailRedirectTo);
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -43,10 +46,39 @@ export async function POST(request: NextRequest) {
         emailRedirectTo: emailRedirectTo,
       },
     });
+    
+    console.log('Signup response:', { 
+      success: !error, 
+      userId: data?.user?.id,
+      sessionExists: !!data?.session,
+      emailConfirmed: data?.user?.email_confirmed_at 
+    });
 
     if (error) {
+      // Provide more specific error messages
+      let errorMessage = error.message;
+      let errorCode = error.code || '';
+      
+      // Map Supabase error codes to user-friendly messages
+      if (errorCode === 'email_address_invalid' || errorMessage.includes('email_address_invalid')) {
+        errorMessage = 'Please enter a valid email address';
+      } else if (errorCode === 'user_already_exists' || errorMessage.includes('already registered')) {
+        errorMessage = 'An account with this email already exists. Please try signing in instead.';
+      } else if (errorCode === 'weak_password' || errorMessage.includes('least 6 characters')) {
+        errorMessage = 'Password must be at least 6 characters long';
+      } else if (errorMessage.includes('Invalid login')) {
+        errorMessage = 'Invalid email or password';
+      } else if (errorMessage.includes('Email not confirmed')) {
+        errorMessage = 'Please check your email and confirm your account before signing in';
+      }
+      
       return NextResponse.json(
-        { error: error.message },
+        { 
+          error: {
+            message: errorMessage,
+            code: errorCode
+          }
+        },
         { status: 400 }
       );
     }
@@ -71,6 +103,13 @@ export async function POST(request: NextRequest) {
           data.user.id,
           {
             user_metadata: {
+              ...processedMetadata,
+              display_name: processedMetadata.full_name,
+              name: processedMetadata.full_name,
+              full_name: processedMetadata.full_name
+            },
+            // Also update the raw_user_meta_data for immediate display
+            raw_user_meta_data: {
               ...processedMetadata,
               display_name: processedMetadata.full_name,
               name: processedMetadata.full_name,

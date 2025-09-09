@@ -13,12 +13,40 @@ export async function POST(request: Request) {
     // Create supabase client for this request
     const supabase = createRouteHandlerClient<Database>({ cookies });
 
-    // Get Google Books API key from environment
-    const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
+    // Get Google Books API key from database settings (fallback to environment)
+    let apiKey = process.env.GOOGLE_BOOKS_API_KEY;
+    
+    // Try to get from database first
+    const { data: settings } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'google_books_api_key')
+      .eq('category', 'integrations')
+      .single();
+
+    if (settings?.value) {
+      apiKey = settings.value;
+    }
+
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'Google Books API key not configured' },
+        { error: 'Google Books API key not configured. Please configure it in Settings > Integrations.' },
         { status: 500 }
+      );
+    }
+
+    // Check if Google Books integration is enabled
+    const { data: enabledSetting } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'google_books_enabled')
+      .eq('category', 'integrations')
+      .single();
+
+    if (!enabledSetting?.value) {
+      return NextResponse.json(
+        { error: 'Google Books integration is disabled. Please enable it in Settings > Integrations.' },
+        { status: 403 }
       );
     }
 

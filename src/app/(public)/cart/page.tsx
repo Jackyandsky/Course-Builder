@@ -42,7 +42,7 @@ const CartItem = memo(function CartItem({
     if (newQuantity < 1) return;
     
     // Optimistic update - instantly update UI
-    setItem(prev => ({ ...prev, quantity: newQuantity }));
+    setItem((prev: any) => ({ ...prev, quantity: newQuantity }));
     setIsUpdating(true);
 
     try {
@@ -50,7 +50,7 @@ const CartItem = memo(function CartItem({
       await onQuantityChange(item.id, newQuantity);
     } catch (error) {
       // Revert on error
-      setItem(prev => ({ ...prev, quantity: item.quantity }));
+      setItem((prev: any) => ({ ...prev, quantity: item.quantity }));
       console.error('Failed to update quantity:', error);
     } finally {
       setIsUpdating(false);

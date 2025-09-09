@@ -67,14 +67,12 @@ export function LoginForm({ onToggleMode, isSignUp = false }: LoginFormProps) {
         );
 
         if (error) {
-          // Provide more helpful error messages for signup
-          if (error.message.includes('already registered')) {
-            setError('An account with this email already exists. Please try signing in instead.');
-          } else if (error.message.includes('password')) {
-            setError('Password must be at least 6 characters long.');
-          } else {
-            setError(error.message);
-          }
+          // Handle error object structure from API
+          const errorMessage = error.message || error;
+          
+          // The API now returns properly formatted error messages
+          // Just display them directly
+          setError(errorMessage);
         } else if (user) {
           // Check if email confirmation is required (user exists but no session)
           const needsEmailConfirmation = user && !user.email_confirmed_at;

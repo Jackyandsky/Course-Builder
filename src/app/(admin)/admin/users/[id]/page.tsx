@@ -27,7 +27,8 @@ import {
   BookOpenIcon,
   FolderIcon,
   ShareIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import { SocialMediaInput, SocialMediaData } from '@/components/ui/SocialMediaInput';
 

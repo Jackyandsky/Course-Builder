@@ -13,6 +13,7 @@ export default function CheckoutPage() {
   const { items, loading, totalItems, totalAmount } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'alipay'>('card');
 
   const formatPrice = (price: number, currency = 'CAD') => {
     return new Intl.NumberFormat('en-CA', {
@@ -48,8 +49,9 @@ export default function CheckoutPage() {
             item_id: item.item_id,
             quantity: item.quantity,
             price: item.price,
-            currency: item.currency || 'CAD'
-          }))
+            currency: (item as any).currency || 'CAD'
+          })),
+          payment_method: selectedPaymentMethod
         }),
       });
 
@@ -63,7 +65,7 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Redirect to Stripe Checkout
+      // Redirect to payment provider
       if (data.url) {
         window.location.href = data.url;
       } else {
@@ -186,7 +188,7 @@ export default function CheckoutPage() {
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-medium text-gray-900">
-                          {formatPrice(item.price * item.quantity, item.currency)}
+                          {formatPrice(item.price * item.quantity, (item as any).currency)}
                         </p>
                       </div>
                     </div>
@@ -243,15 +245,54 @@ export default function CheckoutPage() {
                 {/* Payment Method */}
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-gray-900 mb-3">Payment Method</h3>
-                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                    <div className="flex items-center">
-                      <CreditCard className="h-5 w-5 text-blue-600 mr-3" />
-                      <div>
-                        <p className="text-sm font-medium text-blue-900">Secure Payment via Stripe</p>
-                        <p className="text-xs text-blue-700">
-                          Credit Card, Debit Card, and Digital Wallets accepted
-                        </p>
+                  <div className="space-y-3">
+                    {/* Card Payment */}
+                    <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                      <input
+                        type="radio"
+                        name="payment"
+                        value="card"
+                        checked={selectedPaymentMethod === 'card'}
+                        onChange={(e) => setSelectedPaymentMethod(e.target.value as 'card' | 'alipay')}
+                        className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      />
+                      <div className="ml-3 flex items-center">
+                        <CreditCard className="h-5 w-5 text-gray-600 mr-3" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Credit/Debit Card</p>
+                          <p className="text-xs text-gray-500">Visa, Mastercard, American Express</p>
+                        </div>
                       </div>
+                    </label>
+
+                    {/* Alipay Payment */}
+                    <label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                      <input
+                        type="radio"
+                        name="payment"
+                        value="alipay"
+                        checked={selectedPaymentMethod === 'alipay'}
+                        onChange={(e) => setSelectedPaymentMethod(e.target.value as 'card' | 'alipay')}
+                        className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      />
+                      <div className="ml-3 flex items-center">
+                        <div className="h-5 w-5 mr-3 flex items-center justify-center">
+                          <span className="text-blue-600 font-bold text-xs">支</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Alipay</p>
+                          <p className="text-xs text-gray-500">Pay with your Alipay account</p>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                  
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center">
+                      <Lock className="h-4 w-4 text-blue-600 mr-2" />
+                      <p className="text-xs text-blue-700">
+                        All payments are processed securely through Stripe
+                      </p>
                     </div>
                   </div>
                 </div>

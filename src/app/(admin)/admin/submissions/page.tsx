@@ -583,7 +583,8 @@ export default function SubmissionsPage() {
                             <>
                               <Button
                                 size="sm"
-                                variant="success"
+                                variant="primary"
+                                className="bg-green-600 hover:bg-green-700 text-white"
                                 onClick={() => {
                                   const maxPoints = submission.task?.points || 100;
                                   const score = prompt(`Enter score (0-${maxPoints}):`);

@@ -16,17 +16,16 @@ export async function POST(request: NextRequest) {
 
     const supabase = createRouteHandlerClient<Database>({ cookies });
     
-    // Get the origin from the request
-    const origin = request.nextUrl.origin;
+    // Use the configured app URL if available, otherwise use request origin
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+    // Remove trailing slash to prevent double slashes
+    const appUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
     
     // Build the email redirect URL that preserves the original redirect
-    let emailRedirectTo = origin;
+    let emailRedirectTo = `${appUrl}/auth/callback`;
     if (redirectTo) {
       // Encode the redirect parameter to pass it through the magic link
-      emailRedirectTo = `${origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
-    } else {
-      // Default redirect to account page after magic link login
-      emailRedirectTo = `${origin}/auth/callback`;
+      emailRedirectTo = `${appUrl}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
     }
     
     // Send magic link

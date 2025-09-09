@@ -369,11 +369,11 @@ export default function SubmissionDetailPage({ params }: { params: { id: string 
                     {submission.status === 'approved' ? 'Update & Keep Approved' : 'Approve Submission'}
                   </Button>
                   <Button
-                    variant="warning"
+                    variant="secondary"
                     onClick={() => handleUpdateStatus('revision_requested')}
                     loading={updating}
                     leftIcon={<Clock className="h-4 w-4" />}
-                    className="font-semibold"
+                    className="font-semibold bg-yellow-500 hover:bg-yellow-600 text-white"
                   >
                     Request Revision
                   </Button>

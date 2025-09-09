@@ -37,10 +37,13 @@ export interface ButtonComponentProps
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonComponentProps>(
-  ({ className, variant, size, loading, children, disabled, ...props }, ref) => {
+  ({ className, variant, size, loading, leftIcon, rightIcon, fullWidth, children, disabled, ...props }, ref) => {
     return (
       <button
-        className={cn(buttonVariants({ variant, size, className }))}
+        className={cn(
+          buttonVariants({ variant, size, className }),
+          fullWidth && 'w-full'
+        )}
         ref={ref}
         disabled={disabled || loading}
         {...props}
@@ -67,7 +70,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonComponentProps>(
             ></path>
           </svg>
         )}
+        {!loading && leftIcon && <span className="mr-2">{leftIcon}</span>}
         {children}
+        {!loading && rightIcon && <span className="ml-2">{rightIcon}</span>}
       </button>
     );
   }

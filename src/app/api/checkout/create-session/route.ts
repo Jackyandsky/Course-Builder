@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { items } = body;
+    const { items, payment_method } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'No items provided' }, { status: 400 });
@@ -261,7 +261,7 @@ export async function POST(request: NextRequest) {
         order_number: orderNumber,
         status: 'pending',
         payment_status: 'pending',
-        payment_method: 'stripe',
+        payment_method: payment_method || 'card',
         subtotal: subtotal,
         tax_amount: taxAmount,
         total_amount: totalAmount,
@@ -339,10 +339,9 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         order_number: orderNumber
       },
-      payment_method_types: [
-        'card',           // Credit/Debit cards - automatically includes Apple Pay & Google Pay
-        'klarna'          // Klarna (Buy now, pay later)
-      ],
+      payment_method_types: body.payment_method === 'alipay' 
+        ? ['alipay']     // Alipay only
+        : ['card', 'klarna'], // Credit/Debit cards and Klarna
       payment_intent_data: {
         metadata: {
           order_id: order.id,

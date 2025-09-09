@@ -547,12 +547,17 @@ export default function EnrollmentsPage() {
         <Card.Content className="p-4">
           <div className="flex gap-4">
             <div className="flex-1">
-              <Input
-                placeholder="Search by student or course..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                leftIcon={<Search className="h-4 w-4 text-gray-400" />}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </div>
+                <Input
+                  placeholder="Search by student or course..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
             <Select
               value={statusFilter}

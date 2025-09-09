@@ -12,6 +12,11 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   import('@/lib/auth/auth-debug');
 }
 
+// Initialize logger on server-side to start console mirroring
+if (typeof window === 'undefined') {
+  import('@/lib/logger').catch(() => {}); // Silent import to initialize logger
+}
+
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
